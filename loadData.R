@@ -53,15 +53,15 @@ loadRawData<-function(folder,agent,listparam,values){
   setwd(folder)
   fullList<-getFilelist(folder,listparam,values)
   DT<-do.call(rbind,lapply(fullList[[agent]],fread))
-  DT$option<-ifelse((DT$Type_choice==1 & DT$Type_discard==0) | 
-                   (DT$Type_choice==0 & DT$Type_discard==1),"RV",NA)
-  DT$option<-ifelse((DT$Type_choice==0 & DT$Type_discard==0),"RR",DT$option)
-  DT$option<-ifelse((DT$Type_choice==1 & DT$Type_discard==1),"VV",DT$option)
-  DT$option<-ifelse((DT$Type_choice==0 & DT$Type_discard==2) | 
-                   (DT$Type_choice==2 & DT$Type_discard==0),"R0",DT$option)
-  DT$option<-ifelse((DT$Type_choice==1 & DT$Type_discard==2) | 
-                   (DT$Type_choice==2 & DT$Type_discard==1),"V0",DT$option)
-  DT$option<-ifelse((DT$Type_choice==2 & DT$Type_discard==2),"00",DT$option)
+  DT$option<-ifelse((DT$Client1==1 & DT$Client2==0) | 
+                   (DT$Client1==0 & DT$Client2==1),"RV",NA)
+  DT$option<-ifelse((DT$Client1==0 & DT$Client2==0),"RR",DT$option)
+  DT$option<-ifelse((DT$Client1==1 & DT$Client2==1),"VV",DT$option)
+  DT$option<-ifelse((DT$Client1==0 & DT$Client2==2) | 
+                   (DT$Client1==2 & DT$Client2==0),"R0",DT$option)
+  DT$option<-ifelse((DT$Client1==1 & DT$Client2==2) | 
+                   (DT$Client1==2 & DT$Client2==1),"V0",DT$option)
+  DT$option<-ifelse((DT$Client1==2 & DT$Client2==2),"00",DT$option)
   
   return(DT)
 }
@@ -145,6 +145,10 @@ file2lastDP<-function(filename)
 
 soft_max<-function(x,y,t){
   return(exp(x/t)/(exp(x/t)+exp(y/t)))
+}
+
+logist<-function(theta){
+  return(1/(1+exp(-theta)))
 }
 
 diffJsons<-function(json1,json2){

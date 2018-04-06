@@ -1,7 +1,7 @@
 # --------------------------------- Time intervals -------------------------------------------------#
 
-projDir<-"d:/quinonesa/learning_models_c++/Sarsa/"
-simsDir<-"s:/quinonesa/Simulations/Basic_sarsa/"
+projDir<-"d:/quinonesa/learning_models_c++/actCrit/"
+simsDir<-"s:/quinonesa/Simulations/actCrit/"
 
 # libraries ---------------------------------------------------------------------------------------
 source('d:/quinonesa/Dropbox/R_files/posPlots.R')
@@ -14,13 +14,11 @@ library('plotrix')
 
 # Define data to be loaded 
 
-(listPar<-rep("factRew",2))
-(listVal<-c(1,2))
+(listPar<-rep("test",1))
+(listVal<-"")
 param<-getParam(simsDir,listparam = listPar,values = listVal)
 
 #diffJsons(param[1],param[3])
-
-list.files(simsDir,recursive = TRUE,pattern = "Olle_/")
 
 # Load interval data for FIA from the raw data
 FIAtimeInt<-do.call(

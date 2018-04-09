@@ -54,7 +54,7 @@ check_create.dir<-function(folder,param,values){
 
 rang<-
 
-listfolders<-check_create.dir(simsDir,rep("alphThet",1),rang)
+listfolders<-check_create.dir(simsDir,rep("AlphaTh",1),rang)
 
 for (i in 1:1) {
   param$folder<-paste(simsDir,'/',listfolders[i],'/',sep='')

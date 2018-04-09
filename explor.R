@@ -16,27 +16,25 @@ library('lme4')
 # Load data ------------------------------------------------------------
 
 
-
-
 # Define data to be loaded 
 
-(listPar<-rep("test",1))
+(listPar<-rep("alphaTh",1))
 (listVal<-"")
-
-param<-getParam(simsDir,listparam = listPar,values = listVal)
 
 
 FIAraw<-loadRawData(simsDir,"FIA",listparam = listPar,values = listVal)
-param<-getParam(genDir,listparam = listPar,values = listVal)
+param<-getParam(simsDir,listparam = listPar,values = listVal)
+
+FIAraw
 
 
-plot(logist(Theta)~Age,data=FIAraw[(Training==0&Gamma==0.0)&Neta==0])
+plot(logist(Theta)~Age,data=FIAraw[(Training==0&Gamma==0.8)&Neta==0])
 lines(x=c(0,5000),y=c(0.5,0.5),col="grey")
 
-FIAagg<-FIAraw[, as.list(unlist(lapply(.SD, function(x) list(mean = mean(x),
-                                                             sd = sd(x))))),
-               by=.(Age,Alpha,Gamma,Tau,Neta,Outbr), 
-               .SDcols=grep("[[:digit:]]",names(FIAraw))]
+FIAagg<-FIAraw[, as.list(unlist(lapply(.SD, function(x) 
+  list(mean = mean(x),IQ.h = fivenum(x)[4],IQ.l=fivenum(x)[2])))),
+               by=.(Age,Alpha,Gamma,Tau,Neta,Outbr,AlphaTh), 
+               .SDcols=c('Theta','RV.V','RV.R')]
 
 
 
@@ -44,33 +42,18 @@ FIAagg<-FIAraw[, as.list(unlist(lapply(.SD, function(x) list(mean = mean(x),
 
 FIAtimeInt<-do.call(
   rbind,lapply(
-    getFilelist(genDir,listPar,listVal)$FIA,
-    file2timeInter,interV=1001))
+    getFilelist(simsDir,listPar,listVal)$FIA,
+    file2timeInter,interV=501))
 
 PIAtimeInt<-do.call(
   rbind,lapply(
     getFilelist(genDir,listPar,listVal)$PIA,
-    file2timeInter,interV=1001))
+    file2timeInter,interV=501))
 
 DPdataProb<-do.call(rbind,
                     lapply(getFilelist(genDir,listPar,listVal)$DP,
                            file2lastDP))
 
-
-featNames<-list(first.client=list(
-  choise_0=list(
-    mean=grep("_1_0.mean",names(FIAagg),value = TRUE),
-    sd=grep("_1_0.sd",names(FIAagg),value = TRUE)),
-  choise_1=list(
-    mean=grep("_1_1.mean",names(FIAagg),value = TRUE),
-    sd=grep("_1_1.sd",names(FIAagg),value = TRUE))),
-  second.client=list(
-    choise_0=list(
-      mean=grep("_2_0.mean",names(FIAagg),value = TRUE),
-      sd=grep("_2_0.sd",names(FIAagg),value = TRUE)),
-    choise_1=list(
-      mean=grep("_2_1.mean",names(FIAagg),value = TRUE),
-      sd=grep("_2_1.sd",names(FIAagg),value = TRUE))))
 
 
 # Plot of the dynamics of the feature weights --------------------------------------------------
@@ -146,46 +129,46 @@ with(FIAraw[((Tau==10 & Gamma==0.8)&(Neta==0 & Outbr==0.2))&option=='RV'],{
 })
 
 
-# Try to understand the failures --------------------------------------------------------
+# Plot dynamics of probability to choose V over R ------------------------------
 
-tmp<-FIAraw[option=='RV'& Age>0.5*max(Age)]
+par(plt=posPlot(numplotx = 1,idplotx = 1),yaxt='s',las=1)
+with(FIAagg[Neta==0&Gamma==0.8],{
+  plotCI(x=Age,y=logist(Theta.mean),
+         ui = logist(Theta.IQ.h),li=logist(Theta.IQ.l),
+         pch=16,xlab='Time',ylab='Prob. V over R',cex.lab=2,
+         col=colboxes[match(AlphaTh,unique(AlphaTh))],
+         sfrac=0.0002,cex.axis=1.3,ylim=c(0,1),cex=1.2)
+  lines(x=c(0,max(Age)),y=c(0.5,0.5),col='grey')
+})
 
-tmp[,':='(length.diff=Length_choice-Length_discard,
-          height.diff=Height_choice-Height_discard,
-          redMain.diff=redMain_choice-redMain_discard)]
+legend('topright',
+       legend=unique(FIAagg[,AlphaTh])[order(unique(FIAagg[,AlphaTh]))],
+       col=colboxes,pch=15,
+       title="AlphaTH",cex=1.5,ncol=3)
 
-names(tmp)
 
-npx<-3
+extpar<-listPar[1]
 
-par(plt=posPlot(numplotx = npx,idplotx = 1)-c(0.05,0.05,0,0))
-plot(Type_choice~length.diff,data=tmp)
-lines(x = rep(0,2),y=c(0,1),col='grey')
+FIAIntstats<-FIAtimeInt[,.(meanProb=mean(Prob.RV.V),
+                           upIQR=fivenum(Prob.RV.V)[4],
+                           lowIQR=fivenum(Prob.RV.V)[2])
+                        ,by=.(Interv,Neta,Outbr,Tau,Gamma,get(extpar))]
+setnames(FIAIntstats,'get',extpar)
 
-par(plt=posPlot(numplotx = npx,idplotx = 2)-c(0.05,0.05,0,0),new=TRUE)
-plot(Type_choice~height.diff,data=tmp,yaxt='n',ylab='')
-lines(x = rep(0,2),y=c(0,1),col='grey')
+par(plt=posPlot(numplotx = 1,idplotx = 1),yaxt='s',las=1)
+with(FIAIntstats[Neta==0&Gamma==0.8],{
+  plotCI(x=Interv,y=meanProb,
+         ui = upIQR,li=lowIQR,
+         pch=16,xlab='Time',ylab='Prob. V over R',cex.lab=2,
+         col=colboxes[match(AlphaTh,unique(AlphaTh))],
+         sfrac=0.002,cex.axis=1.3,ylim=c(0,1),cex=1.2)
+  lines(x=c(0,max(Interv)),y=c(0.5,0.5),col='grey')
+})
 
-par(plt=posPlot(numplotx = npx,idplotx = 3)-c(0.05,0.05,0,0),new=TRUE)
-plot(Type_choice~redMain.diff,data=tmp,yaxt='n',ylab='')
-lines(x = rep(0,2),y=c(0,1),col='grey')
-
-Heig.mod<-glm(Type_choice~length.diff+height.diff+redMain.diff,
-              family = binomial,data = tmp)
-summary(Heig.mod)
-
-Heig.mod.int<-glm(Type_choice~length.diff*height.diff*redMain.diff,
-              family = binomial,data = tmp)
-summary(Heig.mod.int)
-
-Heig.mod.length<-glm(Type_choice~Length_1_0+Length_1_1+Length_2_0+Length_2_1,
-              family = binomial,data = tmp)
-summary(Heig.mod.length)
-
-Heig.mod.height<-glm(Type_choice~Height_1_0+Height_1_1+Height_2_0+Height_2_1,
-                     family = binomial,data = tmp)
-summary(Heig.mod.height)
-
+legend('topright',
+       legend=unique(FIAagg[,AlphaTh])[order(unique(FIAagg[,AlphaTh]))],
+       col=colboxes,pch=15,
+       title="AlphaTH",cex=1.5,ncol=3)
 
 
 

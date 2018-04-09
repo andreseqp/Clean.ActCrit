@@ -14,9 +14,9 @@ library('plotrix')
 
 # Define data to be loaded 
 
-(listPar<-rep("test",1))
+(listPar<-rep("alphThet",1))
 (listVal<-"")
-param<-getParam(simsDir,listparam = listPar,values = listVal)
+(param<-getParam(simsDir,listparam = listPar,values = listVal))
 
 #diffJsons(param[1],param[3])
 

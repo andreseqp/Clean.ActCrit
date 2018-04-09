@@ -106,7 +106,7 @@ file2timeInter<-function(filename,interV,maxAge=-2){
     (tmp$Client1==0 & tmp$Client2==1)
   tmptimeInter<-
     tmp[fullRVoptions==TRUE,.(Prob.RV.V=mean(Choice)),
-      by=.(Interv=floor(Age/interV),Training,Alpha,Gamma,Tau,Neta,Outbr)]
+      by=.(Interv=floor(Age/interV),Training,Alpha,Gamma,Tau,Neta,Outbr,AlphaTh)]
   if(length(extPar)>0){
     tmptimeInter[,eval(extPar):=parVal]
   }
@@ -120,7 +120,7 @@ file2lastDP<-function(filename){
   tmp<-fread(filename)
   tmpProbsDP<-tmp[Time==max(Time),
                   .(probRV.V=soft_max(RV.V,RV.R,Tau),RV.V,RV.R),
-                  by=.(Alpha,Gamma,Tau,Neta,Outbr)]
+                  by=.(Alpha,Gamma,Tau,Neta,Outbr,AlphTh)]
   if(length(extPar)>0){
     tmpProbsDP[,eval(extPar):=parVal]
   }

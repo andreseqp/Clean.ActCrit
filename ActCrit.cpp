@@ -149,7 +149,7 @@ agent::agent(double alphaI = 0.01, double gammaI = 0.5,
 	numEst = 9;
 	for (int i = 0; i < numEst; i++) { values[i] = 0, DPbackup[i]=0; }
 	theta = 0;
-	alpha = alphaI, gamma = gammaI, tau = tauI, alphath = alphaI;
+	alpha = alphaI, gamma = gammaI, tau = tauI, alphath = alphathI;
 	neta = netaI;
 	cleanOptionsT[0] = absence, cleanOptionsT[1] = absence, choiceT = 0;
 	cleanOptionsT1[0] = absence, cleanOptionsT1[1] = absence, choiceT1 = 0;
@@ -759,36 +759,35 @@ void initializeIndFile(ofstream &indOutput, agent &learner,
 int main(int argc, _TCHAR* argv[]){
 
 	mark_time(1);
-	//ifstream input(argv[1]);
-	//if (input.fail()) { cout << "JSON file failed" << endl; }
-	//json param = nlohmann::json::parse(input);
+	ifstream input(argv[1]);
+	if (input.fail()) { cout << "JSON file failed" << endl; }
+	json param = nlohmann::json::parse(input);
 	
 	// Only for debugging
-	json param;
+	//json param;
+	//param["totRounds"]    = 5000;
+	//param["ResReward"]    = 1;
+	//param["VisReward"]    = 1;
+	//param["ResProb"]      = 0.3;
+	//param["VisProb"]      = 0.3;
+	//param["ResProbLeav"]  = 0;
+	//param["VisProbLeav"]  = 1;
+	//param["negativeRew"]  = 0.5;
+	//param["experiment"]   = false;
+	//param["inbr"]         = 0;
+	//param["outbr"]        = 0;
+	//param["trainingRep"]  = 10;
+	//param["alphaT"]       = 0.01;
+	//param["printGen"]     = 1;
+	//param["seed"]         = 1;
+	//param["forRat"]       = 0.0;
+	//param["alphThRange"]  = { 0 };
+	//param["gammaRange"]   = { 0, 0.8 };
+	//param["tauRange"]     = { 0.6667 };
+	//param["netaRange"]    = { 0, 0.5 };
+	//param["alphaThRange"] = { 0.01 };
+	//param["folder"] = "S:/quinonesa/Simulations/actCrit/test/";
 
-	param["totRounds"]    = 5000;
-	param["ResReward"]    = 1;
-	param["VisReward"]    = 1;
-	param["ResProb"]      = 0.3;
-	param["VisProb"]      = 0.3;
-	param["ResProbLeav"]  = 0;
-	param["VisProbLeav"]  = 1;
-	param["negativeRew"]  = 0.5;
-	param["experiment"]   = false;
-	param["inbr"]         = 0;
-	param["outbr"]        = 0;
-	param["trainingRep"]  = 10;
-	param["alphaT"]       = 0.01;
-	param["printGen"]     = 1;
-	param["seed"]         = 1;
-	param["forRat"]       = 0.0;
-	param["alphThRange"]  = { 0 };
-	param["gammaRange"]   = { 0, 0.8 };
-	param["tauRange"]     = { 0.6667 };
-	param["netaRange"]    = { 0, 0.5 };
-	param["alphaThRange"] = { 0.01 };
-	param["folder"] = "S:/quinonesa/Simulations/actCrit/test/";
-	
 	int const totRounds = param["totRounds"];
 	double ResReward = param["ResReward"];
 	double VisReward = param["VisReward"];
@@ -852,8 +851,8 @@ int main(int argc, _TCHAR* argv[]){
 	int idClientSet;
 
 	agent *learners[numlearn];
-	for (json::iterator italTh = param["alphThRange"].begin();
-		italTh != param["alphThRange"].end(); ++italTh) {
+	for (json::iterator italTh = param["alphaThRange"].begin();
+		italTh != param["alphaThRange"].end(); ++italTh) {
 		for (json::iterator itn = param["netaRange"].begin();
 			itn != param["netaRange"].end(); ++itn) {
 			for (json::iterator itg = param["gammaRange"].begin();
@@ -866,7 +865,6 @@ int main(int argc, _TCHAR* argv[]){
 						*itn, *italTh);
 					ofstream printTest;
 					ofstream DPprint;
-
 					for (int k = 0; k < numlearn; ++k){
 						initializeIndFile(printTest, *learners[k],
 							param, 0);

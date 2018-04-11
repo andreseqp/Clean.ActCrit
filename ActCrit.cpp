@@ -615,10 +615,9 @@ class FIATyp1 :public agent{			// Fully Informed Agent (FIA)
 	virtual void updateThet(int curStatAct,double delta, double probV) {
 		if (curStatAct < 2) {
 			if (curStatAct == 0) {
-				theta += alphath*delta*(1 - probV);
-			}
-			else {
-				theta -= alphath*delta*probV;
+				theta -= 2*alphath*delta*(1-probV);
+			} else {
+				theta += 2*alphath*delta*probV;
 			}
 		}
 	}
@@ -759,11 +758,8 @@ void initializeIndFile(ofstream &indOutput, agent &learner,
 int main(int argc, _TCHAR* argv[]){
 
 	mark_time(1);
-	ifstream input(argv[1]);
-	if (input.fail()) { cout << "JSON file failed" << endl; }
-	json param = nlohmann::json::parse(input);
-	
-	// Only for debugging
+
+	 //Only for debugging
 	//json param;
 	//param["totRounds"]    = 5000;
 	//param["ResReward"]    = 1;
@@ -788,6 +784,11 @@ int main(int argc, _TCHAR* argv[]){
 	//param["alphaThRange"] = { 0.01 };
 	//param["folder"] = "S:/quinonesa/Simulations/actCrit/test/";
 
+	
+	ifstream input(argv[1]);
+	if (input.fail()) { cout << "JSON file failed" << endl; }
+	json param = nlohmann::json::parse(input);
+	
 	int const totRounds = param["totRounds"];
 	double ResReward = param["ResReward"];
 	double VisReward = param["VisReward"];

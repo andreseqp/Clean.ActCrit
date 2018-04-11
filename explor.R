@@ -28,31 +28,24 @@ param<-getParam(simsDir,listparam = listPar,values = listVal)
 FIAraw
 
 
-plot(logist(Theta)~Age,data=FIAraw[(Training==0&Gamma==0.8)&Neta==0])
-lines(x=c(0,5000),y=c(0.5,0.5),col="grey")
-
 FIAagg<-FIAraw[, as.list(unlist(lapply(.SD, function(x) 
   list(mean = mean(x),IQ.h = fivenum(x)[4],IQ.l=fivenum(x)[2])))),
                by=.(Age,Alpha,Gamma,Tau,Neta,Outbr,AlphaTh), 
                .SDcols=c('Theta','RV.V','RV.R')]
-
-
-
-
 
 FIAtimeInt<-do.call(
   rbind,lapply(
     getFilelist(simsDir,listPar,listVal)$FIA,
     file2timeInter,interV=501))
 
-PIAtimeInt<-do.call(
-  rbind,lapply(
-    getFilelist(genDir,listPar,listVal)$PIA,
-    file2timeInter,interV=501))
+# PIAtimeInt<-do.call(
+#   rbind,lapply(
+#     getFilelist(genDir,listPar,listVal)$PIA,
+#     file2timeInter,interV=501))
 
-DPdataProb<-do.call(rbind,
-                    lapply(getFilelist(genDir,listPar,listVal)$DP,
-                           file2lastDP))
+# DPdataProb<-do.call(rbind,
+#                     lapply(getFilelist(genDir,listPar,listVal)$DP,
+#                            file2lastDP))
 
 
 
@@ -131,6 +124,8 @@ with(FIAraw[((Tau==10 & Gamma==0.8)&(Neta==0 & Outbr==0.2))&option=='RV'],{
 
 # Plot dynamics of probability to choose V over R ------------------------------
 
+
+# Using Theta
 par(plt=posPlot(numplotx = 1,idplotx = 1),yaxt='s',las=1)
 with(FIAagg[Neta==0&Gamma==0.8],{
   plotCI(x=Age,y=logist(Theta.mean),
@@ -146,13 +141,66 @@ legend('topright',
        col=colboxes,pch=15,
        title="AlphaTH",cex=1.5,ncol=3)
 
+# Plot Theta
+
+par(plt=posPlot(numplotx = 1,idplotx = 1),yaxt='s',las=1)
+with(FIAagg[(Neta==0&Gamma==0.8)],{
+  plot(x=Age,y=Theta.mean,
+         pch=16,xlab='Time',ylab='Theta',cex.lab=2,
+         col=colboxes[match(AlphaTh,unique(AlphaTh))],
+         cex.axis=1.3,ylim=c(-0.5,0.5),cex=1)
+  lines(x=c(0,max(Age)),y=c(0,0),col='grey')
+})
+
+legend('topright',
+       legend=unique(FIAagg[,AlphaTh])[order(unique(FIAagg[,AlphaTh]))],
+       col=colboxes,pch=15,
+       title="AlphaTH",cex=1.5,ncol=3)
+
+# Plot lines theta
+
+FIAlines<-dcast(FIAagg[(Neta==0&Gamma==0.8)],Age~AlphaTh,
+                value.var = "Theta.mean")
+names(FIAlines)[2:4]<-paste0("AlphaTh",names(FIAlines)[2:4],sep="")
+
+par(plt=posPlot(numplotx = 1,idplotx = 1),yaxt='s',las=1)
+with(FIAlines,{
+  matplot(y=cbind(AlphaTh0.005,AlphaTh0.01,AlphaTh0.05),
+           pch=16,xlab='Time',ylab='Value',cex.lab=2,
+           col=colboxes,
+           cex.axis=1.3,ylim=c(-0.5,1),cex=1,yaxt='n',type='l')
+  axis(2)
+  lines(x=c(0,max(Age)),y=c(0,0),col='grey')
+})
+
+
+# Plot values
+
+par(plt=posPlot(numplotx = 1,idplotx = 1),yaxt='s',las=1)
+with(FIAagg[(Neta==0&Gamma==0.8)&AlphaTh==0.05],{
+  plot(y=RV.V.mean,x=Age,
+       pch=16,xlab='Time',ylab='Value',cex.lab=2,
+       col=colboxes[match(AlphaTh,unique(AlphaTh))],
+       cex.axis=1.3,ylim=c(0,10),cex=1,yaxt='n',type='l')
+  axis(2)
+  lines(x=Age,y=RV.R.mean,col=colboxes[match(AlphaTh,unique(AlphaTh))],
+         pch=8)
+  lines(x=c(0,max(Age)),y=c(0,0),col='grey')
+})
+
+
+legend('topright',
+       legend=unique(FIAagg[,AlphaTh])[order(unique(FIAagg[,AlphaTh]))],
+       col=colboxes,pch=15,
+       title="AlphaTH",cex=1.5,ncol=3)
+
 
 extpar<-listPar[1]
 
 FIAIntstats<-FIAtimeInt[,.(meanProb=mean(Prob.RV.V),
                            upIQR=fivenum(Prob.RV.V)[4],
                            lowIQR=fivenum(Prob.RV.V)[2])
-                        ,by=.(Interv,Neta,Outbr,Tau,Gamma,get(extpar))]
+                        ,by=.(Interv,Neta,Outbr,Tau,Gamma,AlphaTh,get(extpar))]
 setnames(FIAIntstats,'get',extpar)
 
 par(plt=posPlot(numplotx = 1,idplotx = 1),yaxt='s',las=1)

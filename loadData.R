@@ -106,7 +106,8 @@ file2timeInter<-function(filename,interV,maxAge=-2){
     (tmp$Client1==0 & tmp$Client2==1)
   tmptimeInter<-
     tmp[fullRVoptions==TRUE,.(Prob.RV.V=mean(Choice)),
-      by=.(Interv=floor(Age/interV),Training,Alpha,Gamma,Tau,Neta,Outbr,AlphaTh)]
+      by=.(Interv=floor(Age/interV),Training,Alpha,
+           Gamma,Tau,Neta,Outbr,AlphaTh)]
   if(length(extPar)>0){
     tmptimeInter[,eval(extPar):=parVal]
   }

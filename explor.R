@@ -18,14 +18,12 @@ library('lme4')
 
 # Define data to be loaded 
 
-(listPar<-rep("alphaTh",1))
-(listVal<-"")
+(listPar<-rep("factRew",2))
+(listVal<-c(1,2))
 
 
 FIAraw<-loadRawData(simsDir,"FIA",listparam = listPar,values = listVal)
 param<-getParam(simsDir,listparam = listPar,values = listVal)
-
-FIAraw
 
 
 FIAagg<-FIAraw[, as.list(unlist(lapply(.SD, function(x) 
@@ -40,7 +38,7 @@ FIAtimeInt<-do.call(
 
 # PIAtimeInt<-do.call(
 #   rbind,lapply(
-#     getFilelist(genDir,listPar,listVal)$PIA,
+#     getFilelist(simsDir,listPar,listVal)$PIA,
 #     file2timeInter,interV=501))
 
 # DPdataProb<-do.call(rbind,
@@ -144,13 +142,15 @@ legend('topright',
 # Plot Theta
 
 par(plt=posPlot(numplotx = 1,idplotx = 1),yaxt='s',las=1)
-with(FIAagg[(Neta==0&Gamma==0.8)],{
+with(FIAagg[(Neta==0.0&Gamma==0.8)],{
   plot(x=Age,y=Theta.mean,
          pch=16,xlab='Time',ylab='Theta',cex.lab=2,
          col=colboxes[match(AlphaTh,unique(AlphaTh))],
-         cex.axis=1.3,ylim=c(-0.5,0.5),cex=1)
+         cex.axis=1.3,ylim=c(-0.5,1),cex=1)
   lines(x=c(0,max(Age)),y=c(0,0),col='grey')
 })
+
+FIAraw[(Neta==0&Gamma==0.8)&Training==0,.(Age,Theta)][Theta==max(Theta)]
 
 legend('topright',
        legend=unique(FIAagg[,AlphaTh])[order(unique(FIAagg[,AlphaTh]))],
@@ -168,7 +168,7 @@ with(FIAlines,{
   matplot(y=cbind(AlphaTh0.005,AlphaTh0.01,AlphaTh0.05),
            pch=16,xlab='Time',ylab='Value',cex.lab=2,
            col=colboxes,
-           cex.axis=1.3,ylim=c(-0.5,1),cex=1,yaxt='n',type='l')
+           cex.axis=1.3,cex=1,yaxt='n',type='l')
   axis(2)
   lines(x=c(0,max(Age)),y=c(0,0),col='grey')
 })
@@ -176,16 +176,20 @@ with(FIAlines,{
 
 # Plot values
 
-par(plt=posPlot(numplotx = 1,idplotx = 1),yaxt='s',las=1)
-with(FIAagg[(Neta==0&Gamma==0.8)&AlphaTh==0.05],{
+par(plt=posPlot(numplotx = 1,idplotx = 1)-c(0.05,0.05,0,0),yaxt='s',las=1)
+with(FIAagg[(Neta==0&Gamma==0.8)&AlphaTh==0.01],{
   plot(y=RV.V.mean,x=Age,
        pch=16,xlab='Time',ylab='Value',cex.lab=2,
        col=colboxes[match(AlphaTh,unique(AlphaTh))],
-       cex.axis=1.3,ylim=c(0,10),cex=1,yaxt='n',type='l')
+       cex.axis=1.3,ylim=c(0,5),cex=1,yaxt='n',type='l')
+  
   axis(2)
   lines(x=Age,y=RV.R.mean,col=colboxes[match(AlphaTh,unique(AlphaTh))],
-         pch=8)
+         pch=8,lty="dashed")
   lines(x=c(0,max(Age)),y=c(0,0),col='grey')
+  par(new=TRUE)
+  plot(Theta.mean~Age,col="green",ylab = "",xlab="",yaxt='n')
+  axis(4)
 })
 
 
@@ -209,16 +213,63 @@ with(FIAIntstats[Neta==0&Gamma==0.8],{
          ui = upIQR,li=lowIQR,
          pch=16,xlab='Time',ylab='Prob. V over R',cex.lab=2,
          col=colboxes[match(AlphaTh,unique(AlphaTh))],
-         sfrac=0.002,cex.axis=1.3,ylim=c(0,1),cex=1.2)
-  lines(x=c(0,max(Interv)),y=c(0.5,0.5),col='grey')
+         sfrac=0.002,cex.axis=1.3,ylim=c(0,1),cex=1.2,
+         xlim=c(0,10))
+  lines(x=c(0,10),y=c(0.5,0.5),col='grey')
 })
 
-legend('topright',
+legend('bottomright',
        legend=unique(FIAagg[,AlphaTh])[order(unique(FIAagg[,AlphaTh]))],
        col=colboxes,pch=15,
        title="AlphaTH",cex=1.5,ncol=3)
 
+with(FIAraw[])
+plot()
 
+# Olle's results ---------------------------------------------------------------
+
+cexpar<-1.5
+yaxRangy<-c('s','n','n')
+
+ylabRang<-c("Prob. V over R","","")
+xlabRang<-c("","Time","")
+
+png(filename = "d:/quinonesa/Dropbox/Neuchatel/Olle/ActCrit_Olle_par.png",
+    width = 1600,height = 800)
+count<-0
+for(alphTh in unique(FIAIntstats$AlphaTh)){
+  
+  count<-count+1
+  par(plt=posPlot(numplotx = 3,idplotx = count),yaxt=yaxRangy[count],las=1,
+      new=c(FALSE,TRUE)[count])
+  with(FIAIntstats[(Neta==0.5&factRew==2)&AlphaTh==alphTh],{
+    plotCI(x=Interv,y=meanProb,
+           ui = upIQR,li=lowIQR,
+           pch=16,xlab=xlabRang[count],ylab=ylabRang[count],cex.lab=2,
+           col=colOlle[match(Gamma,unique(Gamma))],xlim=c(0,15),
+           sfrac=0.002,cex.axis=1.3,ylim=c(0,1),cex=cexpar)
+    lines(x=c(0,max(Interv)),y=c(0.5,0.5),col='grey')
+  })
+  par(new=TRUE)
+  with(FIAIntstats[(Neta==0&factRew==1)&AlphaTh==alphTh],{
+    plotCI(x=Interv,y=meanProb,
+           ui = upIQR,li=lowIQR,
+           pch=16,xlab='',ylab='',
+           col=colOlle2[match(Gamma,unique(Gamma))],xlim=c(0,15),
+           sfrac=0.002,cex.axis=1.3,ylim=c(0,1),cex=cexpar)
+    lines(x=c(0,max(Interv)),y=c(0.5,0.5),col='grey')
+  })
+
+  text(x=par('usr')[1]+0.3*(par('usr')[2]-par('usr')[1]),
+       y=par('usr')[3]+0.1*(par('usr')[4]-par('usr')[3]),
+       labels = bquote(alpha[theta]==.(alphTh)),cex = 2)
+}
+legend('bottomright',
+       legend=c("Punishment and future", "punishment",
+                "future","no punishment no future"),
+       col=c(colOlle,colOlle2),pch=15,cex=1.3,ncol=1)
+
+dev.off()
 
 
 

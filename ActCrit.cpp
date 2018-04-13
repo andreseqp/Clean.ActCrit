@@ -116,7 +116,7 @@ public:
 	virtual int mapOptions(client options[], int &choice)=0;
 	// function that maps state action pairs to indexes in the array 'values' 
 	//where values are stored
-	virtual void updateThet(int curStatAct, double delta, double probV) = 0;
+	virtual void updateThet(int curStatAct, double delta) = 0;
 	// function to update the policy parameter Theta
 	int numEst;
 	// Number of estimates characterizing bhavioural options 9 for FIA
@@ -339,8 +339,7 @@ void agent::update(){
 	// construct the TD error
 	values[currentStAct] += alpha*delta;
 	// update value
-	double probV = logist();
-	updateThet(currentStAct, delta, probV);
+	updateThet(currentStAct, delta);
 }
 
 void agent::forget(double forRat)
@@ -384,15 +383,8 @@ void agent::printDPData(ofstream &DPdata, double &outbr, int &time)	{
 	//cout << endl;
 }
 
-double agent::softMax(double &value1, double &value2)
-{
-	double prob1 = (exp(value1 / tau)) / (exp(value1 / tau) + exp(value2 / tau));
-	// Calculate probability of chosing option 1
-	return(prob1);
-}
 
-double agent::logist() {
-	return(1 / (1 + exp(-theta)));
+double agent::logist() { return 1 / (1 + exp(-theta));
 }
 
 int agent::mapOptionsDP(client options[], int &choice){
@@ -401,8 +393,9 @@ int agent::mapOptionsDP(client options[], int &choice){
 		// One of the options is empty
 		if (options[0] == resident || options[1] == resident){					
 		// the other one is a resident
-			if (options[choice] == resident) { stateAction = 4; } // State = R0 , action = R		
-			else { stateAction = 5; }					// State = R0 , action = 0		
+			if (options[choice] == resident) { stateAction = 4; } 
+			// State = R0 , action = R		
+			else { stateAction = 5; }	// State = R0 , action = 0		
 		}
 		else if (options[0] == visitor || options[1] == visitor){
 			// the other one is a resident
@@ -428,159 +421,159 @@ int agent::mapOptionsDP(client options[], int &choice){
 	else { stateAction = 6; }			 // State = VV , action = V
 	return stateAction;
 }
-void agent::DPupdate(double &probRes, double &probVis, double &VisProbLeav, 
-	double &ResProbLeav, double &outbr, double &ResReward, double &VisReward, 
-	double &negativeRew, ofstream &DPdata,bool &experiment){
-// Expected value according to DP algorithm
-	double transProb[9] = {0,0,0,0,0,0,0,0,0};	// Transition probabilities
-	double sum; 
-	double rewards[9] = {VisReward*(1-neta)+neta*ResProbLeav*negativeRew,			//0
-						ResReward*(1-neta)+neta*VisProbLeav*negativeRew,			//1
-						VisReward*(1-neta),											//2
-						neta*VisProbLeav*negativeRew,								//3
-						ResReward*(1-neta),											//4
-						neta*ResProbLeav*negativeRew,								//5
-						VisReward*(1 - neta) + neta*VisProbLeav*negativeRew,		//6
-						ResReward*(1 - neta) + neta*ResProbLeav*negativeRew,		//7
-						0};															//8
-	if (experiment)     // In an experimental setting
-	{
-		for (int k = 0; k < 1000; k++)
-		{
-			for (int i = 0; i < 9; i++)
-			{
-				DPid = i;//DPid = mapOptionsDP(cleanOptionsT, choiceT);
-				if (DPid == 0)
-				{
-					transProb[0] = 0;
-					transProb[1] = 0;
-					transProb[2] = 0;
-					transProb[3] = 0;
-					transProb[4] = softMax(DPbackup[4], DPbackup[5])*
-						(1-ResProbLeav);
-					transProb[5] = softMax(DPbackup[5], DPbackup[4])*
-						(1 - ResProbLeav);
-					transProb[6] = 0;
-					transProb[7] = 0;
-					transProb[8] = ResProbLeav;
-				}
-				else if (DPid == 1)
-				{
-					transProb[0] = 0;
-					transProb[1] = 0;
-					transProb[2] = softMax(DPbackup[2], DPbackup[3])*
-						(1 - VisProbLeav);
-					transProb[3] = softMax(DPbackup[3], DPbackup[2])*
-						(1 - VisProbLeav);
-					transProb[4] = 0;
-					transProb[5] = 0;
-					transProb[6] = 0;
-					transProb[7] = 0;
-					transProb[8] = VisProbLeav;
-				}
-				else
-				{
-					transProb[0] = softMax(DPbackup[0], DPbackup[1]);
-					transProb[1] = softMax(DPbackup[1], DPbackup[0]);
-					transProb[2] = 0;
-					transProb[3] = 0;
-					transProb[4] = 0;
-					transProb[5] = 0;
-					transProb[6] = 0;
-					transProb[7] = 0;
-					transProb[8] = 0;
-				}
-				sum = 0;
-				for (int j = 0; j < 9; j++)
-				{
-					sum += transProb[j] * (rewards[DPid] + gamma*DPbackup[j]);
-				}
-				DPbackup[DPid] = sum;
-			}
-			printDPData(DPdata, outbr, k);
-		}
-	}
-	else{						// In a natural setting
-		for (int k = 0; k < 1000; k++){
-			for (int i = 0; i < 9; i++){
-				DPid = i;//DPid = mapOptionsDP(cleanOptionsT, choiceT);
-				if (DPid == 0 || DPid == 5 || DPid == 7){
-					transProb[0] = softMax(DPbackup[0], DPbackup[1])*
-						((1 - ResProbLeav)*(probVis*(1 - outbr) + outbr) + 
-						ResProbLeav * (2 * probRes*probVis*(1 - outbr) + 
-						outbr*(probVis + probRes)));
-					transProb[1] = softMax(DPbackup[1], DPbackup[0])*
-						((1 - ResProbLeav)*(probVis*(1 - outbr) + outbr) + 
-						ResProbLeav * (2 * probRes*probVis*(1 - outbr) + 
-						outbr*(probVis + probRes)));
-					transProb[2] = softMax(DPbackup[2], DPbackup[3])*
-						ResProbLeav * probVis*(1 - probRes - probVis)*(2 - outbr);
-					transProb[3] = softMax(DPbackup[3], DPbackup[2])*
-						ResProbLeav * probVis*(1 - probRes - probVis)*(2 - outbr);
-					transProb[4] = softMax(DPbackup[4], DPbackup[5])*
-						((1 - ResProbLeav)*(1 - probRes - probVis)*(1 - outbr) 
-						+ ResProbLeav * (1 - probRes - probVis)*probRes*(2 - outbr));
-					transProb[5] = softMax(DPbackup[5], DPbackup[4])*
-						((1 - ResProbLeav)*(1 - probRes - probVis)*(1 - outbr) 
-						+ ResProbLeav * (1 - probRes - probVis)*probRes*(2 - outbr));
-					transProb[6] = ResProbLeav*pow(probVis, 2)*(1-outbr);
-					transProb[7] = ((1 - ResProbLeav)*probRes + 
-						ResProbLeav*pow(probRes, 2))*(1-outbr);
-					transProb[8] = ResProbLeav*pow((1 - probRes - probVis), 2);
-				}
-				else if (DPid == 1 || DPid == 3 || DPid == 6){
-					transProb[0] = softMax(DPbackup[0], DPbackup[1])*
-						((1 - VisProbLeav)*(probRes*(1 - outbr) + outbr) + 
-						VisProbLeav * (2 * probRes*probVis*(1 - outbr) + 
-						outbr*(probVis + probRes)));
-					transProb[1] = softMax(DPbackup[1], DPbackup[0])*
-						((1 - VisProbLeav)*(probRes*(1 - outbr) + outbr) + 
-						VisProbLeav * (2 * probRes*probVis*(1 - outbr) + 
-						outbr*(probVis + probRes)));
-					transProb[2] = softMax(DPbackup[2], DPbackup[3])*
-						((1 - VisProbLeav)*(1 - probRes - probVis)*(1 - outbr) 
-						+ VisProbLeav * probVis*(1 - probRes - probVis)*(2 - outbr));
-					transProb[3] = softMax(DPbackup[3], DPbackup[2])*
-						((1 - VisProbLeav)*(1 - probRes - probVis)*(1 - outbr) 
-						+ VisProbLeav * probVis*(1 - probRes - probVis)*(2 - outbr));
-					transProb[4] = softMax(DPbackup[4], DPbackup[5])*
-						VisProbLeav * (1 - probRes - probVis)*probRes*(2 - outbr);
-					transProb[5] = softMax(DPbackup[5], DPbackup[4])
-						*VisProbLeav * (1 - probRes - probVis)*probRes*(2 - outbr);
-					transProb[6] = ((1 - VisProbLeav)*probVis + 
-						VisProbLeav*pow(probVis, 2))*(1 - outbr);
-					transProb[7] = VisProbLeav*pow(probRes, 2)*(1 - outbr);
-					transProb[8] = VisProbLeav*pow((1 - probRes - probVis), 2);
-				}
-				else{
-					transProb[0] = softMax(DPbackup[0], DPbackup[1]) * 
-						(2 * probRes*probVis*(1 - outbr) + 
-							outbr*(probVis + probRes));
-					transProb[1] = softMax(DPbackup[1], DPbackup[0]) * 
-						(2 * probRes*probVis*(1 - outbr) + 
-							outbr*(probVis + probRes));
-					transProb[2] = softMax(DPbackup[2], DPbackup[3]) * 
-						probVis*(1 - probRes - probVis)*(2 - outbr);
-					transProb[3] = softMax(DPbackup[3], DPbackup[2]) * 
-						probVis*(1 - probRes - probVis)*(2 - outbr);
-					transProb[4] = softMax(DPbackup[4], DPbackup[5]) * 
-						(1 - probRes - probVis) * probRes*(2 - outbr);
-					transProb[5] = softMax(DPbackup[5], DPbackup[4]) * 
-						(1 - probRes - probVis) * probRes*(2 - outbr);
-					transProb[6] = pow(probVis, 2)*(1 - outbr);
-					transProb[7] = pow(probRes, 2)*(1 - outbr);
-					transProb[8] = pow((1 - probRes - probVis), 2);
-				}
-				sum = 0;
-				for (int j = 0; j < 9; j++){
-					sum +=  transProb[j] * (rewards[DPid] + gamma*DPbackup[j]);
-				}
-				DPbackup[DPid] = sum;
-			}
-			printDPData(DPdata, outbr, k);
-		}
-	}
-}
+//void agent::DPupdate(double &probRes, double &probVis, double &VisProbLeav, 
+//	double &ResProbLeav, double &outbr, double &ResReward, double &VisReward, 
+//	double &negativeRew, ofstream &DPdata,bool &experiment){
+//// Expected value according to DP algorithm
+//	double transProb[9] = {0,0,0,0,0,0,0,0,0};	// Transition probabilities
+//	double sum; 
+//	double rewards[9] = {VisReward*(1-neta)+neta*ResProbLeav*negativeRew,			//0
+//						ResReward*(1-neta)+neta*VisProbLeav*negativeRew,			//1
+//						VisReward*(1-neta),											//2
+//						neta*VisProbLeav*negativeRew,								//3
+//						ResReward*(1-neta),											//4
+//						neta*ResProbLeav*negativeRew,								//5
+//						VisReward*(1 - neta) + neta*VisProbLeav*negativeRew,		//6
+//						ResReward*(1 - neta) + neta*ResProbLeav*negativeRew,		//7
+//						0};															//8
+//	if (experiment)     // In an experimental setting
+//	{
+//		for (int k = 0; k < 1000; k++)
+//		{
+//			for (int i = 0; i < 9; i++)
+//			{
+//				DPid = i;//DPid = mapOptionsDP(cleanOptionsT, choiceT);
+//				if (DPid == 0)
+//				{
+//					transProb[0] = 0;
+//					transProb[1] = 0;
+//					transProb[2] = 0;
+//					transProb[3] = 0;
+//					transProb[4] = softMax(DPbackup[4], DPbackup[5])*
+//						(1-ResProbLeav);
+//					transProb[5] = softMax(DPbackup[5], DPbackup[4])*
+//						(1 - ResProbLeav);
+//					transProb[6] = 0;
+//					transProb[7] = 0;
+//					transProb[8] = ResProbLeav;
+//				}
+//				else if (DPid == 1)
+//				{
+//					transProb[0] = 0;
+//					transProb[1] = 0;
+//					transProb[2] = softMax(DPbackup[2], DPbackup[3])*
+//						(1 - VisProbLeav);
+//					transProb[3] = softMax(DPbackup[3], DPbackup[2])*
+//						(1 - VisProbLeav);
+//					transProb[4] = 0;
+//					transProb[5] = 0;
+//					transProb[6] = 0;
+//					transProb[7] = 0;
+//					transProb[8] = VisProbLeav;
+//				}
+//				else
+//				{
+//					transProb[0] = softMax(DPbackup[0], DPbackup[1]);
+//					transProb[1] = softMax(DPbackup[1], DPbackup[0]);
+//					transProb[2] = 0;
+//					transProb[3] = 0;
+//					transProb[4] = 0;
+//					transProb[5] = 0;
+//					transProb[6] = 0;
+//					transProb[7] = 0;
+//					transProb[8] = 0;
+//				}
+//				sum = 0;
+//				for (int j = 0; j < 9; j++)
+//				{
+//					sum += transProb[j] * (rewards[DPid] + gamma*DPbackup[j]);
+//				}
+//				DPbackup[DPid] = sum;
+//			}
+//			printDPData(DPdata, outbr, k);
+//		}
+//	}
+//	else{						// In a natural setting
+//		for (int k = 0; k < 1000; k++){
+//			for (int i = 0; i < 9; i++){
+//				DPid = i;//DPid = mapOptionsDP(cleanOptionsT, choiceT);
+//				if (DPid == 0 || DPid == 5 || DPid == 7){
+//					transProb[0] = softMax(DPbackup[0], DPbackup[1])*
+//						((1 - ResProbLeav)*(probVis*(1 - outbr) + outbr) + 
+//						ResProbLeav * (2 * probRes*probVis*(1 - outbr) + 
+//						outbr*(probVis + probRes)));
+//					transProb[1] = softMax(DPbackup[1], DPbackup[0])*
+//						((1 - ResProbLeav)*(probVis*(1 - outbr) + outbr) + 
+//						ResProbLeav * (2 * probRes*probVis*(1 - outbr) + 
+//						outbr*(probVis + probRes)));
+//					transProb[2] = softMax(DPbackup[2], DPbackup[3])*
+//						ResProbLeav * probVis*(1 - probRes - probVis)*(2 - outbr);
+//					transProb[3] = softMax(DPbackup[3], DPbackup[2])*
+//						ResProbLeav * probVis*(1 - probRes - probVis)*(2 - outbr);
+//					transProb[4] = softMax(DPbackup[4], DPbackup[5])*
+//						((1 - ResProbLeav)*(1 - probRes - probVis)*(1 - outbr) 
+//						+ ResProbLeav * (1 - probRes - probVis)*probRes*(2 - outbr));
+//					transProb[5] = softMax(DPbackup[5], DPbackup[4])*
+//						((1 - ResProbLeav)*(1 - probRes - probVis)*(1 - outbr) 
+//						+ ResProbLeav * (1 - probRes - probVis)*probRes*(2 - outbr));
+//					transProb[6] = ResProbLeav*pow(probVis, 2)*(1-outbr);
+//					transProb[7] = ((1 - ResProbLeav)*probRes + 
+//						ResProbLeav*pow(probRes, 2))*(1-outbr);
+//					transProb[8] = ResProbLeav*pow((1 - probRes - probVis), 2);
+//				}
+//				else if (DPid == 1 || DPid == 3 || DPid == 6){
+//					transProb[0] = softMax(DPbackup[0], DPbackup[1])*
+//						((1 - VisProbLeav)*(probRes*(1 - outbr) + outbr) + 
+//						VisProbLeav * (2 * probRes*probVis*(1 - outbr) + 
+//						outbr*(probVis + probRes)));
+//					transProb[1] = softMax(DPbackup[1], DPbackup[0])*
+//						((1 - VisProbLeav)*(probRes*(1 - outbr) + outbr) + 
+//						VisProbLeav * (2 * probRes*probVis*(1 - outbr) + 
+//						outbr*(probVis + probRes)));
+//					transProb[2] = softMax(DPbackup[2], DPbackup[3])*
+//						((1 - VisProbLeav)*(1 - probRes - probVis)*(1 - outbr) 
+//						+ VisProbLeav * probVis*(1 - probRes - probVis)*(2 - outbr));
+//					transProb[3] = softMax(DPbackup[3], DPbackup[2])*
+//						((1 - VisProbLeav)*(1 - probRes - probVis)*(1 - outbr) 
+//						+ VisProbLeav * probVis*(1 - probRes - probVis)*(2 - outbr));
+//					transProb[4] = softMax(DPbackup[4], DPbackup[5])*
+//						VisProbLeav * (1 - probRes - probVis)*probRes*(2 - outbr);
+//					transProb[5] = softMax(DPbackup[5], DPbackup[4])
+//						*VisProbLeav * (1 - probRes - probVis)*probRes*(2 - outbr);
+//					transProb[6] = ((1 - VisProbLeav)*probVis + 
+//						VisProbLeav*pow(probVis, 2))*(1 - outbr);
+//					transProb[7] = VisProbLeav*pow(probRes, 2)*(1 - outbr);
+//					transProb[8] = VisProbLeav*pow((1 - probRes - probVis), 2);
+//				}
+//				else{
+//					transProb[0] = softMax(DPbackup[0], DPbackup[1]) * 
+//						(2 * probRes*probVis*(1 - outbr) + 
+//							outbr*(probVis + probRes));
+//					transProb[1] = softMax(DPbackup[1], DPbackup[0]) * 
+//						(2 * probRes*probVis*(1 - outbr) + 
+//							outbr*(probVis + probRes));
+//					transProb[2] = softMax(DPbackup[2], DPbackup[3]) * 
+//						probVis*(1 - probRes - probVis)*(2 - outbr);
+//					transProb[3] = softMax(DPbackup[3], DPbackup[2]) * 
+//						probVis*(1 - probRes - probVis)*(2 - outbr);
+//					transProb[4] = softMax(DPbackup[4], DPbackup[5]) * 
+//						(1 - probRes - probVis) * probRes*(2 - outbr);
+//					transProb[5] = softMax(DPbackup[5], DPbackup[4]) * 
+//						(1 - probRes - probVis) * probRes*(2 - outbr);
+//					transProb[6] = pow(probVis, 2)*(1 - outbr);
+//					transProb[7] = pow(probRes, 2)*(1 - outbr);
+//					transProb[8] = pow((1 - probRes - probVis), 2);
+//				}
+//				sum = 0;
+//				for (int j = 0; j < 9; j++){
+//					sum +=  transProb[j] * (rewards[DPid] + gamma*DPbackup[j]);
+//				}
+//				DPbackup[DPid] = sum;
+//			}
+//			printDPData(DPdata, outbr, k);
+//		}
+//	}
+//}
 
 void agent::choice() {
 	if (cleanOptionsT1[0] == absence || cleanOptionsT1[1] == absence) {
@@ -593,8 +586,7 @@ void agent::choice() {
 		bool visit = rnd::bernoulli(logist());
 		if (cleanOptionsT1[1] == visitor) {
 			choiceT1 = visit;
-		}
-		else {
+		} else {
 			choiceT1 = !visit;
 		}
 	}
@@ -612,12 +604,13 @@ class FIATyp1 :public agent{			// Fully Informed Agent (FIA)
 	virtual int mapOptions(client options[], int &choice){
 		return(mapOptionsDP(options, choice));
 	}
-	virtual void updateThet(int curStatAct,double delta, double probV) {
+	virtual void updateThet(int curStatAct,double delta) {
 		if (curStatAct < 2) {
+			double pV = logist();
 			if (curStatAct == 0) {
-				theta -= 2*alphath*delta*(1-probV);
+				theta += 2 * alphath*delta*pV;
 			} else {
-				theta += 2*alphath*delta*probV;
+				theta -= 2 * alphath*delta*(1-pV);
 			}
 		}
 	}
@@ -629,27 +622,19 @@ class PIATyp1 :public agent{				// Partially Informed Agent (PIA)
 		double alphaThI):agent(alphaI, gammaI, tauI, netaI, alphaThI){
 		numEst = 3;
 	}
-	/*virtual void choice(int &StaAct1, int &StaAct2)
-	{
-		if (rnd::uniform() < softMax(values[StaAct1], values[StaAct2]))
-		{
-			choiceT1 = 0;
-		}
-		else { choiceT1 = 1; }
-	}*/
 	int mapOptions(client options[], int &choice){
 		if (options[choice] == resident) { return (0); }
 		else if (options[choice] == visitor) { return(1); }
 		else { return(2); }
 		return(options[choice]); 
 	}
-	virtual void updateThet(int curStatAct, double delta, double probV) {
+	virtual void updateThet(int curStatAct, double delta) {
 		if (curStatAct < 2) {
 			if (curStatAct == 1) {
-				theta += alphath*delta*(1 - probV);
+				theta += alphath*delta*(1-logist());
 			}
 			else {
-				theta -= alphath*delta*probV;
+				theta -= alphath*delta*logist();
 			}
 		}
 	}
@@ -760,29 +745,29 @@ int main(int argc, _TCHAR* argv[]){
 	mark_time(1);
 
 	 //Only for debugging
-	//json param;
-	//param["totRounds"]    = 5000;
-	//param["ResReward"]    = 1;
-	//param["VisReward"]    = 1;
-	//param["ResProb"]      = 0.3;
-	//param["VisProb"]      = 0.3;
-	//param["ResProbLeav"]  = 0;
-	//param["VisProbLeav"]  = 1;
-	//param["negativeRew"]  = 0.5;
-	//param["experiment"]   = false;
-	//param["inbr"]         = 0;
-	//param["outbr"]        = 0;
-	//param["trainingRep"]  = 10;
-	//param["alphaT"]       = 0.01;
-	//param["printGen"]     = 1;
-	//param["seed"]         = 1;
-	//param["forRat"]       = 0.0;
-	//param["alphThRange"]  = { 0 };
-	//param["gammaRange"]   = { 0, 0.8 };
-	//param["tauRange"]     = { 0.6667 };
-	//param["netaRange"]    = { 0, 0.5 };
-	//param["alphaThRange"] = { 0.01 };
-	//param["folder"] = "S:/quinonesa/Simulations/actCrit/test/";
+	/*json param;
+	param["totRounds"]    = 20000;
+	param["ResReward"]    = 1;
+	param["VisReward"]    = 1;
+	param["ResProb"]      = 0.3;
+	param["VisProb"]      = 0.3;
+	param["ResProbLeav"]  = 0;
+	param["VisProbLeav"]  = 1;
+	param["negativeRew"]  = 0.5;
+	param["experiment"]   = false;
+	param["inbr"]         = 0;
+	param["outbr"]        = 0;
+	param["trainingRep"]  = 10;
+	param["alphaT"]       = 0.01;
+	param["printGen"]     = 1;
+	param["seed"]         = 1;
+	param["forRat"]       = 0.0;
+	param["alphThRange"]  = { 0 };
+	param["gammaRange"]   = { 0.8 };
+	param["tauRange"]     = { 0.6667 };
+	param["netaRange"]    = { 0 };
+	param["alphaThRange"] = { 0.01 };
+	param["folder"] = "S:/quinonesa/Simulations/actCrit/test_/";*/
 
 	
 	ifstream input(argv[1]);
@@ -802,7 +787,7 @@ int main(int argc, _TCHAR* argv[]){
 	double outbr = param["outbr"];
 	int trainingRep = param["trainingRep"];
 	double alphaT = param["alphaT"];
-	const int numlearn = 2;
+	const int numlearn = 1;
 	int printGen = param["printGen"];
 	int seed = param["seed"];
 	const double forRat = param["forRat"];
@@ -873,6 +858,9 @@ int main(int argc, _TCHAR* argv[]){
 							draw(clientSet, totRounds, ResProb, VisProb);
 							idClientSet = 0;
 							for (int j = 0; j < totRounds; j++){
+								/*if (j == 2000) {
+									wait_for_return();
+								}*/
 								learners[k]->act(clientSet, idClientSet,
 									VisProbLeav, ResProbLeav, VisReward, 
 									ResReward, inbr, outbr, negativeRew, 
@@ -890,13 +878,13 @@ int main(int argc, _TCHAR* argv[]){
 							learners[k]->rebirth();
 						}
 						printTest.close();
-						if (k == 0) {
-							initializeIndFile(DPprint, *learners[0], param, 1);
-							learners[k]->DPupdate(ResProb, VisProb, 
-								VisProbLeav, ResProbLeav, outbr, ResReward,
-								VisReward, negativeRew, DPprint, experiment);
-							DPprint.close();
-						}
+						//if (k == 0) {
+						//	initializeIndFile(DPprint, *learners[0], param, 1);
+						//	learners[k]->DPupdate(ResProb, VisProb, 
+						//		VisProbLeav, ResProbLeav, outbr, ResReward,
+						//		VisReward, negativeRew, DPprint, experiment);
+						//	DPprint.close();
+						//}
 						delete learners[k];
 					}
 				}

@@ -26,7 +26,7 @@ param<-list(totRounds=30000,ResReward=1,VisReward=1,ResProb=0.3,VisProb=0.3,
             ResProbLeav=0,VisProbLeav=1,negativeRew=-0.5,experiment=FALSE,
             inbr=0,outbr=0,trainingRep=30,forRat=0.0,
             alphaT=0.01,printGen=1,seed=1, gammaRange=c(0,0.8),
-            tauRange=c(1),netaRange=c(0,0.5),alphaThRange=c(0.01),
+            tauRange=c(1),netaRange=c(0,0.5),alphaThRange=c(0.005,0.01,0.02),
             folder=simsDir)
 
 setwd(simsDir)
@@ -52,13 +52,17 @@ check_create.dir<-function(folder,param,values){
   }
 }
 
-rang<-""
+rang<-c(1,2)
+rangNeta<-c(0,0.5)
 
-listfolders<-check_create.dir(simsDir,rep("alphaTh",1),rang)
+listfolders<-check_create.dir(simsDir,rep("factRew",2),rang)
 
-for (i in 1:1) {
+for (i in 2:2) {
   param$folder<-paste(simsDir,'/',listfolders[i],'/',sep='')
-  param$alphaThRange<-c(0.005,0.01,0.05)
+  param$netaRange<-c(rangNeta[i])
+  param$ResReward<-param$ResReward*rang[i]
+  param$VisReward<-param$VisReward*rang[i]
+  param$negativeRew<-param$negativeRew*rang[i]
   outParam<-toJSON(param,auto_unbox = TRUE,pretty = TRUE)
   if(file.exists(paste(param$folder,fileName,sep = ''))){
     currFile<-fromJSON(paste(param$folder,fileName,sep = ''))

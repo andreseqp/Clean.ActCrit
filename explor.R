@@ -5,6 +5,7 @@
 projDir<-"d:/quinonesa/learning_models_c++/actCrit/"
 simsDir<-"s:/quinonesa/Simulations/actCrit/"
 
+
 # libraries ----------------------------------------------------------------
 source('d:/quinonesa/Dropbox/R_files/posPlots.R')
 source(paste(projDir,"aesth_par.R",sep=""))
@@ -18,18 +19,19 @@ library('lme4')
 
 # Define data to be loaded 
 
-(listPar<-rep("factRew",2))
-(listVal<-c(1,2))
+(listPar<-c("test","gamma","neta"))
+(listVal<-c("",0.8,0))
 
 
 FIAraw<-loadRawData(simsDir,"FIA",listparam = listPar,values = listVal)
 param<-getParam(simsDir,listparam = listPar,values = listVal)
 
+file.info(getFilelist(simsDir,listPar,listVal)$FIA)
 
 FIAagg<-FIAraw[, as.list(unlist(lapply(.SD, function(x) 
   list(mean = mean(x),IQ.h = fivenum(x)[4],IQ.l=fivenum(x)[2])))),
                by=.(Age,Alpha,Gamma,Tau,Neta,Outbr,AlphaTh), 
-               .SDcols=c('Theta','RV.V','RV.R')]
+               .SDcols=c('Theta','RV.V','RV.R','Delta')]
 
 FIAtimeInt<-do.call(
   rbind,lapply(
@@ -141,13 +143,16 @@ legend('topright',
 
 # Plot Theta
 
-par(plt=posPlot(numplotx = 1,idplotx = 1),yaxt='s',las=1)
+par(plt=posPlot(numplotx = 1,idplotx = 1)+c(-0.05,-0.05,0,0),yaxt='s',las=1)
 with(FIAagg[(Neta==0.0&Gamma==0.8)],{
-  plot(x=Age,y=Theta.mean,
+  plot(x=Age,y=logist(Theta.mean),
          pch=16,xlab='Time',ylab='Theta',cex.lab=2,
          col=colboxes[match(AlphaTh,unique(AlphaTh))],
-         cex.axis=1.3,ylim=c(-0.5,1),cex=1)
+         cex.axis=1.3,cex=1,type="l")
   lines(x=c(0,max(Age)),y=c(0,0),col='grey')
+  par(new=TRUE)
+  plot(x=Age,y=Delta.mean,type="l",col="green",yaxt='n')
+  axis(4)
 })
 
 FIAraw[(Neta==0&Gamma==0.8)&Training==0,.(Age,Theta)][Theta==max(Theta)]
@@ -173,6 +178,32 @@ with(FIAlines,{
   lines(x=c(0,max(Age)),y=c(0,0),col='grey')
 })
 
+# One training round
+
+par(plt=posPlot(numplotx = 1,idplotx = 1)+c(-0.05,-0.05,0,0),yaxt='s',las=1)
+with(FIAraw[((Neta==0.0&Gamma==0.8)&Training==0)&option=='RV'],{
+  plot(x=Age[Choice==1],y=Delta[Choice==1],#*(1-logist(Theta[Choice==1]))
+       pch=16,xlab='Time',cex.lab=2,
+       col="red",cex=0.1,
+       cex.axis=1.3,type="p")
+  points(x=Age[Choice==0],y=Delta[Choice==0],#*logist(Theta[Choice==0]),
+         col='green',cex=0.1)
+  # par(new=TRUE)
+  # plot(x=Age,y=Delta.mean,type="l",col="green",yaxt='n')
+  # axis(4)
+})
+
+sum(FIAraw[Training==0&option=='RV',AlphaTh*ifelse(Choice,(1-logist(Theta))*Delta,
+                                       -logist(Theta)*Delta)])
+
+FIAraw[(Training==0&Age==max(Age)),Theta]
+
+with(FIAraw[Training==0],{
+  matplot(y=cbind(RV.V,RV.R),x=cbind(Age,Age),type = 'l',lty = c(1,2))})
+
+hist(FIAraw[option=='RV'&Choice==1,Delta],col=rgb(0,0,1,1/4),breaks = 30)
+hist(FIAraw[option=='RV'&Choice==0,Delta],col=rgb(1,0,1,1/4),add=TRUE,
+     breaks = 30)
 
 # Plot values
 
@@ -271,5 +302,11 @@ legend('bottomright',
 
 dev.off()
 
+## Debugging -------------------------------------------------------------------
 
+setwd(simsDir)
+
+list.files("ActCrit")
+
+getFilelist(simsDir)
 

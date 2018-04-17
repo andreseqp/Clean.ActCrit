@@ -95,8 +95,6 @@ public:
 	// Get new clients in the experimental setting
 	void ObtainReward(double &ResReward, double &VisReward);
 	// Get reward
-	double softMax(double &value1, double &value2);
-	// Calculate probability of taken a given action
 	double agent::logist();
 	void agent::DPupdate(double &probRes, double &probVis, double &VisProbLeav,
 		double &ResProbLeav, double &outbr, double &ResReward, 
@@ -116,7 +114,7 @@ public:
 	virtual int mapOptions(client options[], int &choice)=0;
 	// function that maps state action pairs to indexes in the array 'values' 
 	//where values are stored
-	virtual void updateThet(int curStatAct, double delta) = 0;
+	virtual void updateThet(int curStatAct) = 0;
 	// function to update the policy parameter Theta
 	int numEst;
 	// Number of estimates characterizing bhavioural options 9 for FIA
@@ -124,6 +122,8 @@ protected:
 	double values[9];																							
 	// array storing the estimated values of state action pairs
 	double theta; // Policy parameter
+	double delta;
+	double pV;
 	double DPbackup[9];		
 	int DPid;
 	int choiceT;// current choice 
@@ -147,8 +147,9 @@ agent::agent(double alphaI = 0.01, double gammaI = 0.5,
 	double tauI = 10, double netaI = 0, double alphathI = 0.01){
 // parameterized constructor with defaults
 	numEst = 9;
+	delta = 0;
 	for (int i = 0; i < numEst; i++) { values[i] = 0, DPbackup[i]=0; }
-	theta = 0;
+	theta = 0, pV = logist();
 	alpha = alphaI, gamma = gammaI, tau = tauI, alphath = alphathI;
 	neta = netaI;
 	cleanOptionsT[0] = absence, cleanOptionsT[1] = absence, choiceT = 0;
@@ -166,7 +167,8 @@ void agent::rebirth()
 	currentReward = 0;
 	cumulReward = 0;
 	for (int i = 0; i < numEst; i++) { values[i] = 0, DPbackup[i]=0; }
-	theta = 0;
+	theta = 0, pV = logist();
+	delta = 0;
 }
 
 agent::~agent() {}		// Destructor
@@ -334,12 +336,12 @@ void agent::update(){
 	// change policy parameter according to TD error
 	int currentStAct = mapOptions(cleanOptionsT, choiceT);
 	int nextStAct = mapOptions(cleanOptionsT1, choiceT1);
-	double delta = currentReward*(1 - neta) +
+	delta = currentReward*(1 - neta) +
 		negReward*neta + gamma*values[nextStAct] - values[currentStAct];
 	// construct the TD error
 	values[currentStAct] += alpha*delta;
 	// update value
-	updateThet(currentStAct, delta);
+	updateThet(currentStAct);
 }
 
 void agent::forget(double forRat)
@@ -365,6 +367,7 @@ void agent::printIndData(ofstream &learnSeries, int &seed, double &outbr)
 		learnSeries << values[j] << '\t';
 		//cout << values[j] << '\t';
 	}
+	learnSeries << delta << '\t';
 	learnSeries << endl;
 	//cout << endl;
 }
@@ -383,9 +386,7 @@ void agent::printDPData(ofstream &DPdata, double &outbr, int &time)	{
 	//cout << endl;
 }
 
-
-double agent::logist() { return 1 / (1 + exp(-theta));
-}
+double agent::logist() { return 1 / (1 + exp(-theta));}
 
 int agent::mapOptionsDP(client options[], int &choice){
 	int stateAction;
@@ -578,12 +579,12 @@ int agent::mapOptionsDP(client options[], int &choice){
 void agent::choice() {
 	if (cleanOptionsT1[0] == absence || cleanOptionsT1[1] == absence) {
 		// if there is an absence choose the client
-		bool presence = cleanOptionsT[0] == absence;
+		bool presence = cleanOptionsT1[0] == absence;
 		choiceT1 = presence;
 	}
 	else if (cleanOptionsT1[0] != cleanOptionsT1[1]) {
 		// if clients are different use policy (logist)
-		bool visit = rnd::bernoulli(logist());
+		bool visit = rnd::bernoulli(pV);
 		if (cleanOptionsT1[1] == visitor) {
 			choiceT1 = visit;
 		} else {
@@ -604,14 +605,14 @@ class FIATyp1 :public agent{			// Fully Informed Agent (FIA)
 	virtual int mapOptions(client options[], int &choice){
 		return(mapOptionsDP(options, choice));
 	}
-	virtual void updateThet(int curStatAct,double delta) {
+	virtual void updateThet(int curStatAct) {
 		if (curStatAct < 2) {
-			double pV = logist();
 			if (curStatAct == 0) {
-				theta += 2 * alphath*delta*pV;
+				theta += 2 * alphath*delta*(1-pV);
 			} else {
-				theta -= 2 * alphath*delta*(1-pV);
+				theta -= 2 * alphath*delta*pV;
 			}
+			pV = logist();
 		}
 	}
 };
@@ -628,14 +629,15 @@ class PIATyp1 :public agent{				// Partially Informed Agent (PIA)
 		else { return(2); }
 		return(options[choice]); 
 	}
-	virtual void updateThet(int curStatAct, double delta) {
+	virtual void updateThet(int curStatAct) {
 		if (curStatAct < 2) {
 			if (curStatAct == 1) {
-				theta += alphath*delta*(1-logist());
+				theta += alphath*delta*(1-pV);
 			}
 			else {
-				theta -= alphath*delta*logist();
+				theta -= alphath*delta*pV;
 			}
+			pV = logist();
 		}
 	}
 };
@@ -735,6 +737,7 @@ void initializeIndFile(ofstream &indOutput, agent &learner,
 			indOutput << "Resident" << '\t' << "Visitor" << '\t';
 			indOutput << "Absence" << '\t';
 		}
+		indOutput << "Delta" << '\t';
 		indOutput << endl;
 	}
 }
@@ -745,7 +748,7 @@ int main(int argc, _TCHAR* argv[]){
 	mark_time(1);
 
 	 //Only for debugging
-	/*json param;
+	json param;
 	param["totRounds"]    = 20000;
 	param["ResReward"]    = 1;
 	param["VisReward"]    = 1;
@@ -767,12 +770,12 @@ int main(int argc, _TCHAR* argv[]){
 	param["tauRange"]     = { 0.6667 };
 	param["netaRange"]    = { 0 };
 	param["alphaThRange"] = { 0.01 };
-	param["folder"] = "S:/quinonesa/Simulations/actCrit/test_/";*/
+	param["folder"] = "S:/quinonesa/Simulations/actCrit/test_/";
 
 	
-	ifstream input(argv[1]);
+	/*ifstream input(argv[1]);
 	if (input.fail()) { cout << "JSON file failed" << endl; }
-	json param = nlohmann::json::parse(input);
+	json param = nlohmann::json::parse(input);*/
 	
 	int const totRounds = param["totRounds"];
 	double ResReward = param["ResReward"];

@@ -19,7 +19,7 @@ library('lme4')
 
 # Define data to be loaded 
 
-(listPar<-c("test","gamma","neta"))
+(listPar<-c("alphaTh","gamma","neta"))
 (listVal<-c("",0.8,0))
 
 
@@ -235,7 +235,7 @@ extpar<-listPar[1]
 FIAIntstats<-FIAtimeInt[,.(meanProb=mean(Prob.RV.V),
                            upIQR=fivenum(Prob.RV.V)[4],
                            lowIQR=fivenum(Prob.RV.V)[2])
-                        ,by=.(Interv,Neta,Outbr,Tau,Gamma,AlphaTh,get(extpar))]
+                        ,by=.(Interv,Neta,Outbr,Tau,Gamma,AlphaTh)]
 setnames(FIAIntstats,'get',extpar)
 
 par(plt=posPlot(numplotx = 1,idplotx = 1),yaxt='s',las=1)

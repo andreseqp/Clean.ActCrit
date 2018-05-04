@@ -114,7 +114,7 @@ public:
 	virtual int mapOptions(client options[], int &choice)=0;
 	// function that maps state action pairs to indexes in the array 'values' 
 	//where values are stored
-	virtual void updateThet(int curStatAct) = 0;
+	virtual void updateThet(int curStatAct, int nextStat) = 0;
 	// function to update the policy parameter Theta
 	int numEst;
 	// Number of estimates characterizing bhavioural options 9 for FIA
@@ -341,13 +341,7 @@ void agent::update(){
 	// construct the TD error
 	values[currentStAct] += alpha*delta;
 	// update value
-	updateThet(currentStAct);
-}
-
-void agent::forget(double forRat)
-{
-	int tmpAct = rnd::integer(numEst);
-	values[tmpAct] += rnd::normal(0, forRat);
+	updateThet(currentStAct,nextStAct);
 }
 
 void agent::printIndData(ofstream &learnSeries, int &seed, double &outbr)
@@ -386,7 +380,7 @@ void agent::printDPData(ofstream &DPdata, double &outbr, int &time)	{
 	//cout << endl;
 }
 
-double agent::logist() { return 1 / (1 + exp(-theta));}
+double agent::logist() { return (1 / (1 + exp(-theta)));}
 
 int agent::mapOptionsDP(client options[], int &choice){
 	int stateAction;
@@ -584,7 +578,7 @@ void agent::choice() {
 	}
 	else if (cleanOptionsT1[0] != cleanOptionsT1[1]) {
 		// if clients are different use policy (logist)
-		bool visit = rnd::bernoulli(pV);
+		bool visit = rnd::bernoulli(1-pV);
 		if (cleanOptionsT1[1] == visitor) {
 			choiceT1 = visit;
 		} else {
@@ -605,14 +599,26 @@ class FIATyp1 :public agent{			// Fully Informed Agent (FIA)
 	virtual int mapOptions(client options[], int &choice){
 		return(mapOptionsDP(options, choice));
 	}
-	virtual void updateThet(int curStatAct) {
+	virtual void updateThet(int curStatAct, int nextStat) {
 		if (curStatAct < 2) {
-			if (curStatAct == 0) {
-				theta += 2 * alphath*delta*(1-pV);
+			if (curStatAct == 1) {
+				if (delta > 1.2) {
+					cout << "resident" << '\t';
+					cout << 2 * alphath*delta*(1 - pV) << '\t';
+				}
+				theta += 2 * alphath*delta*(1 - pV);
 			} else {
-				theta -= 2 * alphath*delta*pV;
+				if (delta>1.2){
+					cout << "visitor " << '\t';
+					cout << -2 * alphath*delta*pV << '\t';
+				}
+				theta -= 2*alphath*delta*pV;
 			}
 			pV = logist();
+			if (delta > 1.2) {
+				cout << theta << '\t' << pV << '\t' << delta << '\t';
+				cout << curStatAct << '\t' << nextStat << endl;
+			}
 		}
 	}
 };
@@ -629,13 +635,13 @@ class PIATyp1 :public agent{				// Partially Informed Agent (PIA)
 		else { return(2); }
 		return(options[choice]); 
 	}
-	virtual void updateThet(int curStatAct) {
+	virtual void updateThet(int curStatAct, int nextStat) {
 		if (curStatAct < 2) {
 			if (curStatAct == 1) {
-				theta += alphath*delta*(1-pV);
+				theta += 2*alphath*delta*(1-pV);
 			}
 			else {
-				theta -= alphath*delta*pV;
+				theta -= 2*alphath*delta*pV;
 			}
 			pV = logist();
 		}
@@ -747,7 +753,7 @@ int main(int argc, _TCHAR* argv[]){
 
 	mark_time(1);
 
-	 //Only for debugging
+	// Only for debugging
 	json param;
 	param["totRounds"]    = 20000;
 	param["ResReward"]    = 1;
@@ -756,7 +762,7 @@ int main(int argc, _TCHAR* argv[]){
 	param["VisProb"]      = 0.3;
 	param["ResProbLeav"]  = 0;
 	param["VisProbLeav"]  = 1;
-	param["negativeRew"]  = 0.5;
+	param["negativeRew"]  = -0.5;
 	param["experiment"]   = false;
 	param["inbr"]         = 0;
 	param["outbr"]        = 0;
@@ -861,9 +867,9 @@ int main(int argc, _TCHAR* argv[]){
 							draw(clientSet, totRounds, ResProb, VisProb);
 							idClientSet = 0;
 							for (int j = 0; j < totRounds; j++){
-								/*if (j == 2000) {
+								if (j == 500) {
 									wait_for_return();
-								}*/
+								}
 								learners[k]->act(clientSet, idClientSet,
 									VisProbLeav, ResProbLeav, VisReward, 
 									ResReward, inbr, outbr, negativeRew, 

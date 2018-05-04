@@ -96,17 +96,10 @@ public:
 	void ObtainReward(double &ResReward, double &VisReward);
 	// Get reward
 	double agent::logist();
-	void agent::DPupdate(double &probRes, double &probVis, double &VisProbLeav,
-		double &ResProbLeav, double &outbr, double &ResReward, 
-		double &VisReward, double &negReward, ofstream &DPdata, bool &experiment);
-	// Obtain expected values from a Dynamic programing algorithm
 	int mapOptionsDP(client options[], int &choice);			
-	// default function that maps state action pairs to indexes in the array 
+	// default function that maps state pairs to indexes in the array 
 	//'values' where values are stored works for DPupdate and for 
 	//state-action pair NOT for action estimation
-	void agent::forget(double forRat);
-	// Forgetting function: stochastic change in the estimated values
-	void agent::printDPData(ofstream &DPdata, double &oubr, int &time);
 	client cleanOptionsT[2];	// current cleaning options time = t
 	client cleanOptionsT1[2];	// future cleaning options  time = t+1
 	void choice();
@@ -114,17 +107,16 @@ public:
 	virtual int mapOptions(client options[], int &choice)=0;
 	// function that maps state action pairs to indexes in the array 'values' 
 	//where values are stored
-	virtual void updateThet(int curStatAct, int nextStat) = 0;
+	virtual void updateThet(int curState) = 0;
 	// function to update the policy parameter Theta
 	int numEst;
 	// Number of estimates characterizing bhavioural options 9 for FIA
 protected:
-	double values[9];																							
-	// array storing the estimated values of state action pairs
+	double values[6];																							
+	// array storing the estimated values of states 
 	double theta; // Policy parameter
 	double delta;
-	double pV;
-	double DPbackup[9];		
+	double pV;	
 	int DPid;
 	int choiceT;// current choice 
 	int choiceT1;// future choice
@@ -146,9 +138,9 @@ protected:
 agent::agent(double alphaI = 0.01, double gammaI = 0.5, 
 	double tauI = 10, double netaI = 0, double alphathI = 0.01){
 // parameterized constructor with defaults
-	numEst = 9;
+	numEst = 6;
 	delta = 0;
-	for (int i = 0; i < numEst; i++) { values[i] = 0, DPbackup[i]=0; }
+	for (int i = 0; i < numEst; i++) { values[i] = 0; }
 	theta = 0, pV = logist();
 	alpha = alphaI, gamma = gammaI, tau = tauI, alphath = alphathI;
 	neta = netaI;
@@ -166,7 +158,7 @@ void agent::rebirth()
 	choiceT = 0, choiceT1 = 0;
 	currentReward = 0;
 	cumulReward = 0;
-	for (int i = 0; i < numEst; i++) { values[i] = 0, DPbackup[i]=0; }
+	for (int i = 0; i < numEst; i++) { values[i] = 0; }
 	theta = 0, pV = logist();
 	delta = 0;
 }
@@ -334,14 +326,14 @@ void agent::act(client newOptions[], int &idNewOptions, double &VisProbLeav,
 void agent::update(){																								
 	// change estimated value according to TD error
 	// change policy parameter according to TD error
-	int currentStAct = mapOptions(cleanOptionsT, choiceT);
-	int nextStAct = mapOptions(cleanOptionsT1, choiceT1);
+	int currState = mapOptions(cleanOptionsT,choiceT);
+	int nextState = mapOptions(cleanOptionsT1, choiceT);
 	delta = currentReward*(1 - neta) +
-		negReward*neta + gamma*values[nextStAct] - values[currentStAct];
+		negReward*neta + gamma*values[nextState] - values[currState];
 	// construct the TD error
-	values[currentStAct] += alpha*delta;
+	values[currState] += alpha*delta;
 	// update value
-	updateThet(currentStAct,nextStAct);
+	updateThet(currState);
 }
 
 void agent::printIndData(ofstream &learnSeries, int &seed, double &outbr)
@@ -366,209 +358,33 @@ void agent::printIndData(ofstream &learnSeries, int &seed, double &outbr)
 	//cout << endl;
 }
 
-void agent::printDPData(ofstream &DPdata, double &outbr, int &time)	{							
-	// Print the outcome of the DP estimation
-	DPdata << time << '\t';
-	DPdata << alpha << '\t' << gamma << '\t' << tau << '\t' << neta << '\t';
-	DPdata << outbr << '\t';
-	for (int j = 0; j < 9; j++)
-	{
-		DPdata << DPbackup[j] << '\t';
-		//cout << values[j] << '\t';
-	}
-	DPdata << endl;
-	//cout << endl;
-}
-
 double agent::logist() { return (1 / (1 + exp(-theta)));}
 
 int agent::mapOptionsDP(client options[], int &choice){
-	int stateAction;
+	int state;
 	if (options[0] == absence || options[1] == absence)	{
 		// One of the options is empty
 		if (options[0] == resident || options[1] == resident){					
 		// the other one is a resident
-			if (options[choice] == resident) { stateAction = 4; } 
-			// State = R0 , action = R		
-			else { stateAction = 5; }	// State = R0 , action = 0		
+			state = 2;                                                    // R0
 		}
 		else if (options[0] == visitor || options[1] == visitor){
-			// the other one is a resident
-			if (options[choice] == visitor) { stateAction = 2; } 
-			// State = V0 , action = V
-			else { stateAction = 3; }
-			// State = V0 , action = 0
+			// the other one is a visitor
+			state = 1;                                                    // V0
 		}
-		else { stateAction = 8; }				
-		// State = 00 , action = 0		// the other one is empty too
+		else { state = 5; }				                                  // 00
 	}
 	else if (options[0] == resident || options[1] == resident){
 		// Both options have clients and one of them is a resident
 		if (options[0] == visitor || options[1] == visitor){
 			// the other one is a visitor
-			if (options[choice] == resident) { stateAction = 1; }
-			// State = RV , action = R		
-			else { stateAction = 0; }	
-			// State = RV , action = V
+			state = 0;                                                    // RV
 		}
-		else { stateAction = 7; }		// State = RR , action = R		
+		else { state = 3; }		                                          // RR
 	}
-	else { stateAction = 6; }			 // State = VV , action = V
-	return stateAction;
+	else { state = 4; }			                                          // VV
+	return state;
 }
-//void agent::DPupdate(double &probRes, double &probVis, double &VisProbLeav, 
-//	double &ResProbLeav, double &outbr, double &ResReward, double &VisReward, 
-//	double &negativeRew, ofstream &DPdata,bool &experiment){
-//// Expected value according to DP algorithm
-//	double transProb[9] = {0,0,0,0,0,0,0,0,0};	// Transition probabilities
-//	double sum; 
-//	double rewards[9] = {VisReward*(1-neta)+neta*ResProbLeav*negativeRew,			//0
-//						ResReward*(1-neta)+neta*VisProbLeav*negativeRew,			//1
-//						VisReward*(1-neta),											//2
-//						neta*VisProbLeav*negativeRew,								//3
-//						ResReward*(1-neta),											//4
-//						neta*ResProbLeav*negativeRew,								//5
-//						VisReward*(1 - neta) + neta*VisProbLeav*negativeRew,		//6
-//						ResReward*(1 - neta) + neta*ResProbLeav*negativeRew,		//7
-//						0};															//8
-//	if (experiment)     // In an experimental setting
-//	{
-//		for (int k = 0; k < 1000; k++)
-//		{
-//			for (int i = 0; i < 9; i++)
-//			{
-//				DPid = i;//DPid = mapOptionsDP(cleanOptionsT, choiceT);
-//				if (DPid == 0)
-//				{
-//					transProb[0] = 0;
-//					transProb[1] = 0;
-//					transProb[2] = 0;
-//					transProb[3] = 0;
-//					transProb[4] = softMax(DPbackup[4], DPbackup[5])*
-//						(1-ResProbLeav);
-//					transProb[5] = softMax(DPbackup[5], DPbackup[4])*
-//						(1 - ResProbLeav);
-//					transProb[6] = 0;
-//					transProb[7] = 0;
-//					transProb[8] = ResProbLeav;
-//				}
-//				else if (DPid == 1)
-//				{
-//					transProb[0] = 0;
-//					transProb[1] = 0;
-//					transProb[2] = softMax(DPbackup[2], DPbackup[3])*
-//						(1 - VisProbLeav);
-//					transProb[3] = softMax(DPbackup[3], DPbackup[2])*
-//						(1 - VisProbLeav);
-//					transProb[4] = 0;
-//					transProb[5] = 0;
-//					transProb[6] = 0;
-//					transProb[7] = 0;
-//					transProb[8] = VisProbLeav;
-//				}
-//				else
-//				{
-//					transProb[0] = softMax(DPbackup[0], DPbackup[1]);
-//					transProb[1] = softMax(DPbackup[1], DPbackup[0]);
-//					transProb[2] = 0;
-//					transProb[3] = 0;
-//					transProb[4] = 0;
-//					transProb[5] = 0;
-//					transProb[6] = 0;
-//					transProb[7] = 0;
-//					transProb[8] = 0;
-//				}
-//				sum = 0;
-//				for (int j = 0; j < 9; j++)
-//				{
-//					sum += transProb[j] * (rewards[DPid] + gamma*DPbackup[j]);
-//				}
-//				DPbackup[DPid] = sum;
-//			}
-//			printDPData(DPdata, outbr, k);
-//		}
-//	}
-//	else{						// In a natural setting
-//		for (int k = 0; k < 1000; k++){
-//			for (int i = 0; i < 9; i++){
-//				DPid = i;//DPid = mapOptionsDP(cleanOptionsT, choiceT);
-//				if (DPid == 0 || DPid == 5 || DPid == 7){
-//					transProb[0] = softMax(DPbackup[0], DPbackup[1])*
-//						((1 - ResProbLeav)*(probVis*(1 - outbr) + outbr) + 
-//						ResProbLeav * (2 * probRes*probVis*(1 - outbr) + 
-//						outbr*(probVis + probRes)));
-//					transProb[1] = softMax(DPbackup[1], DPbackup[0])*
-//						((1 - ResProbLeav)*(probVis*(1 - outbr) + outbr) + 
-//						ResProbLeav * (2 * probRes*probVis*(1 - outbr) + 
-//						outbr*(probVis + probRes)));
-//					transProb[2] = softMax(DPbackup[2], DPbackup[3])*
-//						ResProbLeav * probVis*(1 - probRes - probVis)*(2 - outbr);
-//					transProb[3] = softMax(DPbackup[3], DPbackup[2])*
-//						ResProbLeav * probVis*(1 - probRes - probVis)*(2 - outbr);
-//					transProb[4] = softMax(DPbackup[4], DPbackup[5])*
-//						((1 - ResProbLeav)*(1 - probRes - probVis)*(1 - outbr) 
-//						+ ResProbLeav * (1 - probRes - probVis)*probRes*(2 - outbr));
-//					transProb[5] = softMax(DPbackup[5], DPbackup[4])*
-//						((1 - ResProbLeav)*(1 - probRes - probVis)*(1 - outbr) 
-//						+ ResProbLeav * (1 - probRes - probVis)*probRes*(2 - outbr));
-//					transProb[6] = ResProbLeav*pow(probVis, 2)*(1-outbr);
-//					transProb[7] = ((1 - ResProbLeav)*probRes + 
-//						ResProbLeav*pow(probRes, 2))*(1-outbr);
-//					transProb[8] = ResProbLeav*pow((1 - probRes - probVis), 2);
-//				}
-//				else if (DPid == 1 || DPid == 3 || DPid == 6){
-//					transProb[0] = softMax(DPbackup[0], DPbackup[1])*
-//						((1 - VisProbLeav)*(probRes*(1 - outbr) + outbr) + 
-//						VisProbLeav * (2 * probRes*probVis*(1 - outbr) + 
-//						outbr*(probVis + probRes)));
-//					transProb[1] = softMax(DPbackup[1], DPbackup[0])*
-//						((1 - VisProbLeav)*(probRes*(1 - outbr) + outbr) + 
-//						VisProbLeav * (2 * probRes*probVis*(1 - outbr) + 
-//						outbr*(probVis + probRes)));
-//					transProb[2] = softMax(DPbackup[2], DPbackup[3])*
-//						((1 - VisProbLeav)*(1 - probRes - probVis)*(1 - outbr) 
-//						+ VisProbLeav * probVis*(1 - probRes - probVis)*(2 - outbr));
-//					transProb[3] = softMax(DPbackup[3], DPbackup[2])*
-//						((1 - VisProbLeav)*(1 - probRes - probVis)*(1 - outbr) 
-//						+ VisProbLeav * probVis*(1 - probRes - probVis)*(2 - outbr));
-//					transProb[4] = softMax(DPbackup[4], DPbackup[5])*
-//						VisProbLeav * (1 - probRes - probVis)*probRes*(2 - outbr);
-//					transProb[5] = softMax(DPbackup[5], DPbackup[4])
-//						*VisProbLeav * (1 - probRes - probVis)*probRes*(2 - outbr);
-//					transProb[6] = ((1 - VisProbLeav)*probVis + 
-//						VisProbLeav*pow(probVis, 2))*(1 - outbr);
-//					transProb[7] = VisProbLeav*pow(probRes, 2)*(1 - outbr);
-//					transProb[8] = VisProbLeav*pow((1 - probRes - probVis), 2);
-//				}
-//				else{
-//					transProb[0] = softMax(DPbackup[0], DPbackup[1]) * 
-//						(2 * probRes*probVis*(1 - outbr) + 
-//							outbr*(probVis + probRes));
-//					transProb[1] = softMax(DPbackup[1], DPbackup[0]) * 
-//						(2 * probRes*probVis*(1 - outbr) + 
-//							outbr*(probVis + probRes));
-//					transProb[2] = softMax(DPbackup[2], DPbackup[3]) * 
-//						probVis*(1 - probRes - probVis)*(2 - outbr);
-//					transProb[3] = softMax(DPbackup[3], DPbackup[2]) * 
-//						probVis*(1 - probRes - probVis)*(2 - outbr);
-//					transProb[4] = softMax(DPbackup[4], DPbackup[5]) * 
-//						(1 - probRes - probVis) * probRes*(2 - outbr);
-//					transProb[5] = softMax(DPbackup[5], DPbackup[4]) * 
-//						(1 - probRes - probVis) * probRes*(2 - outbr);
-//					transProb[6] = pow(probVis, 2)*(1 - outbr);
-//					transProb[7] = pow(probRes, 2)*(1 - outbr);
-//					transProb[8] = pow((1 - probRes - probVis), 2);
-//				}
-//				sum = 0;
-//				for (int j = 0; j < 9; j++){
-//					sum +=  transProb[j] * (rewards[DPid] + gamma*DPbackup[j]);
-//				}
-//				DPbackup[DPid] = sum;
-//			}
-//			printDPData(DPdata, outbr, k);
-//		}
-//	}
-//}
 
 void agent::choice() {
 	if (cleanOptionsT1[0] == absence || cleanOptionsT1[1] == absence) {
@@ -578,7 +394,7 @@ void agent::choice() {
 	}
 	else if (cleanOptionsT1[0] != cleanOptionsT1[1]) {
 		// if clients are different use policy (logist)
-		bool visit = rnd::bernoulli(1-pV);
+		bool visit = rnd::bernoulli(pV);
 		if (cleanOptionsT1[1] == visitor) {
 			choiceT1 = visit;
 		} else {
@@ -599,26 +415,22 @@ class FIATyp1 :public agent{			// Fully Informed Agent (FIA)
 	virtual int mapOptions(client options[], int &choice){
 		return(mapOptionsDP(options, choice));
 	}
-	virtual void updateThet(int curStatAct, int nextStat) {
-		if (curStatAct < 2) {
-			if (curStatAct == 1) {
+	virtual void updateThet(int curState) {
+		if (curState == 0) {
+			if (cleanOptionsT[choiceT] == visitor) {
 				if (delta > 1.2) {
-					cout << "resident" << '\t';
+					cout << "visitor" << '\t';
 					cout << 2 * alphath*delta*(1 - pV) << '\t';
 				}
 				theta += 2 * alphath*delta*(1 - pV);
 			} else {
 				if (delta>1.2){
-					cout << "visitor " << '\t';
+					cout << "resident " << '\t';
 					cout << -2 * alphath*delta*pV << '\t';
 				}
 				theta -= 2*alphath*delta*pV;
 			}
 			pV = logist();
-			if (delta > 1.2) {
-				cout << theta << '\t' << pV << '\t' << delta << '\t';
-				cout << curStatAct << '\t' << nextStat << endl;
-			}
 		}
 	}
 };
@@ -635,7 +447,7 @@ class PIATyp1 :public agent{				// Partially Informed Agent (PIA)
 		else { return(2); }
 		return(options[choice]); 
 	}
-	virtual void updateThet(int curStatAct, int nextStat) {
+	virtual void updateThet(int curStatAct) {
 		if (curStatAct < 2) {
 			if (curStatAct == 1) {
 				theta += 2*alphath*delta*(1-pV);
@@ -735,9 +547,8 @@ void initializeIndFile(ofstream &indOutput, agent &learner,
 		indOutput << "Cum.Reward" << '\t' << "Neg.Reward" << '\t';
 
 		if (learner.numEst > 3) {
-			indOutput << "RV.V" << '\t' << "RV.R" << '\t' << "V0.V" << '\t';
-			indOutput << "V0.0" << '\t' << "R0.R" << '\t' << "R0.0" << '\t';
-			indOutput << "VV.V" << '\t' << "RR.R" << '\t' << "OO.O" << '\t';
+			indOutput << "RV" << '\t' << "V0" << '\t' << "R0" << '\t';
+			indOutput << "RR" << '\t' << "VV" << '\t' << "00_" << '\t';
 		}
 		else {
 			indOutput << "Resident" << '\t' << "Visitor" << '\t';
@@ -867,9 +678,9 @@ int main(int argc, _TCHAR* argv[]){
 							draw(clientSet, totRounds, ResProb, VisProb);
 							idClientSet = 0;
 							for (int j = 0; j < totRounds; j++){
-								if (j == 500) {
+								/*if (j == 500) {
 									wait_for_return();
-								}
+								}*/
 								learners[k]->act(clientSet, idClientSet,
 									VisProbLeav, ResProbLeav, VisReward, 
 									ResReward, inbr, outbr, negativeRew, 

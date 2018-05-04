@@ -19,19 +19,23 @@ library('lme4')
 
 # Define data to be loaded 
 
-(listPar<-c("alphaTh","gamma","neta"))
+(listPar<-c("test","gamma","neta"))
 (listVal<-c("",0.8,0))
 
 
 FIAraw<-loadRawData(simsDir,"FIA",listparam = listPar,values = listVal)
 param<-getParam(simsDir,listparam = listPar,values = listVal)
 
+FIAraw<-fread(getFilelist(simsDir,listPar,listVal)$FIA)
+
 file.info(getFilelist(simsDir,listPar,listVal)$FIA)
 
 FIAagg<-FIAraw[, as.list(unlist(lapply(.SD, function(x) 
   list(mean = mean(x),IQ.h = fivenum(x)[4],IQ.l=fivenum(x)[2])))),
                by=.(Age,Alpha,Gamma,Tau,Neta,Outbr,AlphaTh), 
-               .SDcols=c('Theta','RV.V','RV.R','Delta')]
+               .SDcols=c('Theta','Delta')]
+
+
 
 FIAtimeInt<-do.call(
   rbind,lapply(

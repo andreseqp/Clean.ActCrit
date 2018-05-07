@@ -353,7 +353,6 @@ void agent::printIndData(ofstream &learnSeries, int &seed, double &outbr)
 		learnSeries << values[j] << '\t';
 		//cout << values[j] << '\t';
 	}
-	learnSeries << delta << '\t';
 	learnSeries << endl;
 	//cout << endl;
 }
@@ -418,17 +417,9 @@ class FIATyp1 :public agent{			// Fully Informed Agent (FIA)
 	virtual void updateThet(int curState) {
 		if (curState == 0) {
 			if (cleanOptionsT[choiceT] == visitor) {
-				if (delta > 1.2) {
-					cout << "visitor" << '\t';
-					cout << 2 * alphath*delta*(1 - pV) << '\t';
-				}
 				theta += 2 * alphath*delta*(1 - pV);
 			} else {
-				if (delta>1.2){
-					cout << "resident " << '\t';
-					cout << -2 * alphath*delta*pV << '\t';
-				}
-				theta -= 2*alphath*delta*pV;
+					theta -= 2*alphath*delta*pV;
 			}
 			pV = logist();
 		}
@@ -554,7 +545,6 @@ void initializeIndFile(ofstream &indOutput, agent &learner,
 			indOutput << "Resident" << '\t' << "Visitor" << '\t';
 			indOutput << "Absence" << '\t';
 		}
-		indOutput << "Delta" << '\t';
 		indOutput << endl;
 	}
 }
@@ -565,7 +555,7 @@ int main(int argc, _TCHAR* argv[]){
 	mark_time(1);
 
 	// Only for debugging
-	json param;
+	/*json param;
 	param["totRounds"]    = 20000;
 	param["ResReward"]    = 1;
 	param["VisReward"]    = 1;
@@ -587,12 +577,12 @@ int main(int argc, _TCHAR* argv[]){
 	param["tauRange"]     = { 0.6667 };
 	param["netaRange"]    = { 0 };
 	param["alphaThRange"] = { 0.01 };
-	param["folder"] = "S:/quinonesa/Simulations/actCrit/test_/";
+	param["folder"] = "S:/quinonesa/Simulations/actCrit/test_/";*/
 
 	
-	/*ifstream input(argv[1]);
+	ifstream input(argv[1]);
 	if (input.fail()) { cout << "JSON file failed" << endl; }
-	json param = nlohmann::json::parse(input);*/
+	json param = nlohmann::json::parse(input);
 	
 	int const totRounds = param["totRounds"];
 	double ResReward = param["ResReward"];
@@ -678,9 +668,6 @@ int main(int argc, _TCHAR* argv[]){
 							draw(clientSet, totRounds, ResProb, VisProb);
 							idClientSet = 0;
 							for (int j = 0; j < totRounds; j++){
-								/*if (j == 500) {
-									wait_for_return();
-								}*/
 								learners[k]->act(clientSet, idClientSet,
 									VisProbLeav, ResProbLeav, VisReward, 
 									ResReward, inbr, outbr, negativeRew, 
@@ -698,13 +685,6 @@ int main(int argc, _TCHAR* argv[]){
 							learners[k]->rebirth();
 						}
 						printTest.close();
-						//if (k == 0) {
-						//	initializeIndFile(DPprint, *learners[0], param, 1);
-						//	learners[k]->DPupdate(ResProb, VisProb, 
-						//		VisProbLeav, ResProbLeav, outbr, ResReward,
-						//		VisReward, negativeRew, DPprint, experiment);
-						//	DPprint.close();
-						//}
 						delete learners[k];
 					}
 				}

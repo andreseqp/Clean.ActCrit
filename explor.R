@@ -11,7 +11,7 @@ source('d:/quinonesa/Dropbox/R_files/posPlots.R')
 source(paste(projDir,"aesth_par.R",sep=""))
 source(paste(projDir,"loadData.R",sep = ""))
 library('plotrix')
-library('lme4')
+# library('lme4')
 
 
 # Load data ------------------------------------------------------------

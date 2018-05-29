@@ -14,7 +14,7 @@ library('plotrix')
 
 # Define data to be loaded 
 
-(listPar<-rep("alphThet",1))
+(listPar<-rep("BaseLine",1))
 (listVal<-"")
 (param<-getParam(simsDir,listparam = listPar,values = listVal))
 
@@ -47,9 +47,9 @@ PIAtimeInt<-do.call(
 #   rbind,lapply(getFilelist(genDir,listPar,listVal)$PIA,fread))
 
 # Load DP data from the raw data
-DPdataProb<-do.call(rbind,
-                    lapply(getFilelist(simsDir,listPar,listVal)$DP,
-                           file2lastDP))
+# DPdataProb<-do.call(rbind,
+#                     lapply(getFilelist(simsDir,listPar,listVal)$DP,
+#                            file2lastDP))
 
 # Load DP data from processed file
 
@@ -63,35 +63,36 @@ extpar<-listPar[1]
 FIAIntstats<-FIAtimeInt[,.(meanProb=mean(Prob.RV.V),
                            upIQR=fivenum(Prob.RV.V)[4],
                            lowIQR=fivenum(Prob.RV.V)[2])
-                        ,by=.(Interv,Neta,Outbr,Tau,Gamma,get(extpar))]
+                        ,by=.(Interv,Neta,Outbr,Tau,Gamma)]
 setnames(FIAIntstats,'get',extpar)
 PIAIntstats<-PIAtimeInt[,.(meanProb=mean(Prob.RV.V),
                            upIQR=fivenum(Prob.RV.V)[4],
                            lowIQR=fivenum(Prob.RV.V)[2])
-                        ,by=.(Interv,Neta,Outbr,Tau,Gamma,get(extpar))]
+                        ,by=.(Interv,Neta,Outbr,Tau,Gamma)]
 setnames(PIAIntstats,'get',extpar)
 
+png("d:/quinonesa/Dropbox/Neuchatel/Figs/Actor_critic/Fig1.png",width = 1200,
+    height = 800)
+
 par(plt=posPlot(numplotx = 2,idplotx = 1)+c(-0.05,-0.05,0,0),yaxt='s',las=1)
-with(FIAIntstats[Neta==0.5&factRew==2],{
+with(FIAIntstats,{
   plotCI(x=Interv,y=meanProb,
          ui = upIQR,li=lowIQR,
          pch=16,xlab='',ylab='',
-         col=colboxes[match(Gamma,unique(Gamma))],
-         sfrac=0.002,cex.axis=1.3,ylim=c(0,1))
+         col=colboxes[ifelse(Gamma==0.8,
+                             ifelse(Neta==1,1,2),
+                             ifelse(Neta==1,3,4))],
+         sfrac=0.002,cex.axis=1.3,ylim=c(0.4,1))
   lines(x=c(0,max(Interv)),y=c(0.5,0.5),col='grey')
+  lines(x=c(0,max(Interv)),y=c(0.8,0.8),col='grey')
 })
 
-with(DPdataProb,  
-     {matlines(x = t(matrix(rep(max(FIAtimeInt$Interv)*c(0.75,1),
-                                each=length(RV.V)),length(RV.V))),
-               y=t(matrix(rep(probRV.V,2),length(RV.V))),
-               lwd=2,lty = "dashed",
-               col=colboxes[match(Gamma,unique(Gamma))])})
-
-legend('topright',
-       legend=unique(FIAIntstats[,Gamma])[order(unique(FIAIntstats[,Gamma]))],
-              col=colboxes,pch=15,
-              title=eval(extpar),cex=1.5,ncol=3)
+# with(DPdataProb,  
+#      {matlines(x = t(matrix(rep(max(FIAtimeInt$Interv)*c(0.75,1),
+#                                 each=length(RV.V)),length(RV.V))),
+#                y=t(matrix(rep(probRV.V,2),length(RV.V))),
+#                lwd=2,lty = "dashed",
+#                col=colboxes[match(Gamma,unique(Gamma))])})
 
 par(plt=posPlot(numplotx = 2,idplotx = 2)+c(-0.05,-0.05,0,0),
     new=TRUE,yaxt='s',xpd=TRUE)
@@ -99,13 +100,20 @@ with(PIAIntstats,{
   plotCI(x=Interv,y=meanProb,
          ui = upIQR,li=lowIQR,
          pch=16,xlab='',ylab='',
-         col=colboxes[match(Gamma,unique(Gamma))],
-         sfrac=0.002,cex.axis=1.3,yaxt='n')
+         col=colboxes[ifelse(Gamma==0.8,
+                             ifelse(Neta==1,1,2),
+                             ifelse(Neta==1,3,4))],
+         sfrac=0.002,cex.axis=1.3,yaxt='n',ylim=c(0.4,1))
   lines(x=c(0,max(Interv)),y=c(0.5,0.5),col='grey')
   axis(side=4,cex.axis=1.3)
 })
 
-png(filename = paste(projDir,eval(extpar),".png",sep=""))
+legend('topright',
+       legend=c("Punishment and future", "future",
+                "punishment","no punishment no future"),
+       col=colboxes,pch=15,cex=1.5,ncol=1)
+
+# png(filename = paste(projDir,eval(extpar),".png",sep=""))
 
 dev.off()
 

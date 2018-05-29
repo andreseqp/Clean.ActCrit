@@ -19,22 +19,29 @@ library('plotrix')
 
 # Define data to be loaded 
 
-(listPar<-c("test","gamma","neta"))
-(listVal<-c("",0.8,0))
+(listPar<-c("Abundance",'gamma',"neta"))
 
+(listVal<-c("",0.8,0))
 
 FIAraw<-loadRawData(simsDir,"FIA",listparam = listPar,values = listVal)
 param<-getParam(simsDir,listparam = listPar,values = listVal)
 
-FIAraw<-fread(getFilelist(simsDir,listPar,listVal)$FIA)
 
-file.info(getFilelist(simsDir,listPar,listVal)$FIA)
+PIAraw<-loadRawData(simsDir,"PIA",listparam = listPar,values = listVal)
+param<-getParam(simsDir,listparam = listPar,values = listVal)
+
+
+FIAraw$factRew<-rep(c(1,2),each=dim(FIAraw)[1]/2)
+
+
+file.info(getFilelist(simsDir,listPar,listVal)$PIA)
 
 FIAagg<-FIAraw[, as.list(unlist(lapply(.SD, function(x) 
   list(mean = mean(x),IQ.h = fivenum(x)[4],IQ.l=fivenum(x)[2])))),
-               by=.(Age,Alpha,Gamma,Tau,Neta,Outbr,AlphaTh), 
-               .SDcols=c('Theta','Delta')]
+               by=.(Age,Alpha,Gamma,Tau,Neta,Outbr,pR,pV), 
+               .SDcols=c('ThetaV','ThetaR','RV','VV','RR','R0','V0','00_')]
 
+setnames(FIAagg,'get',extpar)
 
 
 FIAtimeInt<-do.call(
@@ -42,10 +49,10 @@ FIAtimeInt<-do.call(
     getFilelist(simsDir,listPar,listVal)$FIA,
     file2timeInter,interV=501))
 
-# PIAtimeInt<-do.call(
-#   rbind,lapply(
-#     getFilelist(simsDir,listPar,listVal)$PIA,
-#     file2timeInter,interV=501))
+PIAtimeInt<-do.call(
+  rbind,lapply(
+    getFilelist(simsDir,listPar,listVal)$PIA,
+    file2timeInter,interV=501))
 
 # DPdataProb<-do.call(rbind,
 #                     lapply(getFilelist(genDir,listPar,listVal)$DP,
@@ -166,22 +173,6 @@ legend('topright',
        col=colboxes,pch=15,
        title="AlphaTH",cex=1.5,ncol=3)
 
-# Plot lines theta
-
-FIAlines<-dcast(FIAagg[(Neta==0&Gamma==0.8)],Age~AlphaTh,
-                value.var = "Theta.mean")
-names(FIAlines)[2:4]<-paste0("AlphaTh",names(FIAlines)[2:4],sep="")
-
-par(plt=posPlot(numplotx = 1,idplotx = 1),yaxt='s',las=1)
-with(FIAlines,{
-  matplot(y=cbind(AlphaTh0.005,AlphaTh0.01,AlphaTh0.05),
-           pch=16,xlab='Time',ylab='Value',cex.lab=2,
-           col=colboxes,
-           cex.axis=1.3,cex=1,yaxt='n',type='l')
-  axis(2)
-  lines(x=c(0,max(Age)),y=c(0,0),col='grey')
-})
-
 # One training round
 
 par(plt=posPlot(numplotx = 1,idplotx = 1)+c(-0.05,-0.05,0,0),yaxt='s',las=1)
@@ -249,8 +240,8 @@ with(FIAIntstats[Neta==0&Gamma==0.8],{
          pch=16,xlab='Time',ylab='Prob. V over R',cex.lab=2,
          col=colboxes[match(AlphaTh,unique(AlphaTh))],
          sfrac=0.002,cex.axis=1.3,ylim=c(0,1),cex=1.2,
-         xlim=c(0,10))
-  lines(x=c(0,10),y=c(0.5,0.5),col='grey')
+         xlim=c(0,40))
+  lines(x=c(0,40),y=c(0.5,0.5),col='grey')
 })
 
 legend('bottomright',
@@ -258,10 +249,31 @@ legend('bottomright',
        col=colboxes,pch=15,
        title="AlphaTH",cex=1.5,ncol=3)
 
-with(FIAraw[])
-plot()
+PIAIntstats<-PIAtimeInt[,.(meanProb=mean(Prob.RV.V),
+                           upIQR=fivenum(Prob.RV.V)[4],
+                           lowIQR=fivenum(Prob.RV.V)[2])
+                        ,by=.(Interv,Neta,Outbr,Tau,Gamma,AlphaTh)]
+
+par(plt=posPlot(numplotx = 1,idplotx = 1),yaxt='s',las=1,new=TRUE)
+with(PIAIntstats[Neta==0],{
+  plotCI(x=Interv,y=meanProb,
+         ui = upIQR,li=lowIQR,
+         pch=16,xlab='Time',ylab='Prob. V over R',cex.lab=2,
+         col=colboxes[match(Gamma,unique(Gamma))],
+         sfrac=0.002,cex.axis=1.3,ylim=c(0,1),cex=1.2,
+         xlim=c(0,40))
+  lines(x=c(0,40),y=c(0.5,0.5),col='grey')
+})
+
+legend('bottomright',
+       legend=unique(FIAagg[,AlphaTh])[order(unique(FIAagg[,AlphaTh]))],
+       col=colboxes,pch=15,
+       title="AlphaTH",cex=1.5,ncol=3)
 
 # Olle's results ---------------------------------------------------------------
+
+colOlle<-c("red","green")
+colOlle2<-c("blue","black")
 
 cexpar<-1.5
 yaxRangy<-c('s','n','n')
@@ -271,9 +283,9 @@ xlabRang<-c("","Time","")
 
 png(filename = "d:/quinonesa/Dropbox/Neuchatel/Olle/ActCrit_Olle_par.png",
     width = 1600,height = 800)
+
 count<-0
-for(alphTh in unique(FIAIntstats$AlphaTh)){
-  
+for(alphTh in unique(FIAIntstats$AlphaTh)[c(2,4,5)]){
   count<-count+1
   par(plt=posPlot(numplotx = 3,idplotx = count),yaxt=yaxRangy[count],las=1,
       new=c(FALSE,TRUE)[count])
@@ -281,7 +293,7 @@ for(alphTh in unique(FIAIntstats$AlphaTh)){
     plotCI(x=Interv,y=meanProb,
            ui = upIQR,li=lowIQR,
            pch=16,xlab=xlabRang[count],ylab=ylabRang[count],cex.lab=2,
-           col=colOlle[match(Gamma,unique(Gamma))],xlim=c(0,15),
+           col=colOlle[match(Gamma,unique(Gamma))],xlim=c(0,10),
            sfrac=0.002,cex.axis=1.3,ylim=c(0,1),cex=cexpar)
     lines(x=c(0,max(Interv)),y=c(0.5,0.5),col='grey')
   })
@@ -290,7 +302,7 @@ for(alphTh in unique(FIAIntstats$AlphaTh)){
     plotCI(x=Interv,y=meanProb,
            ui = upIQR,li=lowIQR,
            pch=16,xlab='',ylab='',
-           col=colOlle2[match(Gamma,unique(Gamma))],xlim=c(0,15),
+           col=colOlle2[match(Gamma,unique(Gamma))],xlim=c(0,10),
            sfrac=0.002,cex.axis=1.3,ylim=c(0,1),cex=cexpar)
     lines(x=c(0,max(Interv)),y=c(0.5,0.5),col='grey')
   })
@@ -306,11 +318,206 @@ legend('bottomright',
 
 dev.off()
 
-## Debugging -------------------------------------------------------------------
+alphTh<-0.01
+par(plt=posPlot(),yaxt='s',las=1,
+    new=FALSE)
+with(FIAIntstats[(Neta==0.5&factRew==2)&AlphaTh==alphTh],{
+  plotCI(x=Interv,y=meanProb,
+         ui = upIQR,li=lowIQR,
+         pch=16,xlab=xlabRang[count],ylab=ylabRang[count],cex.lab=2,
+         col=colOlle[match(Gamma,unique(Gamma))],xlim=c(0,10),
+         sfrac=0.002,cex.axis=1.3,ylim=c(0,1),cex=cexpar)
+  lines(x=c(0,max(Interv)),y=c(0.5,0.5),col='grey')
+})
+par(new=TRUE)
+with(FIAIntstats[(Neta==0&factRew==1)&AlphaTh==alphTh],{
+  plotCI(x=Interv,y=meanProb,
+         ui = upIQR,li=lowIQR,
+         pch=16,xlab='',ylab='',
+         col=colOlle2[match(Gamma,unique(Gamma))],xlim=c(0,10),
+         sfrac=0.002,cex.axis=1.3,ylim=c(0,1),cex=cexpar)
+  lines(x=c(0,max(Interv)),y=c(0.5,0.5),col='grey')
+})
 
-setwd(simsDir)
+text(x=par('usr')[1]+0.3*(par('usr')[2]-par('usr')[1]),
+     y=par('usr')[3]+0.1*(par('usr')[4]-par('usr')[3]),
+     labels = bquote(alpha[theta]==.(alphTh)),cex = 2)
 
-list.files("ActCrit")
 
-getFilelist(simsDir)
+alphTh<-0.01
+par(plt=posPlot(),yaxt='s',las=1)
+with(FIAagg[(Neta==0.5&factRew==2)&AlphaTh==alphTh],{
+  plot(x=Age[Gamma==0],y=logist(Theta.mean[Gamma==0]),type="l",
+         xlab=xlabRang[2],ylab=ylabRang[1],cex.lab=2,
+         col=colOlle[2],xlim=c(0,500*10),
+         cex.axis=1.3,ylim=c(0,1),cex=cexpar)
+  lines(x=Age[Gamma==0.8],y=logist(Theta.mean[Gamma==0.8]),col=colOlle[1])
+  lines(x=c(0,max(Age)),y=c(0.5,0.5),col='grey')
+})
+par(new=TRUE)
+with(FIAagg[(Neta==0&factRew==1)&AlphaTh==alphTh],{
+  plot(x=Age[Gamma==0],y=logist(Theta.mean[Gamma==0]),type="l",
+       xlab=xlabRang[2],ylab=ylabRang[1],cex.lab=2,
+       col=colOlle2[2],xlim=c(0,500*10),
+       cex.axis=1.3,ylim=c(0,1),cex=cexpar)
+  lines(x=Age[Gamma==0.8],y=logist(Theta.mean[Gamma==0.8]),col=colOlle2[1])
+  # lines(x=c(0,max(Age)),y=c(0.5,0.5),col='grey')
+})
 
+text(x=par('usr')[1]+0.3*(par('usr')[2]-par('usr')[1]),
+     y=par('usr')[3]+0.1*(par('usr')[4]-par('usr')[3]),
+     labels = bquote(alpha[theta]==.(alphTh)),cex = 2)
+
+
+# Abundance ------------------------------------------------------------------
+
+# Plot lines theta
+
+unique(FIAtimeInt$pV)
+
+FIAlines<-dcast(FIAtimeInt[pV==0.5],Interv~pR,fun = mean,
+                value.var = "Prob.RV.V")
+
+names(FIAlines)[2:5]<-paste0("pR",names(FIAlines)[2:5],sep="")
+
+par(plt=posPlot(),yaxt='s',las=1)
+with(FIAlines,{
+  matplot(y=cbind(pR0.1,pR0.2,pR0.3,pR0.4),
+          pch=16,xlab='Time',ylab='Value',cex.lab=2,
+          col=colboxes,
+          cex.axis=1.3,cex=1,yaxt='n',type='l')
+  legend("topright",legend = c(0.1,0.2,0.3,0.4),
+         col = colboxes,pch=20)
+  axis(2)
+  lines(x=c(0,max(Interv)),y=c(0.5,0.5),col='grey')
+})
+
+par(plt=posPlot())
+with(FIAagg[ Age %% 300==0],{
+  plot(ThetaV.mean~Age,pch=1,ylim=c(min(c(ThetaV.mean,ThetaR.mean)),
+                                             max(c(ThetaV.mean,ThetaR.mean))),
+       col=colboxes[match(pR,unique(pR))])
+  points(x = Age,y = ThetaR.mean,pch=2,col=colboxes[match(pR,unique(pR))])
+  legend("topleft",legend = c(0.1,0.2,0.3,0.4),
+         col = colboxes,pch=20)
+})
+
+par(plt=posPlot())
+with(FIAagg[ Age %% 300==0],{
+  plot(RV.mean~Age,pch=20,
+       col=colboxes[match(pR,unique(pR))])
+  points(VV.mean~Age,pch=1,
+       col=colboxes[match(pR,unique(pR))])
+  legend("topleft",legend = c(0.1,0.2,0.3,0.4),
+         col = colboxes,pch=20)
+})
+
+FIAtimeInt.equal<-FIAtimeInt[pR==pV]
+
+FIAtimeInt.equal[,pA:=1-pR-pV]
+
+FIAlines.equal<-dcast(FIAtimeInt.equal,Interv~pA,fun = mean,
+                       value.var = "Prob.RV.V")
+
+par(plt=posPlot())
+matplot(y=FIAlines.equal[,c("0.2","0.4","0.6","0.8")],
+        col=colboxes,type='l')
+legend("bottomleft",legend = names(FIAlines.equal)[2:5],col = colboxes,pch = 20)
+
+
+# Plotting Values FIA--------------------------------------------------------------
+
+unique(FIAagg$pV)
+
+FIAagg[,pChoice:=logist(ThetaV.mean,ThetaR.mean)]
+
+setnames(FIAagg,"00_.mean","AA.mean")
+
+FIAlines.prob<-dcast(FIAagg[Gamma==0.8],formula = Age~pR,value.var = "pChoice")
+names(FIAlines.prob)[2:5]<-paste0("pR",names(FIAlines.prob)[2:5])
+
+png("d:/quinonesa/Dropbox/Neuchatel/Figs/Actor_critic/values.png",width = 1200,
+    height = 800)
+
+par(plt=posPlot(1,2,1,2),yaxt='s',las=1)
+with(FIAlines.prob,{
+  matplot(cbind(pR0.1,pR0.2,pR0.3),type='l',col=colboxes,ylab="Prob V over R",
+          lwd=3,lty=1)
+  legend("topleft",legend = names(FIAlines.prob)[2:4],col=colboxes,pch=20,
+         cex=2)
+})
+
+posacor<-c(0,0,-0.06,-0.06)
+
+par(plt=posPlot(3,numploty = 2,1,1)+posacor,yaxt='s',new=TRUE)
+with(FIAagg[pR==0.3&Gamma==0.8],{
+matplot(cbind(RV.mean,VV.mean,RR.mean,V0.mean,R0.mean,AA.mean),type='l',
+        col=1:6,ylim=c(0,5),ylab = "Value",lty=1)
+legend("bottomright",legend=c("RV","VV","RR","V0","R0","AA"),col=1:6,pch=20,
+       ncol=6)
+text(x = 15000,y= 2,labels = bquote(pR==.(pR)),col=colboxes[3],cex=2)
+})
+par(plt=posPlot(3,numploty = 2,2,1)+posacor,new=TRUE,yaxt='n')
+with(FIAagg[pR==0.2&Gamma==0.8],{
+  matplot(cbind(RV.mean,VV.mean,RR.mean,V0.mean,R0.mean,AA.mean),type='l',
+          col=1:6,ylim=c(0,5),ylab = "",lty=1)
+  text(x = 15000,y=2,labels = bquote(pR==.(pR)),col=colboxes[2],cex=2)
+})
+par(plt=posPlot(3,numploty = 2,3,1)+posacor,new=TRUE,yaxt='n')
+with(FIAagg[pR==0.1&Gamma==0.8],{
+  matplot(cbind(RV.mean,VV.mean,RR.mean,V0.mean,R0.mean,AA.mean),type='l',
+          col=1:6,ylim=c(0,5),ylab = "",lty=1)
+  text(x = 15000,y=2,labels = bquote(pR==.(pR)),col=colboxes[1],cex=2)
+})
+
+
+dev.off()
+
+
+# Plotting Values PIA--------------------------------------------------------------
+
+unique(FIAagg$pV)
+
+FIAagg[,pChoice:=logist(ThetaV.mean,ThetaR.mean)]
+
+setnames(FIAagg,"00_.mean","AA.mean")
+
+FIAlines.prob<-dcast(FIAagg[Gamma==0.8],formula = Age~pR,value.var = "pChoice")
+names(FIAlines.prob)[2:5]<-paste0("pR",names(FIAlines.prob)[2:5])
+
+png("d:/quinonesa/Dropbox/Neuchatel/Figs/Actor_critic/values.png",width = 1200,
+    height = 800)
+
+par(plt=posPlot(1,2,1,2),yaxt='s',las=1)
+with(FIAlines.prob,{
+  matplot(cbind(pR0.1,pR0.2,pR0.3),type='l',col=colboxes,ylab="Prob V over R",
+          lwd=3,lty=1)
+  legend("topleft",legend = names(FIAlines.prob)[2:4],col=colboxes,pch=20,
+         cex=2)
+})
+
+posacor<-c(0,0,-0.06,-0.06)
+
+par(plt=posPlot(3,numploty = 2,1,1)+posacor,yaxt='s',new=TRUE)
+with(FIAagg[pR==0.3&Gamma==0.8],{
+  matplot(cbind(RV.mean,VV.mean,RR.mean,V0.mean,R0.mean,AA.mean),type='l',
+          col=1:6,ylim=c(0,5),ylab = "Value",lty=1)
+  legend("bottomright",legend=c("RV","VV","RR","V0","R0","AA"),col=1:6,pch=20,
+         ncol=6)
+  text(x = 15000,y= 2,labels = bquote(pR==.(pR)),col=colboxes[3],cex=2)
+})
+par(plt=posPlot(3,numploty = 2,2,1)+posacor,new=TRUE,yaxt='n')
+with(FIAagg[pR==0.2&Gamma==0.8],{
+  matplot(cbind(RV.mean,VV.mean,RR.mean,V0.mean,R0.mean,AA.mean),type='l',
+          col=1:6,ylim=c(0,5),ylab = "",lty=1)
+  text(x = 15000,y=2,labels = bquote(pR==.(pR)),col=colboxes[2],cex=2)
+})
+par(plt=posPlot(3,numploty = 2,3,1)+posacor,new=TRUE,yaxt='n')
+with(FIAagg[pR==0.1&Gamma==0.8],{
+  matplot(cbind(RV.mean,VV.mean,RR.mean,V0.mean,R0.mean,AA.mean),type='l',
+          col=1:6,ylim=c(0,5),ylab = "",lty=1)
+  text(x = 15000,y=2,labels = bquote(pR==.(pR)),col=colboxes[1],cex=2)
+})
+
+
+dev.off()

@@ -1,9 +1,12 @@
 # ------------------------ Load data ------------------------------------------#
 
+# Libraries
+
 library("data.table")
 library("jsonlite")
 library("rlist")
 
+# get files --------------------------------------------------------------------
 
 getFilelist<-# reads de list of files and filters it according to a list of parameters
              # and values of interest
@@ -47,7 +50,7 @@ getFilelist<-# reads de list of files and filters it according to a list of para
 }
 
 
-
+# Load raw data ----------------------------------------------------------------
 
 loadRawData<-function(folder,agent,listparam,values){
   setwd(folder)
@@ -69,7 +72,7 @@ loadRawData<-function(folder,agent,listparam,values){
 
 getParam<-function(folder,agent,listparam=NULL,values=NULL){
   setwd(folder)
-  irrelPar<-c("gamma","tau","neta")
+  irrelPar<-c("gamma","tau","neta","pR","pV")
   listRaw<-list.files(folder,recursive = TRUE)
   jsonsList<-grep(".json",listRaw,value = TRUE)
   indRelPar<-seq(length(listparam))
@@ -128,19 +131,19 @@ file2lastDP<-function(filename){
   return(tmpProbsDP)
 }
 
-file2lastDP<-function(filename)
+file2lastProp<-function(filename,prop)
 {
-  extPar<-strsplit(filename,split ="_/")[[1]][1]
-  parVal<-as.numeric(gsub("[[:alpha:]]",extPar,replacement = ''))
-  extPar<-gsub("[[:digit:]]",extPar,replacement = '')
   tmp<-fread(filename)
-  tmpProbsDP<-tmp[Time==max(Time),
-                  .(probRV.V=soft_max(RV.V,RV.R,Tau),RV.V,RV.R),
-                  by=.(Alpha,Gamma,Tau,Neta,Outbr)]
-  if(length(extPar)>0){
-    tmpProbsDP[,eval(extPar):=parVal]
-  }
-  return(tmpProbsDP)
+  # resPtmp<-as.numeric(gsub("[[:alpha:]]", "", grep('pR',strsplit(filename,'_')[[1]],value=TRUE)))*0.1
+  # visPtmp<-as.numeric(gsub("[[:alpha:]]", "", grep('pV',strsplit(filename,'_')[[1]],value=TRUE)))*0.1
+  # tmp$resProb<-rep(resPtmp,dim(tmp)[1])
+  # tmp$visProb<-rep(visPtmp,dim(tmp)[1])
+  tmp$fullRVoptions<-(tmp$Client1==1& tmp$Client2==0) | (tmp$Client1==0 & tmp$Client2==1)
+  tmp<-tmp[Age>max(Age)*prop]
+  tmptimeInter<-tmp[fullRVoptions==TRUE,
+                    list(Prob.RV.V=mean(Choice)),
+                    by=.(Training,Gamma,Neta,pR,pV,Outbr)]
+  return(tmptimeInter)
 }
 
 
@@ -148,8 +151,8 @@ soft_max<-function(x,y,t){
   return(exp(x/t)/(exp(x/t)+exp(y/t)))
 }
 
-logist<-function(theta){
-  return(1/(1+exp(-theta)))
+logist<-function(theta1,theta2){
+  return(1/(1+exp(-(theta1-theta2))))
 }
 
 diffJsons<-function(json1,json2){
@@ -159,4 +162,14 @@ diffJsons<-function(json1,json2){
   print(unlist(json2)[unlist(json1)!=unlist(json2)])
 }
 
-
+loadDataFirstReach<-function(filename,bound){
+  tmp<-fread(filename)
+  tmp$fullRVoptions<-(tmp$Client1==1& tmp$Client2==0) | (tmp$Client1==0 & tmp$Client2==1)
+  tmp[,ReachedCut:=logist(theta1 = ThetaV,theta2 = ThetaR)>bound]
+  tmpFirstR<-tmp[ReachedCut==TRUE,.(firstReach=min(Age),
+                                       Prob.RV.V=logist(
+                                         theta1 = ThetaV[Age==min(Age)],
+                                         theta2 = ThetaR[Age==min(Age)])),
+                    by=.(Training,Gamma,Neta,pR,pV,Outbr)]
+  return(tmpFirstR)
+}

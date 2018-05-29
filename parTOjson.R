@@ -13,25 +13,28 @@ exedir<-paste(projDir,'/./ActCrit.exe',sep='')
 fileName<-"parameters.json"
 
 
-#test<-fromJSON(paste(codedir,"\\test.json",sep=""))
+# test<-fromJSON(paste(codedir,"\\test.json",sep=""))
 
-param<-list(totRounds=30000,ResReward=10,VisReward=10,ResProb=0.2,VisProb=0.2,
-            ResProbLeav=0,VisProbLeav=1,negativeRew=-10,experiment=FALSE,
+# param<-list(totRounds=20000,ResReward=10,VisReward=10,ResProb=0.2,VisProb=0.2,
+#             ResProbLeav=0,VisProbLeav=1,negativeRew=-10,experiment=FALSE,
+#             inbr=0,outbr=0,trainingRep=30,forRat=0.0,
+#             alphaT=0.01,printGen=1,seed=1, gammaRange=c(0,0.8),
+#             tauRange=c(5,10),netaRange=c(0,0.5),alphaThRange=c(0.01),
+#             folder=simsDir)
+
+param<-list(totRounds=20000,ResReward=1,VisReward=1,
+            ResProb=0.2,
+            VisProb=0.2,
+            ResProbLeav=0,VisProbLeav=1,negativeRew=-1,experiment=FALSE,
             inbr=0,outbr=0,trainingRep=30,forRat=0.0,
             alphaT=0.01,printGen=1,seed=1, gammaRange=c(0,0.8),
-            tauRange=c(5,10),netaRange=c(0,0.5),alphaThRange=c(0.01),
-            folder=simsDir)
-
-param<-list(totRounds=30000,ResReward=1,VisReward=1,ResProb=0.3,VisProb=0.3,
-            ResProbLeav=0,VisProbLeav=1,negativeRew=-0.5,experiment=FALSE,
-            inbr=0,outbr=0,trainingRep=30,forRat=0.0,
-            alphaT=0.01,printGen=1,seed=1, gammaRange=c(0,0.8),
-            tauRange=c(1),netaRange=c(0,0.5),alphaThRange=c(0.005,0.01,0.02),
+            tauRange=c(1),netaRange=c(0,1),alphaThRange=c(0.01),
             folder=simsDir)
 
 setwd(simsDir)
 
 check_create.dir<-function(folder,param,values){
+  setwd(folder)
   listfolders<-paste(param,values,"_",sep = "")  
   currFolders<-lapply(listfolders,dir.exists)
   if(sum(currFolders>0)){
@@ -52,17 +55,17 @@ check_create.dir<-function(folder,param,values){
   }
 }
 
-rang<-c(1,2)
-rangNeta<-c(0,0.5)
+rang<-c("")
+rang<-c(Vlp)
+rangVpLeav<-seq(0,1,length=6)
 
-listfolders<-check_create.dir(simsDir,rep("factRew",2),rang)
+listfolders<-check_create.dir(paste(simsDir,"LeavingP_/",sep=""),
+                              rep("Vlp",1),rangVpLeav)
 
-for (i in 2:2) {
-  param$folder<-paste(simsDir,'/',listfolders[i],'/',sep='')
-  param$netaRange<-c(rangNeta[i])
-  param$ResReward<-param$ResReward*rang[i]
-  param$VisReward<-param$VisReward*rang[i]
-  param$negativeRew<-param$negativeRew*rang[i]
+scenaDir<-paste(simsDir,"LeavingP_",sep="/")
+for (i in 1:length(rangVpLeav)) {
+  param$folder<-paste(scenaDir,'/',listfolders[i],'/',sep='')
+  param$VisProbLeav<-rangVpLeav[i]
   outParam<-toJSON(param,auto_unbox = TRUE,pretty = TRUE)
   if(file.exists(paste(param$folder,fileName,sep = ''))){
     currFile<-fromJSON(paste(param$folder,fileName,sep = ''))
@@ -74,12 +77,12 @@ for (i in 2:2) {
       print(unlist(param)[unlist(currFile)!=unlist(param)])
       ans<-readline("Want to continue?")
       if(substr(ans, 1, 1) == "y"){
-        write(outParam,paste(simsDir,listfolders[i],fileName,sep="\\"))
+        write(outParam,paste(scenaDir,listfolders[i],fileName,sep="/"))
       }
     }
   }
   else{
-    write(outParam,paste(simsDir,listfolders[i],fileName,sep="\\"))
+    write(outParam,paste(scenaDir,listfolders[i],fileName,sep="/"))
   }
   # system(paste(exedir,
   #   gsub("\\","/",paste(simsdir,listfolders[i],fileName,sep="\\"),fixed=TRUE)

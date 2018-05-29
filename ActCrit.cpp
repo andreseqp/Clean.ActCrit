@@ -62,7 +62,7 @@ enum learPar { alphaPar, gammaPar, tauPar, netaPar , alphathPar};
 class agent													// Learning agent
 {
 public:
-	agent(double alphaI, double gammaI, double tauI, double netaI, 
+	agent(double alphaI, double gammaI, double tauI, bool netaI, 
 		double alphathI);
 	// constructor providing values for the learning parameters
 	~agent();																
@@ -75,7 +75,8 @@ public:
 		double &outbr, double &negativeRew, bool &experiment);
 		// function where the agent takes the action, gets reward, see new 
 		//state and chooses future action
-	void printIndData(ofstream &learnSeries, int &seed, double &outbr);		
+	void printIndData(ofstream &learnSeries, int &seed, double &outbr, 
+		double pV, double pR);
 	// prints individual data from the learning process
 	double getLearnPar(learPar parameter);
 	// function to access the learning parameters
@@ -114,9 +115,9 @@ public:
 protected:
 	double values[6];																							
 	// array storing the estimated values of states 
-	double theta; // Policy parameter
 	double delta;
-	double pV;	
+	double pV;
+	double theta[2]; // policy parameters
 	int DPid;
 	int choiceT;// current choice 
 	int choiceT1;// future choice
@@ -125,7 +126,7 @@ protected:
 	double gamma;// importance of future rewards
 	double tau;	// level of explorative behaviour. 
 				//The higher, the less important values is when making decisions
-	double neta;	
+	bool neta;	
 	// Weight of the negative reward in the total reward obtained by an agent
 	double currentReward; // reward given by current state action pair
 	double cumulReward;	// Cumulative reward
@@ -136,12 +137,13 @@ protected:
 // Members of agent class
 
 agent::agent(double alphaI = 0.01, double gammaI = 0.5, 
-	double tauI = 10, double netaI = 0, double alphathI = 0.01){
+	double tauI = 10, bool netaI = 0, double alphathI = 0.01){
 // parameterized constructor with defaults
+	theta[0] = 0, theta[1] = 0;
 	numEst = 6;
 	delta = 0;
 	for (int i = 0; i < numEst; i++) { values[i] = 0; }
-	theta = 0, pV = logist();
+	pV = logist();
 	alpha = alphaI, gamma = gammaI, tau = tauI, alphath = alphathI;
 	neta = netaI;
 	cleanOptionsT[0] = absence, cleanOptionsT[1] = absence, choiceT = 0;
@@ -159,8 +161,9 @@ void agent::rebirth()
 	currentReward = 0;
 	cumulReward = 0;
 	for (int i = 0; i < numEst; i++) { values[i] = 0; }
-	theta = 0, pV = logist();
+	pV = logist();
 	delta = 0;
+	theta[0] = 0, theta[1] = 0;
 }
 
 agent::~agent() {}		// Destructor
@@ -328,7 +331,7 @@ void agent::update(){
 	// change policy parameter according to TD error
 	int currState = mapOptions(cleanOptionsT,choiceT);
 	int nextState = mapOptions(cleanOptionsT1, choiceT);
-	delta = currentReward*(1 - neta) +
+	delta = currentReward +
 		negReward*neta + gamma*values[nextState] - values[currState];
 	// construct the TD error
 	values[currState] += alpha*delta;
@@ -336,13 +339,15 @@ void agent::update(){
 	updateThet(currState);
 }
 
-void agent::printIndData(ofstream &learnSeries, int &seed, double &outbr)
+void agent::printIndData(ofstream &learnSeries, int &seed, double &outbr, 
+	double pV, double pR)
 {
 	learnSeries << seed << '\t' << age << '\t';
 	//cout << seed << '\t' << age << '\t';
 	learnSeries << alpha << '\t' << gamma << '\t' << tau << '\t';
-	learnSeries << neta << '\t' << alphath << '\t' << theta << '\t';
-	learnSeries << outbr << '\t';
+	learnSeries << neta << '\t' << alphath << '\t' << pV << '\t';
+	learnSeries << pR << '\t' << theta[0] << '\t';
+	learnSeries << theta[1] << '\t' << outbr << '\t';
 	learnSeries << cleanOptionsT[0] << '\t' << cleanOptionsT[1] << '\t';
 	learnSeries << cleanOptionsT[choiceT] << '\t';
 	//cout << cleanOptionsT[0] << '\t' << cleanOptionsT[1] << '\t' << choiceT << '\t';
@@ -357,7 +362,7 @@ void agent::printIndData(ofstream &learnSeries, int &seed, double &outbr)
 	//cout << endl;
 }
 
-double agent::logist() { return (1 / (1 + exp(-theta)));}
+double agent::logist() { return (1 / (1 + exp(-(theta[0]-theta[1]))));}
 
 int agent::mapOptionsDP(client options[], int &choice){
 	int state;
@@ -417,9 +422,11 @@ class FIATyp1 :public agent{			// Fully Informed Agent (FIA)
 	virtual void updateThet(int curState) {
 		if (curState == 0) {
 			if (cleanOptionsT[choiceT] == visitor) {
-				theta += 2 * alphath*delta*(1 - pV);
+				theta[0] += alphath*delta*(1 - pV);
+				theta[1] -= alphath*delta*(1 - pV);
 			} else {
-					theta -= 2*alphath*delta*pV;
+				theta[0] -= alphath*delta*pV;
+				theta[1] += alphath*delta*pV;
 			}
 			pV = logist();
 		}
@@ -440,11 +447,18 @@ class PIATyp1 :public agent{				// Partially Informed Agent (PIA)
 	}
 	virtual void updateThet(int curStatAct) {
 		if (curStatAct < 2) {
+			//int notchoice = (choiceT == 0);
 			if (curStatAct == 1) {
-				theta += 2*alphath*delta*(1-pV);
+				theta[0] += alphath*delta*(1 - pV);
+				/*if(mapOptions(cleanOptionsT, notchoice) == 0) { 
+					theta[1] -= alphath*delta*(1 - pV);
+				} */				
 			}
 			else {
-				theta -= 2*alphath*delta*pV;
+				theta[1] += alphath*delta*pV;
+				/*if (mapOptions(cleanOptionsT, notchoice) == 1) {
+					theta[0] -= alphath*delta*pV;
+				}*/
 			}
 			pV = logist();
 		}
@@ -453,7 +467,7 @@ class PIATyp1 :public agent{				// Partially Informed Agent (PIA)
 
 // Functions external to the agent
 
-void draw(client trainingSet[], int rounds, double &probRes, double &probVis){					
+void draw(client trainingSet[], int rounds, double probRes, double probVis){					
 	// In a natural setting draw clients according to their abundance
 	double cumProbs[3] = { probRes, probRes + probVis, 1 };
 	double rndNum;
@@ -478,7 +492,7 @@ std::string douts(double j){			// turns double into string
 }
 
 string create_filename(std::string filename, agent &individual,
-	nlohmann::json param){
+	nlohmann::json param, double pV, double pR){
 	// name the file with the parameter specifications
 	filename.append("alph");
 	filename.append(douts(individual.getLearnPar(alphaPar)));
@@ -488,10 +502,10 @@ string create_filename(std::string filename, agent &individual,
 	filename.append(douts(individual.getLearnPar(tauPar)));
 	filename.append("_neta");
 	filename.append(douts(individual.getLearnPar(netaPar)));
-	filename.append("_alphaTh");
-	filename.append(douts(individual.getLearnPar(alphathPar)));
-	filename.append("_outb");
-	filename.append(douts(param["outbr"]));
+	filename.append("_pV");
+	filename.append(douts(pV));
+	filename.append("_pR");
+	filename.append(douts(pR));
 	filename.append("_seed");
 	filename.append(itos(param["seed"]));
 	filename.append(".txt");
@@ -499,7 +513,7 @@ string create_filename(std::string filename, agent &individual,
 }
 
 void initializeIndFile(ofstream &indOutput, agent &learner, 
-	nlohmann::json param, bool DP){
+	nlohmann::json param, bool DP, double pV, double pR){
 	std::string namedir = param["folder"];
 	// "S:\\quinonesa\\Simulations\\Basic_sarsa\\"; //  //"M:\\prelim_results\\General\\"; // "E:\\Dropbox\\Neuchatel\\prelimResults\\Set_15\\IndTrain_equVal"
 	std::string namedirDP = param["folder"];
@@ -519,7 +533,7 @@ void initializeIndFile(ofstream &indOutput, agent &learner,
 		cout << learner.getLearnPar(alphathPar) << endl;
 	}
 	namedir.append(folder);
-	string IndFile = create_filename(namedir, learner, param);
+	string IndFile = create_filename(namedir, learner, param, pV,pR);
 	indOutput.open(IndFile.c_str());
 	if (DP){
 		indOutput << "Time" << '\t' << "Alpha" << '\t' << "Gamma" << '\t';
@@ -532,7 +546,8 @@ void initializeIndFile(ofstream &indOutput, agent &learner,
 	else {
 		indOutput << "Training" << '\t' << "Age" << '\t' << "Alpha" << '\t';
 		indOutput << "Gamma" << '\t' << "Tau" << '\t' << "Neta" << '\t';
-		indOutput << "AlphaTh" << '\t' << "Theta" << '\t';
+		indOutput << "AlphaTh" << '\t' << "pV" << '\t' << "pR" << '\t';
+		indOutput << "ThetaV" << '\t' << "ThetaR" << '\t';
 		indOutput << "Outbr" << '\t' << "Client1" << '\t' << "Client2" << '\t';
 		indOutput << "Choice" << '\t' << "Current.Reward" << '\t';
 		indOutput << "Cum.Reward" << '\t' << "Neg.Reward" << '\t';
@@ -573,7 +588,7 @@ int main(int argc, _TCHAR* argv[]){
 	param["seed"]         = 1;
 	param["forRat"]       = 0.0;
 	param["alphThRange"]  = { 0 };
-	param["gammaRange"]   = { 0.8 };
+	param["gammaRange"]   = { 0, 0.8 };
 	param["tauRange"]     = { 0.6667 };
 	param["netaRange"]    = { 0 };
 	param["alphaThRange"] = { 0.01 };
@@ -587,8 +602,6 @@ int main(int argc, _TCHAR* argv[]){
 	int const totRounds = param["totRounds"];
 	double ResReward = param["ResReward"];
 	double VisReward = param["VisReward"];
-	double ResProb = param["ResProb"];
-	double VisProb = param["VisProb"];
 	double ResProbLeav = param["ResProbLeav"];
 	double VisProbLeav = param["VisProbLeav"];
 	double negativeRew = param["negativeRew"];
@@ -597,7 +610,7 @@ int main(int argc, _TCHAR* argv[]){
 	double outbr = param["outbr"];
 	int trainingRep = param["trainingRep"];
 	double alphaT = param["alphaT"];
-	const int numlearn = 1;
+	const int numlearn = 2;
 	int printGen = param["printGen"];
 	int seed = param["seed"];
 	const double forRat = param["forRat"];
@@ -645,47 +658,58 @@ int main(int argc, _TCHAR* argv[]){
 	client *clientSet;
 	clientSet = new client[totRounds * 2];
 	int idClientSet;
-
 	agent *learners[numlearn];
-	for (json::iterator italTh = param["alphaThRange"].begin();
-		italTh != param["alphaThRange"].end(); ++italTh) {
-		for (json::iterator itn = param["netaRange"].begin();
-			itn != param["netaRange"].end(); ++itn) {
-			for (json::iterator itg = param["gammaRange"].begin();
-				itg != param["gammaRange"].end(); ++itg) {
-				for (json::iterator itt = param["tauRange"].begin();
-					itt != param["tauRange"].end(); ++itt) {
-					learners[0] = new FIATyp1(alphaT, *itg, *itt,
-						*itn, *italTh);
-					learners[1] = new PIATyp1(alphaT, *itg, *itt,
-						*itn, *italTh);
-					ofstream printTest;
-					ofstream DPprint;
-					for (int k = 0; k < numlearn; ++k){
-						initializeIndFile(printTest, *learners[k],
-							param, 0);
-						for (int i = 0; i < trainingRep; i++){
-							draw(clientSet, totRounds, ResProb, VisProb);
-							idClientSet = 0;
-							for (int j = 0; j < totRounds; j++){
-								learners[k]->act(clientSet, idClientSet,
-									VisProbLeav, ResProbLeav, VisReward, 
-									ResReward, inbr, outbr, negativeRew, 
-									experiment);
-								learners[k]->update();
-								if (j > totRounds*0.9){
-									learners[k]->printIndData(printTest, i, 
-										outbr);
-								}
-								else if (j%printGen == 0){
-									learners[k]->printIndData(printTest, i, 
-										outbr);
+
+	for (json::iterator itVisProb = param["VisProb"].begin();
+		itVisProb != param["VisProb"].end(); ++itVisProb) {
+		for (json::iterator itResProb = param["ResProb"].begin();
+			itResProb != param["ResProb"].end(); ++itResProb) {
+			double tmp1 = *itResProb;
+			double tmp2 = *itVisProb;
+			if (tmp1 + tmp2 < 0.91) {
+				for (json::iterator italTh = param["alphaThRange"].begin();
+					italTh != param["alphaThRange"].end(); ++italTh) {
+					for (json::iterator itn = param["netaRange"].begin();
+						itn != param["netaRange"].end(); ++itn) {
+						for (json::iterator itg = param["gammaRange"].begin();
+							itg != param["gammaRange"].end(); ++itg) {
+							for (json::iterator itt = param["tauRange"].begin();
+								itt != param["tauRange"].end(); ++itt) {
+								learners[0] = new FIATyp1(alphaT, *itg, *itt,
+									*itn, *italTh);
+								learners[1] = new PIATyp1(alphaT, *itg, *itt,
+									*itn, *italTh);
+								ofstream printTest;
+								ofstream DPprint;
+for (int k = 0; k < numlearn; ++k) {
+initializeIndFile(printTest, *learners[k],
+	param, 0, *itVisProb, *itResProb);
+for (int i = 0; i < trainingRep; i++) {
+	draw(clientSet, totRounds, *itResProb, *itVisProb);
+	idClientSet = 0;
+	for (int j = 0; j < totRounds; j++) {
+		learners[k]->act(clientSet, idClientSet,
+			VisProbLeav, ResProbLeav, VisReward,
+			ResReward, inbr, outbr, negativeRew,
+			experiment);
+		learners[k]->update();
+		if (j > totRounds*0.9) {
+			learners[k]->printIndData(printTest, i,
+				outbr, *itVisProb, *itResProb);
+		}
+		else if (j%printGen == 0) {
+			learners[k]->printIndData(printTest, i,
+				outbr, *itVisProb, *itResProb);
+		}
+	}
+	learners[k]->rebirth();
+}
+
+printTest.close();
+delete learners[k];
 								}
 							}
-							learners[k]->rebirth();
 						}
-						printTest.close();
-						delete learners[k];
 					}
 				}
 			}

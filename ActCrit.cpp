@@ -63,7 +63,7 @@ class agent													// Learning agent
 {
 public:
 	agent(double alphaI, double gammaI, double tauI, bool netaI, 
-		double alphathI);
+		double alphathI, double initVal);
 	// constructor providing values for the learning parameters
 	~agent();																
 	// destructor not really necessary
@@ -83,7 +83,7 @@ public:
 	void checkChoice();
 	// Check that the choice taken is among one of the options, 
 	//otherwise trigger an error
-	void rebirth();																								
+	void rebirth(double initVal);																								
 	// Function to reset private variables in an individual
 	void agent::getNewOptions(client newOptions[], int &idNewOptions, 
 		double &VisProbLeav, double &ResProbLeav, double &negativeRew, 
@@ -137,12 +137,13 @@ protected:
 // Members of agent class
 
 agent::agent(double alphaI = 0.01, double gammaI = 0.5, 
-	double tauI = 10, bool netaI = 0, double alphathI = 0.01){
+	double tauI = 10, bool netaI = 0, double alphathI = 0.01,
+	double initVal = 0){
 // parameterized constructor with defaults
 	theta[0] = 0, theta[1] = 0;
 	numEst = 6;
 	delta = 0;
-	for (int i = 0; i < numEst; i++) { values[i] = 0; }
+	for (int i = 0; i < numEst; i++) { values[i] = initVal; }
 	pV = logist();
 	alpha = alphaI, gamma = gammaI, tau = tauI, alphath = alphathI;
 	neta = netaI;
@@ -152,7 +153,7 @@ agent::agent(double alphaI = 0.01, double gammaI = 0.5,
 	age = 0;
 }
 
-void agent::rebirth()
+void agent::rebirth(double initVal = 0)
 {
 	age = 0;
 	cleanOptionsT[0] = absence, cleanOptionsT[1] = absence;
@@ -160,7 +161,7 @@ void agent::rebirth()
 	choiceT = 0, choiceT1 = 0;
 	currentReward = 0;
 	cumulReward = 0;
-	for (int i = 0; i < numEst; i++) { values[i] = 0; }
+	for (int i = 0; i < numEst; i++) { values[i] = initVal; }
 	pV = logist();
 	delta = 0;
 	theta[0] = 0, theta[1] = 0;
@@ -414,7 +415,8 @@ void agent::choice() {
 class FIATyp1 :public agent{			// Fully Informed Agent (FIA)			
 	public:
 	FIATyp1(double alphaI, double gammaI, double tauI, double netaI, 
-		double alphaThI):agent(alphaI, gammaI, tauI, netaI, alphaThI){
+		double alphaThI, double initVal):agent(alphaI, gammaI, tauI, 
+			netaI, alphaThI, initVal){
 	}
 	virtual int mapOptions(client options[], int &choice){
 		return(mapOptionsDP(options, choice));
@@ -436,7 +438,8 @@ class FIATyp1 :public agent{			// Fully Informed Agent (FIA)
 class PIATyp1 :public agent{				// Partially Informed Agent (PIA)	
 	public:
 	PIATyp1(double alphaI, double gammaI, double tauI, double netaI, 
-		double alphaThI):agent(alphaI, gammaI, tauI, netaI, alphaThI){
+		double alphaThI, double initVal):agent(alphaI, gammaI, tauI, 
+			netaI, alphaThI,initVal){
 		numEst = 3;
 	}
 	int mapOptions(client options[], int &choice){
@@ -666,7 +669,7 @@ int main(int argc, _TCHAR* argv[]){
 			itResProb != param["ResProb"].end(); ++itResProb) {
 			double tmp1 = *itResProb;
 			double tmp2 = *itVisProb;
-			if (tmp1 + tmp2 < 0.91) {
+			if (tmp1 + tmp2 <= 1) {
 				for (json::iterator italTh = param["alphaThRange"].begin();
 					italTh != param["alphaThRange"].end(); ++italTh) {
 					for (json::iterator itn = param["netaRange"].begin();
@@ -676,9 +679,9 @@ int main(int argc, _TCHAR* argv[]){
 							for (json::iterator itt = param["tauRange"].begin();
 								itt != param["tauRange"].end(); ++itt) {
 								learners[0] = new FIATyp1(alphaT, *itg, *itt,
-									*itn, *italTh);
+									*itn, *italTh, param["initVal"]);
 								learners[1] = new PIATyp1(alphaT, *itg, *itt,
-									*itn, *italTh);
+									*itn, *italTh, param["initVal"]);
 								ofstream printTest;
 								ofstream DPprint;
 for (int k = 0; k < numlearn; ++k) {
@@ -702,7 +705,7 @@ for (int i = 0; i < trainingRep; i++) {
 				outbr, *itVisProb, *itResProb);
 		}
 	}
-	learners[k]->rebirth();
+	learners[k]->rebirth(param["initVal"]);
 }
 
 printTest.close();

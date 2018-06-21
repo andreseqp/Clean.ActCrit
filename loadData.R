@@ -131,8 +131,14 @@ file2lastDP<-function(filename){
   return(tmpProbsDP)
 }
 
-file2lastProp<-function(filename,prop)
+file2lastProp<-function(filename,prop,outPar=NULL)
 {
+  if(length(outPar)>0){
+    extPar<-grep(outPar,strsplit(filename,"_/")[[1]],
+               value=TRUE)
+    parVal<-as.numeric(gsub("[[:alpha:]]",extPar,replacement = ''))
+    extPar<-gsub("[[:digit:]]",extPar,replacement = '')
+  }
   tmp<-fread(filename)
   # resPtmp<-as.numeric(gsub("[[:alpha:]]", "", grep('pR',strsplit(filename,'_')[[1]],value=TRUE)))*0.1
   # visPtmp<-as.numeric(gsub("[[:alpha:]]", "", grep('pV',strsplit(filename,'_')[[1]],value=TRUE)))*0.1
@@ -140,10 +146,13 @@ file2lastProp<-function(filename,prop)
   # tmp$visProb<-rep(visPtmp,dim(tmp)[1])
   tmp$fullRVoptions<-(tmp$Client1==1& tmp$Client2==0) | (tmp$Client1==0 & tmp$Client2==1)
   tmp<-tmp[Age>max(Age)*prop]
-  tmptimeInter<-tmp[fullRVoptions==TRUE,
+  lastchunk<-tmp[fullRVoptions==TRUE,
                     list(Prob.RV.V=mean(Choice)),
                     by=.(Training,Gamma,Neta,pR,pV,Outbr)]
-  return(tmptimeInter)
+  if(length(outPar)>0){
+    lastchunk[,eval(outPar):=parVal]
+  }
+  return(lastchunk)
 }
 
 

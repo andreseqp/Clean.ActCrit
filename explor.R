@@ -19,9 +19,9 @@ library('plotrix')
 
 # Define data to be loaded 
 
-(listPar<-c("Abundance",'gamma',"neta"))
+(listPar<-c("Abundance",'gamma',"neta","pV"))
 
-(listVal<-c("",0.8,0))
+(listVal<-c("",0.8,0,0.5))
 
 FIAraw<-loadRawData(simsDir,"FIA",listparam = listPar,values = listVal)
 param<-getParam(simsDir,listparam = listPar,values = listVal)
@@ -34,7 +34,7 @@ param<-getParam(simsDir,listparam = listPar,values = listVal)
 FIAraw$factRew<-rep(c(1,2),each=dim(FIAraw)[1]/2)
 
 
-file.info(getFilelist(simsDir,listPar,listVal)$PIA)
+file.info(getFilelist(simsDir,listPar,listVal)$FIA)
 
 FIAagg<-FIAraw[, as.list(unlist(lapply(.SD, function(x) 
   list(mean = mean(x),IQ.h = fivenum(x)[4],IQ.l=fivenum(x)[2])))),
@@ -373,7 +373,7 @@ text(x=par('usr')[1]+0.3*(par('usr')[2]-par('usr')[1]),
 
 # Plot lines theta
 
-unique(FIAtimeInt$pV)
+unique(FIAagg$pR)
 
 FIAlines<-dcast(FIAtimeInt[pV==0.5],Interv~pR,fun = mean,
                 value.var = "Prob.RV.V")
@@ -427,48 +427,55 @@ legend("bottomleft",legend = names(FIAlines.equal)[2:5],col = colboxes,pch = 20)
 
 # Plotting Values FIA--------------------------------------------------------------
 
-unique(FIAagg$pV)
+unique(FIAagg$pR)
+
 
 FIAagg[,pChoice:=logist(ThetaV.mean,ThetaR.mean)]
 
 setnames(FIAagg,"00_.mean","AA.mean")
 
-FIAlines.prob<-dcast(FIAagg[Gamma==0.8],formula = Age~pR,value.var = "pChoice")
-names(FIAlines.prob)[2:5]<-paste0("pR",names(FIAlines.prob)[2:5])
+FIAlines.prob<-dcast(FIAagg,formula = Age~pR,value.var = "pChoice")
+names(FIAlines.prob)[2:length(FIAlines.prob)]<-paste0(
+  "pR",names(FIAlines.prob)[2:length(FIAlines.prob)])
 
 png("d:/quinonesa/Dropbox/Neuchatel/Figs/Actor_critic/values.png",width = 1200,
     height = 800)
 
 par(plt=posPlot(1,2,1,2),yaxt='s',las=1)
 with(FIAlines.prob,{
-  matplot(cbind(pR0.1,pR0.2,pR0.3),type='l',col=colboxes,ylab="Prob V over R",
+  matplot(cbind(pR0.1,pR0.2,pR0.3),type='l',col=colboxes,
+          ylab="prop. V over R",
           lwd=3,lty=1)
-  legend("topleft",legend = names(FIAlines.prob)[2:4],col=colboxes,pch=20,
-         cex=2)
+  legend("topleft",legend = gsub("[[:alpha:]]",names(FIAlines.prob)[2:4],
+                                 replacement=""),title = expression(p[r]),
+         col=colboxes,pch=20,cex=1.5,ncol=3)
 })
 
 posacor<-c(0,0,-0.06,-0.06)
 
 par(plt=posPlot(3,numploty = 2,1,1)+posacor,yaxt='s',new=TRUE)
-with(FIAagg[pR==0.3&Gamma==0.8],{
+with(FIAagg[pR==0.3],{
 matplot(cbind(RV.mean,VV.mean,RR.mean,V0.mean,R0.mean,AA.mean),type='l',
-        col=1:6,ylim=c(0,5),ylab = "Value",lty=1)
-legend("bottomright",legend=c("RV","VV","RR","V0","R0","AA"),col=1:6,pch=20,
-       ncol=6)
-text(x = 15000,y= 2,labels = bquote(pR==.(pR)),col=colboxes[3],cex=2)
+        col=colorValues,ylim=c(0,5),ylab = "Value",lty=1)
+text(x = 8000,y= 0.5,labels = bquote(p[r]==.(pR)),col=colboxes[3],cex=2)
 })
 par(plt=posPlot(3,numploty = 2,2,1)+posacor,new=TRUE,yaxt='n')
-with(FIAagg[pR==0.2&Gamma==0.8],{
+with(FIAagg[pR==0.2],{
   matplot(cbind(RV.mean,VV.mean,RR.mean,V0.mean,R0.mean,AA.mean),type='l',
-          col=1:6,ylim=c(0,5),ylab = "",lty=1)
-  text(x = 15000,y=2,labels = bquote(pR==.(pR)),col=colboxes[2],cex=2)
+          col=colorValues,ylim=c(0,5),ylab = "",lty=1)
+  text(x = 8000,y=0.5,labels = bquote(p[r]==.(pR)),col=colboxes[2],cex=2)
 })
 par(plt=posPlot(3,numploty = 2,3,1)+posacor,new=TRUE,yaxt='n')
-with(FIAagg[pR==0.1&Gamma==0.8],{
+with(FIAagg[pR==0.1],{
   matplot(cbind(RV.mean,VV.mean,RR.mean,V0.mean,R0.mean,AA.mean),type='l',
-          col=1:6,ylim=c(0,5),ylab = "",lty=1)
-  text(x = 15000,y=2,labels = bquote(pR==.(pR)),col=colboxes[1],cex=2)
+          col=colorValues,ylim=c(0,5),ylab = "",lty=1)
+  text(x = 8000,y=0.5,labels = bquote(p[r]==.(pR)),col=colboxes[1],cex=2)
 })
+legend("bottomright",legend=c("resident-visitor","visitor-visitor",
+                              "resident-resident","visitor-absence",
+                              "resident-absence","absence-absence"),
+       col=colorValues,pch=20,pt.cex = 3,title="States values",
+       ncol=1)
 
 
 dev.off()

@@ -29,7 +29,7 @@ param<-list(totRounds=20000,ResReward=1,VisReward=1,
             inbr=0,outbr=0,trainingRep=30,forRat=0.0,
             alphaT=0.01,printGen=1,seed=1, gammaRange=c(0,0.8),
             tauRange=c(1),netaRange=c(0,1),alphaThRange=c(0.01),
-            folder=simsDir)
+            folder=simsDir, initVal=0)
 
 setwd(simsDir)
 
@@ -55,17 +55,26 @@ check_create.dir<-function(folder,param,values){
   }
 }
 
-rang<-c("")
-rang<-c(Vlp)
-rangVpLeav<-seq(0,1,length=6)
+rang<-c(0,1)
+rangAbund<-seq(0,0.9,length=10)
 
-listfolders<-check_create.dir(paste(simsDir,"LeavingP_/",sep=""),
-                              rep("Vlp",1),rangVpLeav)
+check_create.dir(simsDir,param = rep("InitVal",1),
+                 values = c(4))
 
-scenaDir<-paste(simsDir,"LeavingP_",sep="/")
-for (i in 1:length(rangVpLeav)) {
-  param$folder<-paste(scenaDir,'/',listfolders[i],'/',sep='')
-  param$VisProbLeav<-rangVpLeav[i]
+listfolders<-check_create.dir(paste(simsDir,"InitVal4_/",sep=""),
+                                    param = rep("AbundanceLpr",2),
+                              values = rang)
+
+
+for (i in 1:2) {
+  param$folder<-paste(paste(simsDir,"InitVal4_/",sep=""),
+                      listfolders[i],'/',sep='')
+  param$ResProb<-rangAbund
+  param$VisProb<-rangAbund
+  param$initVal<-4
+  param$VisProbLeav<-rang[i]
+  param$totRounds<-20000
+  param$printGen<-100
   outParam<-toJSON(param,auto_unbox = TRUE,pretty = TRUE)
   if(file.exists(paste(param$folder,fileName,sep = ''))){
     currFile<-fromJSON(paste(param$folder,fileName,sep = ''))
@@ -77,12 +86,12 @@ for (i in 1:length(rangVpLeav)) {
       print(unlist(param)[unlist(currFile)!=unlist(param)])
       ans<-readline("Want to continue?")
       if(substr(ans, 1, 1) == "y"){
-        write(outParam,paste(scenaDir,listfolders[i],fileName,sep="/"))
+        write(outParam,paste(param$folder,fileName,sep = ""))
       }
     }
   }
   else{
-    write(outParam,paste(scenaDir,listfolders[i],fileName,sep="/"))
+    write(outParam,paste(param$folder,fileName,sep = ""))
   }
   # system(paste(exedir,
   #   gsub("\\","/",paste(simsdir,listfolders[i],fileName,sep="\\"),fixed=TRUE)

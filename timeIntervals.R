@@ -11,22 +11,25 @@ library('plotrix')
 
 # Load Data ---------------------------------------------------------------------------------------
 
+setwd(simsDir)
 
 # Define data to be loaded 
 
-(listPar<-rep("BaseLine",1))
-(listVal<-"")
+(listPar<-rep("BaselineExp",1))
+(listVal<-c(""))
 (param<-getParam(simsDir,listparam = listPar,values = listVal))
 
 #diffJsons(param[1],param[3])
+
+getFilelist(simsDir,listPar,listVal)$FIA
 
 # Load interval data for FIA from the raw data
 FIAtimeInt<-do.call(
   rbind,lapply(
     getFilelist(simsDir,listPar,listVal)$FIA,
-    file2timeInter,interV=1001))
+    file2timeInter,interV=101))
 
-# Load FIA data from processed file
+  # Load FIA data from processed file
 
 # getFilelist(simsDir,listPar,listVal)$FIA
 
@@ -39,7 +42,7 @@ FIAtimeInt<-do.call(
 PIAtimeInt<-do.call(
   rbind,lapply(
     getFilelist(simsDir,listPar,listVal)$PIA,
-    file2timeInter,interV=1001))
+    file2timeInter,interV=101))
 
 # Load PIA data from processed file
 
@@ -58,18 +61,18 @@ PIAtimeInt<-do.call(
 
 # Plot the dynamics of VR choice -----------------------------------------------------------
 
-extpar<-listPar[1]
+# extpar<-listPar[1]
 
-FIAIntstats<-FIAtimeInt[,.(meanProb=mean(Prob.RV.V),
+FIAIntstats<-FIAtimeInt[Gamma!=0.5,.(meanProb=mean(Prob.RV.V),
                            upIQR=fivenum(Prob.RV.V)[4],
                            lowIQR=fivenum(Prob.RV.V)[2])
                         ,by=.(Interv,Neta,Outbr,Tau,Gamma)]
-setnames(FIAIntstats,'get',extpar)
-PIAIntstats<-PIAtimeInt[,.(meanProb=mean(Prob.RV.V),
+# setnames(FIAIntstats,'get',extpar)
+PIAIntstats<-PIAtimeInt[Gamma!=0.5,.(meanProb=mean(Prob.RV.V),
                            upIQR=fivenum(Prob.RV.V)[4],
                            lowIQR=fivenum(Prob.RV.V)[2])
                         ,by=.(Interv,Neta,Outbr,Tau,Gamma)]
-setnames(PIAIntstats,'get',extpar)
+# setnames(PIAIntstats,'get',extpar)
 
 FIAIntstats[,posit:=ifelse(Gamma==0&Neta==0,0,
                            ifelse(Gamma==0.8&Neta==0,0.1,
@@ -78,34 +81,30 @@ PIAIntstats[,posit:=ifelse(Gamma==0&Neta==0,0,
                            ifelse(Gamma==0.8&Neta==0,0.1,
                                   ifelse(Gamma==0&Neta==1,0.2,0.3)))]
 
-png("d:/quinonesa/Dropbox/Neuchatel/Figs/Actor_critic/Fig1.png",width = 1200,
-    height = 800)
+png("d:/quinonesa/Dropbox/Neuchatel/Figs/Actor_critic/Fig_experiment.png",
+    width = 1200,height = 800)
 
 par(plt=posPlot(numplotx = 2,idplotx = 1),yaxt='s',las=1)
 with(FIAIntstats,{
   plotCI(x=Interv+posit,y=meanProb,
          ui = upIQR,li=lowIQR,
-         pch=16,xlab='',ylab='',
+         pch=16,xlab='',ylab='',xlim=c(0,20),
          col=colboxes[ifelse(Gamma==0.8,
                              ifelse(Neta==1,1,2),
                              ifelse(Neta==1,3,4))],
          sfrac=0.002,cex.axis=1.3,ylim=c(0.4,1))
-  mtext(side = 2,text = "frequency of V over R",las=0,cex=2,line=4)
+  mtext(side = 2,text = "Proportion of visitors \n chosen over residents",
+        las=0,cex=1.8,line=4)
   lines(x=c(0,max(Interv)),y=c(0.5,0.5),col='grey')
   text(x=par('usr')[2]*0.1,y=par('usr')[3]+0.9*(par('usr')[4]-par('usr')[3]),
        labels='FAA',cex=1.5)
   # lines(x=c(0,max(Interv)),y=c(0.8,0.8),col='grey')
 })
 
-# with(DPdataProb,  
-#      {matlines(x = t(matrix(rep(max(FIAtimeInt$Interv)*c(0.75,1),
-#                                 each=length(RV.V)),length(RV.V))),
-#                y=t(matrix(rep(probRV.V,2),length(RV.V))),
-#                lwd=2,lty = "dashed",
-#                col=colboxes[match(Gamma,unique(Gamma))])})
 
 par(plt=posPlot(numplotx = 2,idplotx = 2),
     new=TRUE,yaxt='s',xpd=TRUE)
+
 with(PIAIntstats,{
   plotCI(x=Interv+posit,y=meanProb,
          ui = upIQR,li=lowIQR,
@@ -113,7 +112,7 @@ with(PIAIntstats,{
          col=colboxes[ifelse(Gamma==0.8,
                              ifelse(Neta==1,1,2),
                              ifelse(Neta==1,3,4))],
-         sfrac=0.002,cex.axis=1.3,yaxt='n',ylim=c(0.4,1))
+         sfrac=0.002,cex.axis=1.3,yaxt='n',ylim=c(0.4,1),xlim=c(0,20))
   lines(x=c(0,max(Interv)),y=c(0.5,0.5),col='grey')
   text(x=par('usr')[2]*0.1,y=par('usr')[3]+0.9*(par('usr')[4]-par('usr')[3]),
        labels='PAA',cex=1.5)

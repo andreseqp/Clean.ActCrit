@@ -1,4 +1,4 @@
-# ------------------------ generate json files  ------------------------------------------ #
+# -------------- generate json files with parameters------------------------------------------ #
 
 library("jsonlite")
 
@@ -12,27 +12,19 @@ exedir<-paste(projDir,'/./ActCrit.exe',sep='')
 
 fileName<-"parameters.json"
 
-
-# test<-fromJSON(paste(codedir,"\\test.json",sep=""))
-
-# param<-list(totRounds=20000,ResReward=10,VisReward=10,ResProb=0.2,VisProb=0.2,
-#             ResProbLeav=0,VisProbLeav=1,negativeRew=-10,experiment=FALSE,
-#             inbr=0,outbr=0,trainingRep=30,forRat=0.0,
-#             alphaT=0.01,printGen=1,seed=1, gammaRange=c(0,0.8),
-#             tauRange=c(5,10),netaRange=c(0,0.5),alphaThRange=c(0.01),
-#             folder=simsDir)
-
-param<-list(totRounds=20000,ResReward=1,VisReward=1,
-            ResProb=0.2,
-            VisProb=0.2,
-            ResProbLeav=0,VisProbLeav=1,negativeRew=-1,experiment=FALSE,
+# Baseline parameter values
+param<-list(totRounds=10000,ResReward=1,VisReward=1,
+            ResProb=c(0.2),
+            VisProb=c(0.2),
+            ResProbLeav=0,VisProbLeav=1,negativeRew=-0.5,experiment=FALSE,
             inbr=0,outbr=0,trainingRep=30,forRat=0.0,
-            alphaT=0.01,printGen=1,seed=1, gammaRange=c(0,0.8),
+            alphaT=0.01,printGen=1,seed=1, gammaRange=c(0,0.5,0.8),
             tauRange=c(1),netaRange=c(0,1),alphaThRange=c(0.01),
-            folder=simsDir, initVal=0)
+            folder=simsDir)
 
 setwd(simsDir)
 
+# function that creates new folders for simulations results --------------------
 check_create.dir<-function(folder,param,values){
   setwd(folder)
   listfolders<-paste(param,values,"_",sep = "")  
@@ -55,26 +47,22 @@ check_create.dir<-function(folder,param,values){
   }
 }
 
+# Arrays with the values of expernal parameters
 rang<-c(0,1)
 rangAbund<-seq(0,0.9,length=10)
 
-check_create.dir(simsDir,param = rep("InitVal",1),
-                 values = c(4))
+check_create.dir(simsDir,param = rep("BaselineExp",1),
+                 values = c(""))
 
-listfolders<-check_create.dir(paste(simsDir,"InitVal4_/",sep=""),
-                                    param = rep("AbundanceLpr",2),
+listfolders<-check_create.dir(paste(simsDir,"InitVal1_/",sep=""),
+                                    param = rep("AbundanceLpr",1),
                               values = rang)
 
 
-for (i in 1:2) {
-  param$folder<-paste(paste(simsDir,"InitVal4_/",sep=""),
-                      listfolders[i],'/',sep='')
-  param$ResProb<-rangAbund
-  param$VisProb<-rangAbund
-  param$initVal<-4
-  param$VisProbLeav<-rang[i]
-  param$totRounds<-20000
-  param$printGen<-100
+# Loop through parameter names and values creating JSONs -----------------------
+for (i in 1:1) {
+  param$folder<-paste(simsDir,"BaselineExp_/",sep="")
+  param$experiment<-TRUE
   outParam<-toJSON(param,auto_unbox = TRUE,pretty = TRUE)
   if(file.exists(paste(param$folder,fileName,sep = ''))){
     currFile<-fromJSON(paste(param$folder,fileName,sep = ''))
@@ -93,21 +81,14 @@ for (i in 1:2) {
   else{
     write(outParam,paste(param$folder,fileName,sep = ""))
   }
+  # Uncomment for running simulations directly through R:
   # system(paste(exedir,
   #   gsub("\\","/",paste(simsdir,listfolders[i],fileName,sep="\\"),fixed=TRUE)
   #   ,sep = " "))
 }
-gsub(pattern = "\\",replacement = "/",simsdir,fixed=TRUE)
-
-# system(paste(exedir,
-#              gsub("\\","/",paste(simsdir,listfolders[1],fileName,sep="\\"),fixed=TRUE)
-#              ,sep = " "))
 
 
 
-testParam$folder<-paste(simsDir,"test_/",sep = "")
-outParam<-toJSON(testParam,auto_unbox = TRUE,pretty = TRUE)
-write(outParam,paste(visualDir,"test.json",sep="/"))
 
 
 

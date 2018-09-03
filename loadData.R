@@ -8,13 +8,16 @@ library("rlist")
 
 # get files --------------------------------------------------------------------
 
-getFilelist<-# reads de list of files and filters it according to a list of parameters
-             # and values of interest
+getFilelist<-
+  # reads de list of files and filters it according to a list of parameters
+  # and values of interest
   function(folder, # folder where the files are
-           listparam=NULL, # list strings providing the parameters 
-                           #of interest
-           values=NULL # list of values matching the list in 
-                      # listparam
+           listparam=NULL, 
+           # list strings providing the parameters 
+           # of interest
+           values=NULL 
+           # list of values matching the list in 
+           # listparam
            ){
   posAgen<-c("PIA","FIA","DP")
   listRaw<-list.files(folder,recursive = TRUE)
@@ -69,6 +72,7 @@ loadRawData<-function(folder,agent,listparam,values){
   return(DT)
 }
 
+# Load the JSON files with parameter values  -----------------------------------
 
 getParam<-function(folder,agent,listparam=NULL,values=NULL){
   setwd(folder)
@@ -100,6 +104,11 @@ getParam<-function(folder,agent,listparam=NULL,values=NULL){
   return(jsons)
 }
 
+
+# Load time intervals ----------------------------------------------------------
+# divides raw data in interval according to interV and calculates 
+# the RV preference is such interval
+
 file2timeInter<-function(filename,interV,maxAge=-2){
   extPar<-strsplit(filename,split ="_/")[[1]][1]
   parVal<-as.numeric(gsub("[[:alpha:]]",extPar,replacement = ''))
@@ -117,19 +126,7 @@ file2timeInter<-function(filename,interV,maxAge=-2){
   return(tmptimeInter)
 }
 
-file2lastDP<-function(filename){
-  extPar<-strsplit(filename,split ="_/")[[1]][1]
-  parVal<-as.numeric(gsub("[[:alpha:]]",extPar,replacement = ''))
-  extPar<-gsub("[[:digit:]]",extPar,replacement = '')
-  tmp<-fread(filename)
-  tmpProbsDP<-tmp[Time==max(Time),
-                  .(probRV.V=soft_max(RV.V,RV.R,Tau),RV.V,RV.R),
-                  by=.(Alpha,Gamma,Tau,Neta,Outbr,AlphTh)]
-  if(length(extPar)>0){
-    tmpProbsDP[,eval(extPar):=parVal]
-  }
-  return(tmpProbsDP)
-}
+# Computes RV preference for a certain final proportion of the learning trial --
 
 file2lastProp<-function(filename,prop,outPar=NULL)
 {
@@ -155,14 +152,13 @@ file2lastProp<-function(filename,prop,outPar=NULL)
   return(lastchunk)
 }
 
-
-soft_max<-function(x,y,t){
-  return(exp(x/t)/(exp(x/t)+exp(y/t)))
-}
+# Logistic function to compute probability from preference ---------------------
 
 logist<-function(theta1,theta2){
   return(1/(1+exp(-(theta1-theta2))))
 }
+
+# Visualize difference in parameters between 2 JSON files
 
 diffJsons<-function(json1,json2){
   print("JSON.1")
@@ -170,6 +166,8 @@ diffJsons<-function(json1,json2){
   print("JSON.2")
   print(unlist(json2)[unlist(json1)!=unlist(json2)])
 }
+
+# Compute the number of rounds it takes to develop a certain preference fo V ---
 
 loadDataFirstReach<-function(filename,bound){
   tmp<-fread(filename)

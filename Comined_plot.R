@@ -40,13 +40,13 @@ FIA.stats<-FIAlastQuarData[,.(meanProb=mean(Prob.RV.V),
                               lowIQR=fivenum(Prob.RV.V)[2])
                            ,by=.(Neta,Gamma,pR,pV)]
 
-FIA.stats$notProb<-round(1-FIA.stats$pR-FIA.stats$pV,1)
+FIA.stats$pA<-round(1-FIA.stats$pR-FIA.stats$pV,1)
 
 
 # Load data for dot plot -------------------------------------------------------
 
 
-FIAlast<-rbindlist(lapply(getFilelist(simsDir,listParRuns,listValRuns)$FIA, 
+FIAlast<-rbindlist(lapply(getFilelist(simsDir,listPar,listVal)$FIA, 
                               function(x){
                                 if(as.numeric(gsub("[[:alpha:]]",
                                                    strsplit(x,"_")[[1]][7],
@@ -84,9 +84,9 @@ FIA.statsdot[,posit:=ifelse(Gamma==0&Neta==0,0,
 
 png("d:/quinonesa/Dropbox/Neuchatel/Figs/Actor_critic/Fig4_panelA.png",
     width = 700 , height = 1200)
-
+plot.new()
 par(plt=posPlot(numplotx = 1,numploty = 1,1,1),las=1)
-with(FIA.stats,{
+with(FIA.statsdot,{
   plotCI(x = (1-pA)+posit,
          y = meanProb,ui = upIQR
          ,li = lowIQR,

@@ -13,12 +13,12 @@ exedir<-paste(projDir,'/./ActCrit.exe',sep='')
 fileName<-"parameters.json"
 
 # Baseline parameter values
-param<-list(totRounds=10000,ResReward=1,VisReward=1,
+param<-list(totRounds=20000,ResReward=1,VisReward=1,
             ResProb=c(0.2),
             VisProb=c(0.2),
             ResProbLeav=0,VisProbLeav=1,negativeRew=-0.5,experiment=FALSE,
             inbr=0,outbr=0,trainingRep=30,forRat=0.0,
-            alphaT=0.01,printGen=1,seed=1, gammaRange=c(0,0.5,0.8),
+            alphaT=0.01,printGen=1,seed=1, gammaRange=c(0,0.8),
             tauRange=c(1),netaRange=c(0,1),alphaThRange=c(0.01),
             folder=simsDir)
 
@@ -48,21 +48,23 @@ check_create.dir<-function(folder,param,values){
 }
 
 # Arrays with the values of expernal parameters
-rang<-c(0,1)
+rangLeav<-seq(0.2,0.8,by = 0.2)
 rangAbund<-seq(0,0.9,length=10)
 
-check_create.dir(simsDir,param = rep("BaselineExp",1),
-                 values = c(""))
+# check_create.dir(simsDir,param = rep("AbundanceLpr",4),
+#                  values = rangLeav)
 
 listfolders<-check_create.dir(paste(simsDir,"InitVal1_/",sep=""),
-                                    param = rep("AbundanceLpr",1),
-                              values = rang)
+                                    param = rep("AbundanceLpr",4),
+                              values = rangLeav)
 
 
 # Loop through parameter names and values creating JSONs -----------------------
-for (i in 1:1) {
-  param$folder<-paste(simsDir,"BaselineExp_/",sep="")
-  param$experiment<-TRUE
+for (i in 1:4) {
+  param$folder<-paste(simsDir,"InitVal1_/",listfolders[i],"/",sep="")
+  param$ResProb<-rangAbund
+  param$VisProb<-rangAbund
+  param$VisProbLeav<-rangLeav[i]
   outParam<-toJSON(param,auto_unbox = TRUE,pretty = TRUE)
   if(file.exists(paste(param$folder,fileName,sep = ''))){
     currFile<-fromJSON(paste(param$folder,fileName,sep = ''))
@@ -74,17 +76,17 @@ for (i in 1:1) {
       print(unlist(param)[unlist(currFile)!=unlist(param)])
       ans<-readline("Want to continue?")
       if(substr(ans, 1, 1) == "y"){
-        write(outParam,paste(param$folder,fileName,sep = ""))
+        write(outParam,paste(param$folder,fileName,sep = "/"))
       }
     }
   }
   else{
-    write(outParam,paste(param$folder,fileName,sep = ""))
+    write(outParam,paste(param$folder,fileName,sep = "/"))
   }
   # Uncomment for running simulations directly through R:
-  # system(paste(exedir,
-  #   gsub("\\","/",paste(simsdir,listfolders[i],fileName,sep="\\"),fixed=TRUE)
-  #   ,sep = " "))
+  system(paste(exedir,
+    gsub("\\","/",paste(param$folder,fileName,sep="\\"),fixed=TRUE)
+    ,sep = " "))
 }
 
 

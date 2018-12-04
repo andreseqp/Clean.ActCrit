@@ -9,7 +9,6 @@ simsDir<-"s:/quinonesa/Simulations/actCrit/InitVal1_/"
 source('d:/quinonesa/Dropbox/R_files/posPlots.R')
 source(paste(projDir,"aesth_par.R",sep=""))
 source(paste(projDir,"loadData.R",sep = ""))
-source('D:/quinonesa/Dropbox/R_files/posPlots.R')
 source('D:/quinonesa/Dropbox/R_files/vioplot.R')
 source('D:/quinonesa/Dropbox/R_files/ternaryAEQP.R')
 source(paste(projDir,"data2interp.R",sep=""))
@@ -103,6 +102,11 @@ with(FIA.stats[Neta==1&Gamma==0],{
 
 # Plot Interpolated data -------------------------------------------------------
 
+png(paste("d:/quinonesa/Dropbox/Neuchatel/Results/actCrit/",listPar[1],"_",
+    listVal[1],"future.png",sep=""),
+    width = 700 , height = 700)
+
+plot.new()
 with(FIAinterpData,{
   ternaryplotAEQP(cbind(resProb,visProb,notProb),
               col = paletteMeans(100)[findInterval(Prob.RV.V,
@@ -119,9 +123,12 @@ with(FIAinterpData,{
                  title = "Probability of \n V over R",cex.tit = 2,numplotx = 5,
                  numploty = 5,idplotx = 5,idploty = 4)
 })
+dev.off()
 
-
-
+png(paste("d:/quinonesa/Dropbox/Neuchatel/Results/actCrit/",listPar[1],"_",
+          listVal[1],"punish.png",sep=""),
+    width = 700 , height = 700)
+plot.new()
 with(FIAinterpData.Neg,{
   ternaryplotAEQP(cbind(resProb,visProb,notProb),
                   col = paletteMeans(100)[findInterval(Prob.RV.V,
@@ -136,6 +143,7 @@ with(FIAinterpData.Neg,{
                  title = "Probability of \n V over R",cex.tit = 2,numplotx = 5,
                  numploty = 5,idplotx = 5,idploty = 4)
 })
+dev.off()
 
 # Plot  real Speed data -----------------------------------------------------------------------
 
@@ -194,13 +202,13 @@ with(na.omit(FIAinterpDataSpeed.Neg),{
 
 
 png(paste("d:/quinonesa/Dropbox/Neuchatel/Figs/Actor_critic/",
-          "triplex_initValues_var.png",sep=""),
+          "triplex_pL",listVal[1],".png",sep=""),
     width=1000,height=1000)
 
 
 cex.lab.par<-1.8
 
-colorbreaksMeans<-seq(0.45,1,length=100)
+colorbreaksMeans<-seq(0.40,1,length=100)
   # seq(min(c(FIAinterpData$Prob.RV.V,
   #                               FIAinterpData.Neg$Prob.RV.V)),
   #                max(c(FIAinterpData$Prob.RV.V,

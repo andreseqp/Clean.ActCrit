@@ -17,3 +17,5 @@ paletteMeans <- colorRampPalette(c('#d73027','#fc8d59','#fee090',
                                  alpha=TRUE)
 
 paletteVar <- colorRampPalette(c('#d8b365','#f5f5f5','#5ab4ac'),alpha=TRUE)
+
+

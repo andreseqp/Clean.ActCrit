@@ -541,7 +541,6 @@ void initializeIndFile(ofstream &indOutput, agent &learner,
 		indOutput << "Absence" << '\t';
 	}
 	indOutput << endl;
-	
 }
 
 

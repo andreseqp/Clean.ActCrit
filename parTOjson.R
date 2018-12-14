@@ -19,7 +19,7 @@ param<-list(totRounds=20000,ResReward=1,VisReward=1,
             ResProbLeav=0,VisProbLeav=1,negativeRew=-1,scenario=2,
             inbr=0,outbr=0,trainingRep=30,forRat=0.0,
             alphaT=0.01,printGen=1,seed=1, gammaRange=c(0,0.8),
-            netaRange=c(0,1),alphaThRange=c(0.01),
+            netaRange=c(0,1),alphaThRange=c(0.01),numlearn=1,
             alphaThNch=1,
             folder=simsDir)
 
@@ -89,9 +89,9 @@ for (i in 1:4) {
       write(outParam,paste(param$folder,fileName,sep = "/"))
     }
     # Uncomment for running simulations directly through R:
-    # system(paste(exedir,
-    #   gsub("\\","/",paste(param$folder,fileName,sep="\\"),fixed=TRUE)
-    #   ,sep = " "))
+    system(paste(exedir,
+      gsub("\\","/",paste(param$folder,fileName,sep="\\"),fixed=TRUE)
+      ,sep = " "))
   }
 }
 # 

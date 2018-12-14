@@ -31,14 +31,14 @@ setwd(simsDir)
 # Load interval data for FAA from the raw data
 FAAtime<-do.call(
   rbind,lapply(
-    getFilelist(simsDir,listPar,listVal)$FAA,
+    grep("alphaThNch1",getFilelist(simsDir,listPar,listVal)$FAA,value=TRUE),
     file2timeInter,interV=1001))
 
 # Load interval data for PAA from the raw data
 
 PAAtime<-do.call(
   rbind,lapply(
-    getFilelist(simsDir,listPar,listVal)$PAA,
+    grep("alphaThNch1_",getFilelist(simsDir,listPar,listVal)$PAA,value=TRUE),
     file2timeInter,interV=1001))
 
 
@@ -74,8 +74,8 @@ PAAIntstats[,posit:=ifelse(Gamma==0&Neta==0,0,
 # png("d:/quinonesa/Dropbox/Neuchatel/Figs/Actor_critic/Fig_base_exp.png",
 # width = 1200,height = 800)
 
-netaPar<-1
-gammaPar<-0
+netaPar<-0
+gammaPar<-0.8
 
 par(plt=posPlot(numplotx = 2,numploty = 1,idplotx = 1,idploty = 1)+
       c(-0.05,-0.05,0,0),
@@ -99,7 +99,7 @@ legend('bottomright',
 par(plt=posPlot(numplotx = 2,numploty = 1,idplotx = 2,idploty = 1)+
       c(-0.05,-0.05,0,0),
     new=TRUE,yaxt='s',xpd=TRUE)
-
+par(plt=posPlot())
 with(PAAIntstats[Gamma==gammaPar&Neta==netaPar],{
   plotCI(x=Interv+0.1*scen,y=meanProb,
          ui = upIQR,li=lowIQR,
@@ -110,7 +110,7 @@ with(PAAIntstats[Gamma==gammaPar&Neta==netaPar],{
   text(x=par('usr')[1]+0.05*(par('usr')[2]-par('usr')[1]),
        y=par('usr')[3]+0.9*(par('usr')[4]-par('usr')[3]),
        labels='B',cex=1.5)
-  axis(4)
+  axis(2)
 })
 
 

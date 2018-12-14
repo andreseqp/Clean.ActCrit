@@ -25,7 +25,7 @@ setwd(simsDir)
 # Define data to be loaded 
 
 (listPar<-c("BaseLine","BaselineExp"))
-(listVal<-c("",""))
+(listVal<-c(""))
 (param<-getParam(simsDir,listparam = listPar,values = listVal))
 
 
@@ -38,7 +38,7 @@ FAAtimeIntEcol<-do.call(
 #experimental setting
 FAAtimeIntExp<-do.call(
   rbind,lapply(
-    getFilelist(simsDir,listPar[2],listVal[2])$FIA,
+    getFilelist(simsDir,listPar[1],listVal[1])$FAA,
     file2timeInter,interV=1001))
 
 
@@ -52,7 +52,7 @@ PAAtimeIntEcol<-do.call(
 #experimental setting
 PAAtimeIntExp<-do.call(
   rbind,lapply(
-    getFilelist(simsDir,listPar[2],listVal[2])$PIA,
+    getFilelist(simsDir,listPar[1],listVal[1])$PAA,
     file2timeInter,interV=1001))
 
 # Calculate statistics on the interval data ------------------------------------
@@ -142,7 +142,7 @@ legend('topright',
 
 
 par(plt=posPlot(numplotx = 2,numploty = 2,idplotx = 1,idploty = 1),
-    yaxt='s',las=1,new=TRUE)
+    yaxt='s',las=1)
 with(FAAIntstatsExp,{
   plotCI(x=Interv+posit+1,y=meanProb,
          ui = upIQR,li=lowIQR,
@@ -158,8 +158,8 @@ with(FAAIntstatsExp,{
   axis(1,labels = (Interv+1)*1000,at=Interv+1)
   # lines(x=c(0,max(Interv)),y=c(0.8,0.8),col='grey')
 })
-text(x= -1,y=1.1,labels = "Proportion of visitors \n chosen over residents",
-     srt=90,cex=1.8)
+# text(x= -1,y=1.1,labels = "Proportion of visitors \n chosen over residents",
+#      srt=90,cex=1.8)
 
 
 par(plt=posPlot(numplotx = 2,numploty = 2,idplotx = 2,idploty = 1),

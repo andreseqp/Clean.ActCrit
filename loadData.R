@@ -19,7 +19,7 @@ getFilelist<-
            # list of values matching the list in 
            # listparam
            ){
-  posAgen<-c("PIA","FIA","DP")
+  posAgen<-c("PAA","FAA","DP")
   listRaw<-list.files(folder,recursive = TRUE)
   fullList<-vector("list",3)
   names(fullList)<-posAgen
@@ -119,7 +119,7 @@ file2timeInter<-function(filename,interV,maxAge=-2){
   tmptimeInter<-
     tmp[fullRVoptions==TRUE,.(Prob.RV.V=mean(Choice)),
       by=.(Interv=floor(Age/interV),Training,Alpha,
-           Gamma,Tau,Neta,Outbr,AlphaTh)]
+           Gamma,Neta,Outbr,AlphaTh)]
   if(length(extPar)>0){
     tmptimeInter[,eval(extPar):=parVal]
   }

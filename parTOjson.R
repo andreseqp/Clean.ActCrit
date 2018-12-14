@@ -16,10 +16,11 @@ fileName<-"parameters.json"
 param<-list(totRounds=20000,ResReward=1,VisReward=1,
             ResProb=c(0.2),
             VisProb=c(0.2),
-            ResProbLeav=0,VisProbLeav=1,negativeRew=-0.5,experiment=FALSE,
+            ResProbLeav=0,VisProbLeav=1,negativeRew=-1,scenario=2,
             inbr=0,outbr=0,trainingRep=30,forRat=0.0,
             alphaT=0.01,printGen=1,seed=1, gammaRange=c(0,0.8),
-            tauRange=c(1),netaRange=c(0,1),alphaThRange=c(0.01),
+            netaRange=c(0,1),alphaThRange=c(0.01),
+            alphaThNch=1,
             folder=simsDir)
 
 setwd(simsDir)
@@ -47,48 +48,53 @@ check_create.dir<-function(folder,param,values){
   }
 }
 
-# Arrays with the values of expernal parameters
+# Arrays with the values of external parameters
 rangLeav<-seq(0.2,0.8,by = 0.2)
 rangAbund<-seq(0,0.9,length=10)
+rangScen<-c(0,1,2,3)
+rangAlphNC<-c(0,0.5,1)
 
-# check_create.dir(simsDir,param = rep("AbundanceLpr",4),
-#                  values = rangLeav)
+# General folder for analysis
+check_create.dir(simsDir,param = rep("Experiments",1),
+                 values = "")
 
-listfolders<-check_create.dir(paste(simsDir,"InitVal1_/",sep=""),
-                                    param = rep("AbundanceLpr",4),
-                              values = rangLeav)
+listfolders<-check_create.dir(paste(simsDir,"Experiments_/",sep=""),
+                                    param = rep("scen",4),
+                              values = rangScen)
 
 
 # Loop through parameter names and values creating JSONs -----------------------
 for (i in 1:4) {
-  param$folder<-paste(simsDir,"InitVal1_/",listfolders[i],"/",sep="")
-  param$ResProb<-rangAbund
-  param$VisProb<-rangAbund
-  param$VisProbLeav<-rangLeav[i]
-  outParam<-toJSON(param,auto_unbox = TRUE,pretty = TRUE)
-  if(file.exists(paste(param$folder,fileName,sep = ''))){
-    currFile<-fromJSON(paste(param$folder,fileName,sep = ''))
-    if(sum(unlist(currFile)!=unlist(param))>0){
-      warning("You are erasing old files!! n\ Check first!!!",immediate. = TRUE)
-      print("OLD value")
-      print(unlist(currFile)[unlist(currFile)!=unlist(param)])
-      print("NEW value")
-      print(unlist(param)[unlist(currFile)!=unlist(param)])
-      ans<-readline("Want to continue?")
-      if(substr(ans, 1, 1) == "y"){
-        write(outParam,paste(param$folder,fileName,sep = "/"))
+  for(j in 1:3){
+    param$alphaThNch<-rangAlphNC[j]
+    param$folder<-paste(simsDir,"Experiments_/",listfolders[i],"/",sep="")
+    param$scenario<-rangScen[i]
+    outParam<-toJSON(param,auto_unbox = TRUE,pretty = TRUE)
+    fileName<-paste("parameters",j,".json",sep="")
+    if(file.exists(paste(param$folder,fileName,sep = ''))){
+      currFile<-fromJSON(paste(param$folder,fileName,sep = ''))
+      if(sum(unlist(currFile)!=unlist(param))>0){
+        warning("You are erasing old files!! n\ Check first!!!",immediate. = TRUE)
+        print("OLD value")
+        print(unlist(currFile)[unlist(currFile)!=unlist(param)])
+        print("NEW value")
+        print(unlist(param)[unlist(currFile)!=unlist(param)])
+        ans<-readline("Want to continue?")
+        if(substr(ans, 1, 1) == "y"){
+          write(outParam,paste(param$folder,fileName,sep = "/"))
+        }
       }
     }
+    else{
+      write(outParam,paste(param$folder,fileName,sep = "/"))
+    }
+    # Uncomment for running simulations directly through R:
+    # system(paste(exedir,
+    #   gsub("\\","/",paste(param$folder,fileName,sep="\\"),fixed=TRUE)
+    #   ,sep = " "))
   }
-  else{
-    write(outParam,paste(param$folder,fileName,sep = "/"))
-  }
-  # Uncomment for running simulations directly through R:
-  system(paste(exedir,
-    gsub("\\","/",paste(param$folder,fileName,sep="\\"),fixed=TRUE)
-    ,sep = " "))
 }
-
+# 
 
 
 

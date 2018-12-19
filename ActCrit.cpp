@@ -57,7 +57,7 @@ using json = nlohmann::json;
 
 enum client { resident, visitor, absence };																		
 // clients can be resident, visitors, or be absent
-enum learPar { alphaPar, gammaPar, netaPar , alphathPar};
+enum learPar { alphaPar, gammaPar, netaPar , alphathPar, propAlphUpPar};
 
 enum learnScenario {nature, experiment, marketExperiment, ExtendedMarket};
 
@@ -65,11 +65,12 @@ class agent													// Learning agent
 {
 public:
 	agent(double alphaI, double gammaI, bool netaI, 
-		double alphathI, double initVal);
+		double propAlphUp, double initVal);
 	// constructor providing values for the learning parameters
 	~agent();																
 	// destructor not really necessary
 	void update();
+	void updateAlpha(int curState);
 	// function that updates the value of state-action pairs according to 
 	//current reward and estimates of future values
 	void act(client newOptions[], int &idNewOptions, double &VisProbLeav, 
@@ -77,7 +78,7 @@ public:
 		double &outbr, double &negativeRew, learnScenario &scenario);
 		// function where the agent takes the action, gets reward, see new 
 		//state and chooses future action
-	void printIndData(ofstream &learnSeries, int &seed, double &outbr, 
+	void printIndData(ofstream &learnSeries, int &seed, 
 		double pV, double pR);
 	// prints individual data from the learning process
 	double getLearnPar(learPar parameter);
@@ -87,22 +88,22 @@ public:
 	//otherwise trigger an error
 	void rebirth(double initVal);																								
 	// Function to reset private variables in an individual
-	void agent::getNewOptions(client newOptions[], int &idNewOptions, 
+	void getNewOptions(client newOptions[], int &idNewOptions, 
 		double &VisProbLeav, double &ResProbLeav, double &negativeRew, 
 		double &inbr, double &outbr, learnScenario &scenario);
 	// Function to get new clients in the station, when in a natural environment
-	void agent::getExternalOptions(client newOptions[], int &idNewOptions, 
+	void getExternalOptions(client newOptions[], int &idNewOptions, 
 		double &inbr, double &outbr);		
 	// After unattended clients leave or stay, get new clients
-	void agent::getExperimentalOptions();
+	void getExperimentalOptions();
 	// Get new clients in the experimental setting
-	void agent::getMarketExperiment();
+	void getMarketExperiment();
 	// Get new clients in the experimental setting of Olle's model
-	void agent::getExtenededMarket();
+	void getExtenededMarket();
 	// Get new clients in the experimental setting of Noa's experiment
 	void ObtainReward(double &ResReward, double &VisReward);
 	// Get reward
-	double agent::logist();
+	double logist();
 	int mapOptionsDP(client options[], int &choice);			
 	// default function that maps state pairs to indexes in the array 
 	//'values' where values are stored works for DPupdate and for 
@@ -120,7 +121,8 @@ public:
 	// Number of estimates characterizing bhavioural options 9 for FAA
 	int countExp;
 protected:
-	double values[6];																							
+	double values[6];
+	double alphas[6];
 	// array storing the estimated values of states 
 	double delta;
 	double piV;
@@ -129,9 +131,9 @@ protected:
 	int choiceT;// current choice 
 	int choiceT1;// future choice
 	double alpha;// speed of learning for estimated values
-	double alphath; // speed of learning for policy parameter
 	double gamma;// importance of future rewards
-	bool neta;	
+	bool neta;
+	double propAlphUp;
 	// Weight of the negative reward in the total reward obtained by an agent
 	double currentReward; // reward given by current state action pair
 	double cumulReward;	// Cumulative reward
@@ -148,13 +150,16 @@ agent::agent(double alphaI = 0.01, double gammaI = 0.5,
 	theta[0] = 0, theta[1] = 0;
 	numEst = 6;
 	delta = 0;
-	for (int i = 0; i < numEst; i++) { values[i] = 1+initVal; }
+	for (int i = 0; i < numEst; i++) { 
+		values[i] = 1+initVal; 
+		alphas[i] = alphathI;
+	}
 	// assigned educated initial values. Reward + guess of 
 	//the expected future reward
 	values[5] -= 1;
 	// Value of absence starts with reward of 0
 	piV = logist();
-	alpha = alphaI, gamma = gammaI, alphath = alphathI;
+	alpha = alphaI, gamma = gammaI;
 	neta = netaI;
 	cleanOptionsT[0] = absence, cleanOptionsT[1] = absence, choiceT = 0;
 	cleanOptionsT1[0] = absence, cleanOptionsT1[1] = absence, choiceT1 = 0;
@@ -171,7 +176,10 @@ void agent::rebirth(double initVal = 0)
 	choiceT = 0, choiceT1 = 0;
 	currentReward = 0;
 	cumulReward = 0;
-	for (int i = 0; i < numEst; i++) { values[i] = 1 + initVal; }
+	for (int i = 0; i < numEst; i++) { 
+		values[i] = 1 + initVal; 
+		alphas[i] = alpha;
+	}
 	values[5] -= 1;
 	piV = logist();
 	delta = 0;
@@ -200,7 +208,7 @@ double agent::getLearnPar(learPar parameter)
 		break;
 	case netaPar:return(neta);
 		break;
-	case alphathPar:return(alphath);
+	case propAlphUpPar:return(propAlphUp);
 		break;
 	default:error("agent:getlearnPar",
 		"asking for a parameter that does not exist");
@@ -415,17 +423,24 @@ void agent::update(){
 	values[currState] += alpha*delta;
 	// update value
 	updateThet(currState);
+	updateAlpha(currState);
 }
 
-void agent::printIndData(ofstream &learnSeries, int &seed, double &outbr, 
+
+void agent::updateAlpha(int curState) {
+	alphas[curState] = propAlphUp*abs(delta);
+}
+
+
+void agent::printIndData(ofstream &learnSeries, int &seed,
 	double pV, double pR)
 {
 	learnSeries << seed << '\t' << age << '\t';
 	//cout << seed << '\t' << age << '\t';
 	learnSeries << alpha << '\t' << gamma << '\t';
-	learnSeries << neta << '\t' << alphath << '\t' << pV << '\t';
+	learnSeries << neta << '\t' << propAlphUp << '\t' << pV << '\t';
 	learnSeries << pR << '\t' << theta[0] << '\t';
-	learnSeries << theta[1] << '\t' << outbr << '\t';
+	learnSeries << theta[1] << '\t' ;
 	learnSeries << cleanOptionsT[0] << '\t' << cleanOptionsT[1] << '\t';
 	learnSeries << cleanOptionsT[choiceT] << '\t';
 	//cout << cleanOptionsT[0] << '\t' << cleanOptionsT[1] << '\t' << choiceT << '\t';
@@ -501,11 +516,11 @@ class FAATyp1 :public agent{			// Fully Aware Agent (FAA)
 	virtual void updateThet(int curState) {
 		if (curState == 0) {
 			if (cleanOptionsT[choiceT] == visitor) {
-				theta[0] += alphath*delta*(1 - piV);
-				theta[1] -= alphath*delta*(1 - piV);
+				theta[0] += alphas[curState]*delta*(1 - piV);
+				theta[1] -= alphas[curState]*delta*(1 - piV);
 			} else {
-				theta[0] -= alphath*delta*piV;
-				theta[1] += alphath*delta*piV;
+				theta[0] -= alphas[curState]*delta*piV;
+				theta[1] += alphas[curState]*delta*piV;
 			}
 			piV = logist();
 		}
@@ -537,19 +552,19 @@ class PAATyp1 :public agent{				// Partially Aware Agent (PAA)
 			//int notchoice = (choiceT == 0);
 			if (curStatAct == 1) {
 				if (cleanOptionsT[0] == cleanOptionsT[1]) {
-					theta[0] += alphaThNch*alphath*delta*(1 - piV);
+					theta[0] += alphaThNch*alphas[curStatAct]*delta*(1 - piV);
 				}
 				else {
-					theta[0] += alphath*delta*(1 - piV);
+					theta[0] += alphas[curStatAct]*delta*(1 - piV);
 				}
 				
 			}
 			else {
 				if (cleanOptionsT[0] == cleanOptionsT[1]) {
-					theta[1] += alphaThNch*alphath*delta*piV;
+					theta[1] += alphaThNch*alphas[curStatAct]*delta*piV;
 				}
 				else {
-					theta[1] += alphath*delta*piV;
+					theta[1] += alphas[curStatAct]*delta*piV;
 				}
 				
 			}
@@ -605,17 +620,16 @@ void initializeIndFile(ofstream &indOutput, agent &learner,
 	folder.erase(0, 6).append("_");
 	cout << folder << '\t' << learner.getLearnPar(alphaPar) << '\t';
 	cout << learner.getLearnPar(gammaPar) << '\t';
-	cout << learner.getLearnPar(netaPar) << '\t'; 
-	cout << learner.getLearnPar(alphathPar) << endl;
+	cout << learner.getLearnPar(netaPar) << '\t' << endl;
 	namedir.append(folder);
 	string IndFile = create_filename(namedir, learner, param, pV,pR);
 	indOutput.open(IndFile.c_str());
 	
 	indOutput << "Training" << '\t' << "Age" << '\t' << "Alpha" << '\t';
-	indOutput << "Gamma" << '\t' <<  "Neta" << '\t';
-	indOutput << "AlphaTh" << '\t' << "pV" << '\t' << "pR" << '\t';
+	indOutput << "Gamma" << '\t' <<  "Neta" << '\t' << "propAlphUp" << '\t';
+	indOutput <<  "pV" << '\t' << "pR" << '\t';
 	indOutput << "ThetaV" << '\t' << "ThetaR" << '\t';
-	indOutput << "Outbr" << '\t' << "Client1" << '\t' << "Client2" << '\t';
+	indOutput <<  "Client1" << '\t' << "Client2" << '\t';
 	indOutput << "Choice" << '\t' << "Current.Reward" << '\t';
 	indOutput << "Cum.Reward" << '\t' << "Neg.Reward" << '\t';
 
@@ -706,8 +720,8 @@ int main(int argc, _TCHAR* argv[]){
 			double tmpRes = *itResProb;
 			double tmpVis = *itVisProb;
 			if (tmpRes + tmpVis <= 1) {
-				for (json::iterator italTh = param["alphaThRange"].begin();
-					italTh != param["alphaThRange"].end(); ++italTh) {
+				for (json::iterator italTh = param["propAlphUp"].begin();
+					italTh != param["propAlphUp"].end(); ++italTh) {
 					for (json::iterator itn = param["netaRange"].begin();
 						itn != param["netaRange"].end(); ++itn) {
 						for (json::iterator itg = param["gammaRange"].begin();
@@ -742,11 +756,11 @@ for (int k = 0; k < numlearn; ++k) {
 			// or every printGen rounds
 			if (j > totRounds*0.9) {
 				learners[k]->printIndData(printTest, i,
-					outbr, *itVisProb, *itResProb);
+					*itVisProb, *itResProb);
 			}
 			else if (j%printGen == 0) {
 				learners[k]->printIndData(printTest, i,
-					outbr, *itVisProb, *itResProb);
+					*itVisProb, *itResProb);
 			}
 		}
 		learners[k]->rebirth(init);

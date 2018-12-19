@@ -119,7 +119,7 @@ file2timeInter<-function(filename,interV,maxAge=-2){
   tmptimeInter<-
     tmp[fullRVoptions==TRUE,.(Prob.RV.V=mean(Choice)),
       by=.(Interv=floor(Age/interV),Training,Alpha,
-           Gamma,Neta,Outbr,AlphaTh)]
+           Gamma,Neta,Outbr)]
   if(length(extPar)>0){
     tmptimeInter[,eval(extPar):=parVal]
   }

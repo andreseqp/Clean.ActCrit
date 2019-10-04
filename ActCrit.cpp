@@ -40,9 +40,9 @@ Start date:
 #include <iostream>
 #include <fstream>
 #include "tchar.h"
-#include "M:\\Routines\\C++\\RandomNumbers\\random.h"
+#include "../../Cpp/Routines/C++/RandomNumbers/random.h"
 //H for house pc, E for laptop, M for office
-#include "D:\\quinonesa\\Dropbox\C++\\json.hpp"       
+#include "../../Cpp/json.hpp"       
 // Header for reading and using JSON files see https://github.com/nlohmann/json
 
 

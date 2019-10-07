@@ -19,9 +19,10 @@ getFilelist<-
            # list of values matching the list in 
            # listparam
            ){
-  posAgen<-c("PAA","FAA","DP")
+  posAgen<-c("PAA","FAA","DP","p1")
   listRaw<-list.files(folder,recursive = TRUE)
-  fullList<-vector("list",3)
+  listRaw<-grep(".txt",listRaw,value = TRUE)
+  fullList<-vector("list",4)
   names(fullList)<-posAgen
   if(length(listparam)!=length(values)){
     # parameter and value lists must be the same length
@@ -128,7 +129,7 @@ file2timeInter<-function(filename,interV,maxAge=-2){
 
 # Computes RV preference for a certain final proportion of the learning trial --
 
-file2lastProp<-function(filename,prop,outPar=NULL)
+file2lastProp<-function(filename,prop,outPar=NULL,genfold=NULL)
 {
   if(length(outPar)>0){
     extPar<-grep(outPar,strsplit(filename,"_/")[[1]],
@@ -136,7 +137,8 @@ file2lastProp<-function(filename,prop,outPar=NULL)
     parVal<-as.numeric(gsub("[[:alpha:]]",extPar,replacement = ''))
     extPar<-gsub("[[:digit:]]",extPar,replacement = '')
   }
-  tmp<-fread(filename)
+  if(is.null(genfold)) tmp<-fread(here("Simulations",filename))
+  else tmp<-fread(here("Simulations",genfold,filename))
   # resPtmp<-as.numeric(gsub("[[:alpha:]]", "", grep('pR',strsplit(filename,'_')[[1]],value=TRUE)))*0.1
   # visPtmp<-as.numeric(gsub("[[:alpha:]]", "", grep('pV',strsplit(filename,'_')[[1]],value=TRUE)))*0.1
   # tmp$resProb<-rep(resPtmp,dim(tmp)[1])

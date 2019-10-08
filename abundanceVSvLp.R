@@ -9,7 +9,7 @@ source(here("loadData.R"))
 source(here("..","..","R_files","posPlots.R"))
 source(here("..","..","R_files","vioplot.R"))
 source(here("..","..","R_files",'ternaryAEQP.R'))
-source(paste(projDir,"data2interp.R",sep=""))
+source(here("data2interp.R"))
 library('plotrix')
 library('akima')
 library("vcd")
@@ -30,7 +30,7 @@ rm(list=ls()[grepl('data.frame', sapply(ls(), function(x) class(get(x))))])
 
 
 
-param<-getParam(here("Simulations","AbundLvp"),listparam = listPar,values = listVal)
+# param<-getParam(here("Simulations","AbundLvp"),listparam = listPar,values = listVal)
 
 FIAfirstReach<-do.call(rbind,lapply(
   getFilelist(here("Simulations","AbundLvp"),listPar,listVal)$FIA,
@@ -71,10 +71,13 @@ FIAinterpData.Neg<-AbundLeavData2interp(FIAlastQuarData[Neta==1&Gamma==0],
 
 # Plot real data prob ----------------------------------------------------------
 
+png(here("Simulations","AbundLvp_","levelPlotReal.png"),
+    width = 1000 , height = 700)
+
 par(yaxt='s')
 plot.new()
-par(plt=posPlot(numplotx = 2,idplotx = 1)
-    -c(0,posPlot(15,idplotx = 1)[2]-posPlot(15,idplotx = 1)[1],0,0))
+par(plt=c(posPlot(numplotx = 5,idplotx = 1)[1],
+          posPlot(numplotx = 5,idplotx = 2)[2:4]))
 with(FIA.stats[Neta==0&Gamma==0.8],{
   plot((1-pA),Vlp,col = paletteMeans(100)[findInterval(meanProb,seq(min(meanProb),
                                                               max(meanProb),
@@ -86,8 +89,8 @@ with(FIA.stats[Neta==0&Gamma==0.8],{
   #           idplotx = 4,idploty = 3)
 })
 
-par(plt=posPlot(numplotx = 2,idplotx = 2)-
-      c(0,posPlot(15,idplotx = 1)[2]-posPlot(15,idplotx = 1)[1],0,0),new=TRUE)
+par(plt=c(posPlot(numplotx = 5,idplotx = 3)[1],
+          posPlot(numplotx = 5,idplotx = 4)[2:4]),new=TRUE)
 with(FIA.stats[Neta==1&Gamma==0],{
   plot((1-pA),Vlp,col = paletteMeans(100)[findInterval(meanProb,seq(min(meanProb),
                                                                     max(meanProb),
@@ -96,21 +99,23 @@ with(FIA.stats[Neta==1&Gamma==0],{
        ylab="",yaxt="n");
   color.bar.aeqp(paletteMeans(100),min =round(min(meanProb),2),
                  max = round(max(meanProb),2),nticks = 5,numplotx = 10,numploty = 1,
-                 idplotx = 10,idploty = 1,locAxis = 4)
+                 idplotx = 9,idploty = 1,locAxis = 4)
 })
+
+dev.off()
 
 # png(paste(dirfig,"triplex_tau10_neta0_Outbr0.png",sep=""),width=1000,height=1000)
 
 # Plot Interpolated data -------------------------------------------------------
 
-# png(paste("d:/quinonesa/Dropbox/Neuchatel/Results/actCrit/",listPar[1],"_",
-#     listVal[1],"future.png",sep=""),
-#     width = 700 , height = 700)
+png(here("Simulations","AbundLvp_","levelPlotInterp.png"),
+    width = 1000 , height = 700)
 
 colorbreaksMeans<-seq(0.45,1,length=100)
 
 plot.new()
-par(plt=posPlot(numplotx = 2,idplotx = 1))
+par(plt=c(posPlot(numplotx = 5,idplotx = 1)[1],
+          posPlot(numplotx = 5,idplotx = 2)[2:4]))
 with(FIAinterpData,{
   plot((1-pAbs),VLeavProb,
               col = paletteMeans(100)[findInterval(Prob.RV.V,
@@ -130,7 +135,8 @@ with(FIAinterpData,{
 # png(paste("d:/quinonesa/Dropbox/Neuchatel/Results/actCrit/",listPar[1],"_",
 #           listVal[1],"punish.png",sep=""),
 #     width = 700 , height = 700)
-par(plt=posPlot(numplotx = 2,idplotx = 2),new=TRUE)
+par(plt=c(posPlot(numplotx = 5,idplotx = 3)[1],
+          posPlot(numplotx = 5,idplotx = 4)[2:4]),new=TRUE)
 with(FIAinterpData.Neg,{
   plot((1-pAbs),VLeavProb,
               col = paletteMeans(100)[findInterval(Prob.RV.V,
@@ -143,7 +149,7 @@ with(FIAinterpData.Neg,{
   color.bar.aeqp(paletteMeans(100),min =min(colorbreaksMeans),
                  max = max(colorbreaksMeans),nticks = 3,
                  title = "",cex.tit = 1,numplotx = 10,
-                 numploty = 1,idplotx = 10,idploty = 1,locAxis = 4)
+                 numploty = 1,idplotx = 9,idploty = 1,locAxis = 4)
 })
 
 dev.off()

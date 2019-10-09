@@ -7,7 +7,6 @@ library(here)
 source(here("aesth_par.R"))
 source(here("loadData.R"))
 source(here("..","..","R_files","posPlots.R"))
-source(here("..","..","R_files","vioplot.R"))
 source(here("..","..","R_files",'ternaryAEQP.R'))
 source(here("data2interp.R"))
 library('plotrix')
@@ -31,17 +30,6 @@ rm(list=ls()[grepl('data.frame', sapply(ls(), function(x) class(get(x))))])
 
 
 # param<-getParam(here("Simulations","AbundLvp"),listparam = listPar,values = listVal)
-
-FIAfirstReach<-do.call(rbind,lapply(
-  getFilelist(here("Simulations","AbundLvp"),listPar,listVal)$FIA,
-                                    loadDataFirstReach,0.7))
-
-FIAfrStats<-FIAfirstReach[,.(firstReach=mean(firstReach),
-                             Prob.RV.V=mean(Prob.RV.V)),
-                          by=.(Neta,Gamma,pR,pV,Outbr)]
-
-FIAfrStats$notProb<-round(1-FIAfrStats$pR-FIAfrStats$pV,1)
-
 
 
 FIAlastQuarData<-do.call(rbind,lapply(
@@ -119,9 +107,7 @@ par(plt=c(posPlot(numplotx = 5,idplotx = 1)[1],
 with(FIAinterpData,{
   plot((1-pAbs),VLeavProb,
               col = paletteMeans(100)[findInterval(Prob.RV.V,
-                                                   seq(min(Prob.RV.V),
-                                                       max(Prob.RV.V),
-                                                       length=100))],
+                                                   colorbreaksMeans)],
               main="",cex=1,cex.lab = 2,pch=20,
        xlab="Cleaner abundance",
        ylab="Visitor leaving probability")
@@ -140,9 +126,7 @@ par(plt=c(posPlot(numplotx = 5,idplotx = 3)[1],
 with(FIAinterpData.Neg,{
   plot((1-pAbs),VLeavProb,
               col = paletteMeans(100)[findInterval(Prob.RV.V,
-                                                   seq(min(Prob.RV.V),
-                                                       max(Prob.RV.V),
-                                                       length=100))],
+                                                   colorbreaksMeans)],
               main="",cex=1,cex.lab = 2,pch=20,xlab="Cleaner abundance",
        ylab="",yaxt="n");
   
@@ -154,7 +138,7 @@ with(FIAinterpData.Neg,{
 
 dev.off()
 
-# Plot  real Speed data -----------------------------------------------------------------------
+  # Plot  real Speed data -----------------------------------------------------------------------
 
 
 with(FIAfrStats[Gamma==0.8&Neta==0],{

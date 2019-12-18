@@ -12,6 +12,8 @@ source(here("data2interp.R"))
 library('plotrix')
 library('akima')
 library("vcd")
+library("visreg")
+
 
 # Delete data reset environment ---------------------------------------------------------
 
@@ -51,10 +53,10 @@ FIA.stats$pA<-round(1-FIA.stats$pR-FIA.stats$pV,1)
 # Data interpolations ---------------------------------------------------------
 
 FIAinterpData<-AbundLeavData2interp(FIAlastQuarData[Neta==0&Gamma==0.8],
-                                Var2int = "Prob.RV.V",npoints = 1000)
+                                Var2int = "Prob.RV.V",npoints = 100)
 
 FIAinterpData.Neg<-AbundLeavData2interp(FIAlastQuarData[Neta==1&Gamma==0],
-                                    Var2int = "Prob.RV.V",npoints = 1000)
+                                    Var2int = "Prob.RV.V",npoints = 100)
 
 
 # Plot real data prob ----------------------------------------------------------
@@ -117,6 +119,19 @@ with(FIAinterpData,{
 #                  numploty = 5,idplotx = 5,idploty = 4)
 })
 # dev.off()
+
+interpFIA<-with(FIAlastQuarData[Neta==0&Gamma==0.8],
+     {interp(x=(1-pA),y=Vlp,z=Prob.RV.V,duplicate = "mean",
+             nx=50,ny=50)})
+interpFIA.Neg<-with(FIAlastQuarData[Neta==1&Gamma==0],
+                {interp(x=(1-pA),y=Vlp,z=Prob.RV.V,duplicate = "mean",
+                        nx=50,ny=50)})
+
+filled.contour(y=interpFIA$y,x=interpFIA$x,
+               z=interpFIA$z)
+filled.contour(y=interpFIA.Neg$y,x=interpFIA.Neg$x,
+               z=interpFIA.Neg$z,color.palette =paletteMeans)
+
 
 # png(paste("d:/quinonesa/Dropbox/Neuchatel/Results/actCrit/",listPar[1],"_",
 #           listVal[1],"punish.png",sep=""),

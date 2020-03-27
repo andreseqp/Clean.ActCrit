@@ -20,36 +20,16 @@ param<-list(totRounds=20000,ResReward=1,VisReward=1,
             ResProbLeav=0,VisProbLeav=1,negativeRew=-0.5,scenario=0,
             inbr=0,outbr=0,trainingRep=30,forRat=0.0,
             alphaT=0.01,printGen=1,seed=1, gammaRange=c(0,0.8),
-            netaRange=c(0,1),alphaThRange=c(0.01),numlearn=1,
+            netaRange=c(0,1),alphaThRange=c(0.02),numlearn=1,
             alphaThNch=0.01,
             folderL=paste0(here(simsDir),"AbundLvp/"))
 
-clustfolder="/hpcfs/home/a.quinones/Cleaner/AbundLvp_/"
+clustfolderAnd="/hpcfs/home/a.quinones/Cleaner/AbundLvp_/"
+
+clustfolderNeu="/home/ubuntu/Cleaner/AbundLvp_/"
 
 setwd(paste("./",simsDir,sep=""))
 
-# function that creates new folders for simulations results --------------------
-check_create.dir<-function(folder,param,values){
-  setwd(folder)
-  listfolders<-paste(param,values,"_",sep = "")  
-  currFolders<-lapply(listfolders,dir.exists)
-  if(sum(currFolders>0)){
-    warning("At least one of the folders already exists \n Please check",
-            immediate. = TRUE)
-    print(cbind(listfolders,currFolders))
-    ans<-readline("Want to continue?")
-    if(substr(ans, 1, 1) == "y"){
-      lapply(listfolders,dir.create)
-      return(listfolders)
-    }
-    else{
-      return(listfolders)
-    }
-  }else{
-    lapply(listfolders,dir.create)
-    return(listfolders)
-  }
-}
 
 # Arrays with the values of external parameters
 rangLeav<-seq(0,1,by = 0.1)
@@ -71,7 +51,7 @@ listfolders<-check_create.dir(paste(here(simsDir),"/AbundLvp_/",sep=""),
 for (i in 1:10) {
   for(j in 1:9){
     param$folderL<-paste(here(simsDir),"/AbundLvp_/",listfolders[i],"/",sep="")
-    param$folder<-paste0(clustfolder,listfolders[i],"/")
+    param$folder<-param$folderL
     param$ResProb<-c((1-rangAbund[j])/2)
     param$VisProb<-c((1-rangAbund[j])/2)
     param$VisProbLeav<-rangLeav[i]
@@ -88,7 +68,7 @@ for (i in 1:10) {
         # ans<-readline("Want to continue?")
         # if(substr(ans, 1, 1) == "y"){
           write(outParam,paste(param$folderL,fileName,sep = "/"))
-          jobfile(param$folderL,listfolders[i],jobid = j)
+          # jobfile(param$folderL,listfolders[i],jobid = j)
         # }
         # else{
         #   jobfile(param$folderL,listfolders[i])
@@ -97,7 +77,7 @@ for (i in 1:10) {
     }
     else{
       write(outParam,paste(param$folderL,fileName,sep = ""))
-      jobfile(param$folderL,listfolders[i],jobid = j)
+      # jobfile(param$folderL,listfolders[i],jobid = j)
     }
     # Uncomment for running simulations directly through R:
     # system(paste(exedir,

@@ -182,3 +182,27 @@ loadDataFirstReach<-function(filename,bound){
                     by=.(Training,Gamma,Neta,pR,pV,Outbr)]
   return(tmpFirstR)
 }
+
+
+# function that creates new folders for simulations results --------------------
+check_create.dir<-function(folder,param,values){
+  setwd(folder)
+  listfolders<-paste(param,values,"_",sep = "")  
+  currFolders<-lapply(listfolders,dir.exists)
+  if(sum(currFolders>0)){
+    warning("At least one of the folders already exists \n Please check",
+            immediate. = TRUE)
+    print(cbind(listfolders,currFolders))
+    ans<-readline("Want to continue?")
+    if(substr(ans, 1, 1) == "y"){
+      lapply(listfolders,dir.create)
+      return(listfolders)
+    }
+    else{
+      return(listfolders)
+    }
+  }else{
+    lapply(listfolders,dir.create)
+    return(listfolders)
+  }
+}

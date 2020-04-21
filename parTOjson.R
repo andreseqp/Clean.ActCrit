@@ -14,19 +14,19 @@ exedir<-'/./ActCrit.exe'
 fileName<-"parameters.json"
 
 # Baseline parameter values
-param<-list(totRounds=20000,ResReward=1,VisReward=1,
+param<-list(totRounds=30000,ResReward=1,VisReward=1,
             ResProb=c(0.2),
             VisProb=c(0.2),
             ResProbLeav=0,VisProbLeav=1,negativeRew=-0.5,scenario=0,
             inbr=0,outbr=0,trainingRep=30,forRat=0.0,
             alphaT=0.01,printGen=1,seed=1, gammaRange=c(0,0.8),
-            netaRange=c(0,1),alphaThRange=c(0.02),numlearn=1,
+            netaRange=c(0,1),alphaThRange=c(0.01),numlearn=1,
             alphaThNch=0.01,
-            folderL=paste0(here(simsDir),"AbundLvp/"))
+            folderL=paste0(here(simsDir),"AbundLvpLong1/"))
 
 clustfolderAnd="/hpcfs/home/a.quinones/Cleaner/AbundLvp_/"
 
-clustfolderNeu="/home/ubuntu/Cleaner/AbundLvp_/"
+clustfolderNeu=paste0("/home/ubuntu/Cleaner/","AbundLvpLong1_/")
 
 setwd(paste("./",simsDir,sep=""))
 
@@ -38,10 +38,10 @@ rangScen<-c(0,1,2,3)
 rangAlphNC<-c(0,0.5,1)
 
 # General folder for analysis
-check_create.dir(here(simsDir),param = rep("AbundLvp",1),
+check_create.dir(here(simsDir),param = rep("AbundLvpLong1",1),
                  values = "")
 
-listfolders<-check_create.dir(paste(here(simsDir),"/AbundLvp_/",sep=""),
+listfolders<-check_create.dir(paste(here(simsDir),"/AbundLvpLong1_/",sep=""),
                                     param = rep("Vlp",10),
                               values = rangLeav)
 
@@ -50,8 +50,8 @@ listfolders<-check_create.dir(paste(here(simsDir),"/AbundLvp_/",sep=""),
 
 for (i in 1:10) {
   for(j in 1:9){
-    param$folderL<-paste(here(simsDir),"/AbundLvp_/",listfolders[i],"/",sep="")
-    param$folder<-param$folderL
+    param$folderL<-paste(here(simsDir),"/AbundLvpLong1_/",listfolders[i],"/",sep="")
+    param$folder<-paste0(clustfolderNeu,listfolders[i],"/")
     param$ResProb<-c((1-rangAbund[j])/2)
     param$VisProb<-c((1-rangAbund[j])/2)
     param$VisProbLeav<-rangLeav[i]

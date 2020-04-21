@@ -2,6 +2,8 @@
 
 # Define Colours -------------------------------------------------------
 
+library("wesanderson")
+
 colours <- c(rgb(red = .0, green = 0, blue = 0.8, alpha = 0.5),
              rgb(red = .8, green = 0.8, blue = 0, alpha = 0.5))
 
@@ -18,4 +20,6 @@ paletteMeans <- colorRampPalette(c('#d73027','#fc8d59','#fee090',
 
 paletteVar <- colorRampPalette(c('#d8b365','#f5f5f5','#5ab4ac'),alpha=TRUE)
 
+
+zegniPal <- wes_palette("Zissou1",100, type = "continuous")
 

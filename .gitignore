@@ -2,10 +2,10 @@
 .Rhistory
 .RData
 .Ruserdata
-ActCrit.exe
-ActCrit.iobj
-ActCrit.ipdb
-ActCrit.pdb
+*.exe
+*.iobj
+*.ipdb
+*.pdb
 messages.txt
 BaseLine.png
 /Simulations

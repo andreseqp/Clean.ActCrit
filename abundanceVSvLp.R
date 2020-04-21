@@ -3,15 +3,16 @@
 # Load libraries and external functions -----------------------------------
 
 library(here)
-
+here()
 source(here("aesth_par.R"))
 source(here("loadData.R"))
-source(here("..","..","R_files","posPlots.R"))
-source(here("..","..","R_files",'ternaryAEQP.R'))
+source(here("..","R_files","posPlots.R"))
+source(here("..","R_files",'ternaryAEQP.R'))
 source(here("data2interp.R"))
 library('plotrix')
 library('akima')
 library("vcd")
+library("ggplot2")
 library("visreg")
 
 
@@ -24,6 +25,9 @@ rm(list=ls()[grepl('data.frame', sapply(ls(), function(x) class(get(x))))])
 
 # Load Data FIA --------------------------------------------------------------------------------------
 
+scenario<-"AbundLvp"
+
+simDir<-"h:/Neuch_simulations/AbundLvp_/"
 
 (listPar<-rep("Vlp",10))
 
@@ -33,11 +37,14 @@ rm(list=ls()[grepl('data.frame', sapply(ls(), function(x) class(get(x))))])
 
 # param<-getParam(here("Simulations","AbundLvp"),listparam = listPar,values = listVal)
 
+# when sims are at the project folder
+# FIAlastQuarData<-do.call(rbind,lapply(
+#   getFilelist(here("Simulations",paste0(scenario,"_")),
+#               listPar,listVal)$p1,file2lastProp,0.75,outPar="Vlp"))
 
 FIAlastQuarData<-do.call(rbind,lapply(
-  getFilelist(here("Simulations","AbundLvp_"),
-              listPar,listVal)$p1,file2lastProp,0.75,outPar="Vlp",
-  genfold="AbundLvp_"))
+  getFilelist(simDir,
+              listPar,listVal)$p1,file2lastProp,0.75,outPar="Vlp"))
 
 FIAlastQuarData[,pA:=1-pR-pV]
 
@@ -61,7 +68,7 @@ FIAinterpData.Neg<-AbundLeavData2interp(FIAlastQuarData[Neta==1&Gamma==0],
 
 # Plot real data prob ----------------------------------------------------------
 
-png(here("Simulations","AbundLvp_","levelPlotReal.png"),
+png(here("Simulations",paste0(scenario,"_"),"levelPlotReal.png"),
     width = 1000 , height = 700)
 
 par(yaxt='s')
@@ -98,7 +105,7 @@ dev.off()
 
 # Plot Interpolated data -------------------------------------------------------
 
-png(here("Simulations","AbundLvp_","levelPlotInterp.png"),
+png(here("Simulations",paste0(scenario,"_"),"levelPlotInterp.png"),
     width = 1000 , height = 700)
 
 colorbreaksMeans<-seq(0.45,1,length=100)
@@ -110,7 +117,7 @@ with(FIAinterpData,{
   plot((1-pAbs),VLeavProb,
               col = paletteMeans(100)[findInterval(Prob.RV.V,
                                                    colorbreaksMeans)],
-              main="",cex=1,cex.lab = 2,pch=20,
+              main="",cex=1,cex.lab = 2,pch=20,ylim=c(0,0.2),
        xlab="Cleaner abundance",
        ylab="Visitor leaving probability")
 #   color.bar.aeqp(paletteMeans(100),min =round(min(Prob.RV.V),2),
@@ -126,12 +133,31 @@ interpFIA<-with(FIAlastQuarData[Neta==0&Gamma==0.8],
 interpFIA.Neg<-with(FIAlastQuarData[Neta==1&Gamma==0],
                 {interp(x=(1-pA),y=Vlp,z=Prob.RV.V,duplicate = "mean",
                         nx=50,ny=50)})
+str(FIAinterpData)
+
+FIA_fut_plot<-ggplot(FIAinterpData,aes(pAbs,VLeavProb,z=Prob.RV.V))+geom_contour_filled()+
+  labs(x="Probability of absence")+ 
+  ylab("Probability of visitors \n swimming away if not serviced")+
+  guides(fill = guide_colourbar(barwidth = 0.5, barheight = 10,title = NULL))+
+  theme(legend.position="none")+
+  ylim(0,0.2)+
+  theme(panel.border = element_rect(colour = "black", fill=NA, size=0.5),
+        axis.title.x=element_text(margin=margin(15)))
++
+  scale_fill_gradientn(colors=zegniPal,limits=c(0,1))
+
+  
+FIA_fut_plot
+
 
 filled.contour(y=interpFIA$y,x=interpFIA$x,
-               z=interpFIA$z)
+               z=interpFIA$z,ylim = c(0,0.2),color.palette =paletteMeans,plot.type="gg")
+persp(y=interpFIA$y,x=interpFIA$x,
+               z=interpFIA$z,
+      col=paletteMeans(100)[findInterval(z,colorbreaksMeans)])
 filled.contour(y=interpFIA.Neg$y,x=interpFIA.Neg$x,
-               z=interpFIA.Neg$z,color.palette =paletteMeans)
-
+               z=interpFIA.Neg$z,color.palette =paletteMeans,ylim = c(0,0.2))
+str(interpFIA)
 
 # png(paste("d:/quinonesa/Dropbox/Neuchatel/Results/actCrit/",listPar[1],"_",
 #           listVal[1],"punish.png",sep=""),

@@ -39,7 +39,8 @@ Start date:
 #include <math.h>
 #include <iostream>
 #include <fstream>
-#include "tchar.h"
+#include <omp.h>
+// #include "tchar.h"
 #include "../Cpp/Routines/C++/RandomNumbers/random.h"
 //H for house pc, E for laptop, M for office
 #include "../Cpp/json.hpp"       
@@ -87,22 +88,22 @@ public:
 	//otherwise trigger an error
 	void rebirth(double initVal);																								
 	// Function to reset private variables in an individual
-	void agent::getNewOptions(client newOptions[], int &idNewOptions, 
+	void getNewOptions(client newOptions[], int &idNewOptions, 
 		double &VisProbLeav, double &ResProbLeav, double &negativeRew, 
 		double &inbr, double &outbr, learnScenario &scenario);
 	// Function to get new clients in the station, when in a natural environment
-	void agent::getExternalOptions(client newOptions[], int &idNewOptions, 
+	void getExternalOptions(client newOptions[], int &idNewOptions, 
 		double &inbr, double &outbr);		
 	// After unattended clients leave or stay, get new clients
-	void agent::getExperimentalOptions();
+	void getExperimentalOptions();
 	// Get new clients in the experimental setting
-	void agent::getMarketExperiment();
+	void getMarketExperiment();
 	// Get new clients in the experimental setting of Olle's model
-	void agent::getExtenededMarket();
+	void getExtenededMarket();
 	// Get new clients in the experimental setting of Noa's experiment
 	void ObtainReward(double &ResReward, double &VisReward);
 	// Get reward
-	double agent::logist();
+	double logist();
 	int mapOptionsDP(client options[], int &choice);			
 	// default function that maps state pairs to indexes in the array 
 	//'values' where values are stored works for DPupdate and for 
@@ -631,7 +632,7 @@ void initializeIndFile(ofstream &indOutput, agent &learner,
 }
 
 
-int main(int argc, _TCHAR* argv[]){
+int main(int argc, char* argv[]){
 
 	mark_time(1);
 

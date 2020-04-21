@@ -2,9 +2,9 @@
 
 # Libraries
 
-library("data.table")
-library("jsonlite")
-library("rlist")
+require("data.table")
+require("jsonlite")
+require("rlist")
 
 # get files --------------------------------------------------------------------
 
@@ -20,7 +20,8 @@ getFilelist<-
            # listparam
            ){
   posAgen<-c("PAA","FAA","DP","p1")
-  listRaw<-list.files(folder,recursive = TRUE)
+  listRaw<-list.files(folder,recursive = TRUE,full.names = TRUE)
+  if(length(listRaw)<1)warning("No files in such location",immediate. = TRUE)
   listRaw<-grep(".txt",listRaw,value = TRUE)
   fullList<-vector("list",4)
   names(fullList)<-posAgen
@@ -137,8 +138,8 @@ file2lastProp<-function(filename,prop,outPar=NULL,genfold=NULL)
     parVal<-as.numeric(gsub("[[:alpha:]]",extPar,replacement = ''))
     extPar<-gsub("[[:digit:]]",extPar,replacement = '')
   }
-  if(is.null(genfold)) tmp<-fread(here("Simulations",filename))
-  else tmp<-fread(here("Simulations",genfold,filename))
+  if(is.null(genfold)) tmp<-fread(filename)
+  else tmp<-fread(here(genfold=filename))
   # resPtmp<-as.numeric(gsub("[[:alpha:]]", "", grep('pR',strsplit(filename,'_')[[1]],value=TRUE)))*0.1
   # visPtmp<-as.numeric(gsub("[[:alpha:]]", "", grep('pV',strsplit(filename,'_')[[1]],value=TRUE)))*0.1
   # tmp$resProb<-rep(resPtmp,dim(tmp)[1])

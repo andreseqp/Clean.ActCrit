@@ -13,44 +13,47 @@ exedir<-'/./ActCrit.exe'
 
 fileName<-"parameters.json"
 
+scenario<-"AbundLvpAlphaTh"
+
 # Baseline parameter values
-param<-list(totRounds=30000,ResReward=1,VisReward=1,
+param<-list(totRounds=20000,ResReward=1,VisReward=1,
             ResProb=c(0.2),
             VisProb=c(0.2),
             ResProbLeav=0,VisProbLeav=1,negativeRew=-0.5,scenario=0,
             inbr=0,outbr=0,trainingRep=30,forRat=0.0,
             alphaT=0.01,printGen=1,seed=1, gammaRange=c(0,0.8),
-            netaRange=c(0,1),alphaThRange=c(0.01),numlearn=1,
+            netaRange=c(0,1),alphaThRange=c(0.01,0.02,0.03),numlearn=1,
+            propfullPrint = 0.7,
             alphaThNch=0.01,
-            folderL=paste0(here(simsDir),"AbundLvpLong1/"))
+            folderL=paste0(here(simsDir),scenario,"_/"))
 
 clustfolderAnd="/hpcfs/home/a.quinones/Cleaner/AbundLvp_/"
 
-clustfolderNeu=paste0("/home/ubuntu/Cleaner/","AbundLvpLong1_/")
+clustfolderNeu=paste0("/home/ubuntu/AC/",scenario,"_/")
 
 setwd(paste("./",simsDir,sep=""))
 
 
 # Arrays with the values of external parameters
-rangLeav<-seq(0,1,by = 0.1)
+rangLeav<-seq(0,0.3,length.out = 20)
 rangAbund<-seq(0.1,0.9,length=9)
 rangScen<-c(0,1,2,3)
 rangAlphNC<-c(0,0.5,1)
 
 # General folder for analysis
-check_create.dir(here(simsDir),param = rep("AbundLvpLong1",1),
-                 values = "")
+check_create.dir(here(simsDir),param = rep(scenario,1),
+                 values = c(""))
 
-listfolders<-check_create.dir(paste(here(simsDir),"/AbundLvpLong1_/",sep=""),
-                                    param = rep("Vlp",10),
-                              values = rangLeav)
+listfolders<-check_create.dir(here("Simulations",paste0(scenario,"_")),
+                              param = rep("Vlp",length(rangLeav)),
+                              values = round(rangLeav,2))
 
 
 # Loop through parameter names and values creating JSONs -----------------------
 
-for (i in 1:10) {
-  for(j in 1:9){
-    param$folderL<-paste(here(simsDir),"/AbundLvpLong1_/",listfolders[i],"/",sep="")
+for (i in 1:length(rangLeav)) {
+  for(j in 1:length(rangAbund)){
+    param$folderL<-paste0(here("Simulations",paste0(scenario,"_"),listfolders[i]),"/")
     param$folder<-paste0(clustfolderNeu,listfolders[i],"/")
     param$ResProb<-c((1-rangAbund[j])/2)
     param$VisProb<-c((1-rangAbund[j])/2)

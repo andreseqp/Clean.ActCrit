@@ -1,0 +1,68 @@
+---
+title: "Cognitive and ecological aspects determine cleaner performance"
+author:
+- Andrés E. Quiñones^[Laboratorio de Biología Evolutiva de Vertebrados, Departamento
+  de Ciencias Biológicas, Universidad de los Andes, Bogotá, Colombia - andresqp@gmail.com]
+- Zegni Triki^[Department of Zoology, Stockholm University, Stockholm, Sweden]
+- Redouan Bshary^[Institute of Biology, University of Neuchâtel, Neuchâtel, Switzerland]
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+output:
+  pdf_document: default
+  word_document: default
+fig_caption: yes
+fontsize: 12pt
+header-includes:
+- \usepackage{float}
+- \usepackage{setspace}\doublespacing
+- \linespread{2}
+- \usepackage{lineno}
+- \linenumbers
+keep_tex: yes
+keywords: My keywords
+linespread: 2
+bibliography: Cleaner_learning.bib
+style: C:\Users\andre\Zotero\styles\behavioral-ecology-and-sociobiology.csl
+spacing: double
+abstract: My abstract which has to be long enough to take multiple lines otherwise
+  one does not see the effect of single-spacing.
+
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction
+
+Cooperation among individuals of the same or different species is ubiquitous in nature. 
+Among individuals of the same species it is the basis for the evolution of  higher 
+forms of biological organization [@maynardsmith_Major_1998]. 
+Among individuals of different species it underlays the biological mechanism for 
+fundamental ecological interactions such as pollination, nitrogen fixation or 
+parasite removal [@begon_Ecology_2006]. However, when cooperation is costly, 
+it is not straigtforward to understand why individuals would be willing to pay that cost [@lehmann_Evolution_2006]. Furthermore, cooperative interactions might open the way for 
+one partner to exploit the other, what prevents this type of exploitation? [@herre_Evolution_1999]
+One reason for cooperating is if the benefits obtained from a partner´s 
+cooperative action are dependent on one's own cooperative act. 
+This dependency can arise, for instance, when cooperative partners
+choose who they interact with depending on the level of cooperation they offer. 
+In line with this, cooperative interactions can be viewed as a market-like situation 
+where partner choice mediates the level of exchange between traders [@hammerstein_Biological_2016; @leimar_Cooperation_2010; @noe_Biological_1994a]. Empirical evidence shows
+that several iconic examples of cooperation between individuals of different species 
+are indeed mediated by partner choice [@hammerstein_Biological_2016]. Biological market theory highlights 
+that changes in the supply and demand of goods and services determines the value of 
+those commodities, and therefore, can influence partner's actions in the cooperative 
+exchange. For instance, in the marine cleaning mutualism, where cleaner fish 
+_Labroides dimidiatus_ (cleaners) removes ectoparasites from other coral reef fishes (clients) [@cote_Evolution_2000],
+some client species are able to choose among different cleaners, and because of this
+obtain better service [@grutter_Cleaner_2003]. Better services means for clients to have priority when 
+more than one client is available [@bshary_Choosy_2002], and less cheating (when cleaners eat live tissue
+instead of parasites) [@grutter_Cleaner_2003]. However, recent evidence shows that when clients experience
+ecological conditions with low cleaner abundance, they are less likely to use partner
+choice to leverage better service [@triki_Biological_2019]. On the other side, 
+cleaners in those markets with favourable conditions, stop giving priority to choosy clients [@triki_Biological_2019; @triki_Decrease_2018]. 
+
+
+
+
+## Cited literature

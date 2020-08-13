@@ -1,4 +1,4 @@
-// ActCrit.cpp : Defines the entry point for the console application.
+ // ActCrit.cpp : Defines the entry point for the console application.
 //
 /*=============================================================================
 ActCrit.cpp
@@ -22,11 +22,11 @@ types of agent. Fully Aware Agents (FAA) estimate value for
 
 Written by:
 
-Andr?s E. Qui?ones
+Andr�s E. Qui�ones
 Posdoctoral researcher
 Behavioural Ecology Group
 Institute of Biology
-University of Neuch?tel
+University of Neuch�tel
 Switzerland
 
 Start date:
@@ -65,7 +65,7 @@ enum learnScenario {nature, experiment, marketExperiment, ExtendedMarket};
 class agent													// Learning agent
 {
 public:
-	agent(double alphaI, double gammaI, bool netaI, 
+	agent(double alphaI, double gammaI, double negRewardI, 
 		double alphathI, double initVal);
 	// constructor providing values for the learning parameters
 	~agent();																
@@ -74,8 +74,8 @@ public:
 	// function that updates the value of state-action pairs according to 
 	//current reward and estimates of future values
 	void act(client newOptions[], int &idNewOptions, double &VisProbLeav, 
-		double &ResProbLeav, double &VisReward, double &ResReward, double &inbr, 
-		double &outbr, double &negativeRew, learnScenario &scenario);
+		double &ResProbLeav, double VisReward, double ResReward, double inbr, 
+		double outbr,  learnScenario scenario);
 		// function where the agent takes the action, gets reward, see new 
 		//state and chooses future action
 	void printIndData(ofstream &learnSeries, int &seed, double &outbr, 
@@ -86,10 +86,18 @@ public:
 	void checkChoice();
 	// Check that the choice taken is among one of the options, 
 	//otherwise trigger an error
-	void rebirth(double initVal);																								
+	void rebirth(double initVal);		
+	int getstate(bool time) {
+		if (!time) return currState;
+		else return nextState;
+	}
+	bool getChoice(bool time) {
+		if (!time) return choiceT;
+		else return choiceT1;
+	}
 	// Function to reset private variables in an individual
 	void getNewOptions(client newOptions[], int &idNewOptions, 
-		double &VisProbLeav, double &ResProbLeav, double &negativeRew, 
+		double &VisProbLeav, double &ResProbLeav,  
 		double &inbr, double &outbr, learnScenario &scenario);
 	// Function to get new clients in the station, when in a natural environment
 	void getExternalOptions(client newOptions[], int &idNewOptions, 
@@ -132,18 +140,20 @@ protected:
 	double alpha;// speed of learning for estimated values
 	double alphath; // speed of learning for policy parameter
 	double gamma;// importance of future rewards
-	bool neta;	
+	bool neta=1;
+	double negRew_const;
 	// Weight of the negative reward in the total reward obtained by an agent
 	double currentReward; // reward given by current state action pair
 	double cumulReward;	// Cumulative reward
 	int age;
-	double negReward;
+	double negRew_curr; // size of the negative reward in the current time step
+	int currState, nextState;
 };
 
 // Members of agent class
 
 agent::agent(double alphaI = 0.01, double gammaI = 0.5, 
-	bool netaI = 0, double alphathI = 0.01,
+	double negRewardI = 0, double alphathI = 0.01,
 	double initVal = 0){
 // parameterized constructor with defaults
 	theta[0] = 0, theta[1] = 0;
@@ -156,10 +166,10 @@ agent::agent(double alphaI = 0.01, double gammaI = 0.5,
 	// Value of absence starts with reward of 0
 	piV = logist();
 	alpha = alphaI, gamma = gammaI, alphath = alphathI;
-	neta = netaI;
+	negRew_const = negRewardI;
 	cleanOptionsT[0] = absence, cleanOptionsT[1] = absence, choiceT = 0;
 	cleanOptionsT1[0] = absence, cleanOptionsT1[1] = absence, choiceT1 = 0;
-	currentReward = 0, cumulReward = 0;
+	currentReward = 0, cumulReward = 0; negRew_curr = 0;
 	age = 0;
 	countExp = 2;
 }
@@ -223,47 +233,47 @@ void agent::ObtainReward(double &ResReward, double &VisReward)
 }
 
 void agent::getNewOptions(client newOptions[], int &idNewOptions, 
-	double &VisProbLeav, double &ResProbLeav, double &negativeRew, 
-	double &inbr, double &outbr, learnScenario &scenario)
+	double &VisProbLeav, double &ResProbLeav, double &inbr, double &outbr, 
+	learnScenario &scenario)
 {
 	if (choiceT == 0)		// Define the behaviour of the unattended client
 	{
 		if (cleanOptionsT[1] == resident)
 		{
 			if (rnd::uniform() > ResProbLeav) { 
-				cleanOptionsT1[0] = cleanOptionsT[1], negReward = 0; 
+				cleanOptionsT1[0] = cleanOptionsT[1], negRew_curr = 0; 
 			}								
 			// if the unttended client is a resident, it leaves with probability ResPropLeave
-			else { negReward = negativeRew; }
+			else { negRew_curr = negRew_const; }
 		}
 		else if (cleanOptionsT[1] == visitor)
 		{
 			if (rnd::uniform() > VisProbLeav) { 
-				cleanOptionsT1[0] = cleanOptionsT[1], negReward = 0; 
+				cleanOptionsT1[0] = cleanOptionsT[1], negRew_curr = 0; 
 			}
 			// if the unttended client is a visitor, it leaves with probability VisPropLeave
-			else { negReward = negativeRew; }
+			else { negRew_curr = negRew_const; }
 		}
-		else { negReward = 0; }
+		else { negRew_curr = 0; }
 	}
 	else
 	{
 		if (cleanOptionsT[0] == resident)
 		{
 			if (rnd::uniform() > ResProbLeav) { 
-				cleanOptionsT1[0] = cleanOptionsT[0], negReward = 0; 
+				cleanOptionsT1[0] = cleanOptionsT[0], negRew_curr = 0;
 			}	
 			// if the unattended client is a resident, it leaves with probability ResPropLeave
-			else { negReward = negativeRew; }
+			else { negRew_curr = negRew_const; }
 		}
 		else if (cleanOptionsT[0] == visitor)
 		{
 			if (rnd::uniform() > VisProbLeav) { 
-				cleanOptionsT1[0] = cleanOptionsT[0], negReward = 0; }
+				cleanOptionsT1[0] = cleanOptionsT[0], negRew_curr = 0; }
 			// if the unattended client is a visitor, it leaves with probability VisPropLeave
-			else { negReward = negativeRew; }
+			else { negRew_curr = negRew_const; }
 		}
-		else { negReward = 0; }
+		else { negRew_const = 0; }
 	}
 	switch (scenario) {
 	case nature: getExternalOptions(newOptions, idNewOptions, inbr, outbr);
@@ -385,8 +395,8 @@ void agent::getExtenededMarket() {
 }
 
 void agent::act(client newOptions[], int &idNewOptions, double &VisProbLeav, 
-	double &ResProbLeav, double &VisReward, double &ResReward, double &inbr,
-	double &outbr, double &negativeRew, learnScenario &scenario){
+	double &ResProbLeav, double VisReward, double ResReward, double inbr,
+	double outbr, learnScenario scenario){
 	// taking action, obatining reward, seeing new state, choosing future action
 	++age;																		
 	// new time step
@@ -401,17 +411,17 @@ void agent::act(client newOptions[], int &idNewOptions, double &VisProbLeav,
 	choiceT1 = 2;
 	ObtainReward(VisReward,ResReward);
 	getNewOptions(newOptions, idNewOptions, VisProbLeav, ResProbLeav, 
-		negativeRew, inbr, outbr, scenario);
+		 inbr, outbr, scenario);
 	choice();
 }
 
 void agent::update(){																								
 	// change estimated value according to TD error
 	// change policy parameter according to TD error
-	int currState = mapOptions(cleanOptionsT,choiceT);
-	int nextState = mapOptions(cleanOptionsT1, choiceT);
+	currState = mapOptions(cleanOptionsT,choiceT);
+	nextState = mapOptions(cleanOptionsT1, choiceT);
 	delta = currentReward +
-		negReward*neta + gamma*values[nextState] - values[currState];
+		negRew_curr*neta + gamma*values[nextState] - values[currState];
 	// construct the TD error
 	values[currState] += alpha*delta;
 	// update value
@@ -430,7 +440,7 @@ void agent::printIndData(ofstream &learnSeries, int &seed, double &outbr,
 	learnSeries << cleanOptionsT[0] << '\t' << cleanOptionsT[1] << '\t';
 	learnSeries << cleanOptionsT[choiceT] << '\t';
 	//cout << cleanOptionsT[0] << '\t' << cleanOptionsT[1] << '\t' << choiceT << '\t';
-	learnSeries << currentReward << '\t' << cumulReward << '\t' << negReward << '\t';
+	learnSeries << currentReward << '\t' << cumulReward << '\t' << negRew_curr << '\t';
 	//cout << currentReward << '\t' << cumulReward << '\t';
 	for (int j = 0; j < numEst; j++)
 	{
@@ -492,9 +502,9 @@ void agent::choice() {
 
 class FAATyp1 :public agent{			// Fully Aware Agent (FAA)			
 	public:
-	FAATyp1(double alphaI, double gammaI, double netaI, 
-		double alphaThI, double initVal):agent(alphaI, gammaI,  
-			netaI, alphaThI, initVal){
+	FAATyp1(double alphaI, double gammaI, 
+		double alphaThI, double initVal=1):agent(alphaI, gammaI,  
+			alphaThI, initVal){
 	}
 	virtual int mapOptions(client options[], int &choice){
 		return(mapOptionsDP(options, choice));
@@ -588,12 +598,44 @@ string create_filename(std::string filename, agent &individual,
 	filename.append(douts(pV));
 	filename.append("_pR");
 	filename.append(douts(pR));
-	filename.append("_alphaTh");
-	filename.append(douts(individual.getLearnPar(alphathPar)));
+	filename.append("_alphaThNch");
+	filename.append(douts(param["alphaThNch"]));
 	filename.append("_seed");
 	filename.append(itos(param["seed"]));
 	filename.append(".txt");
 	return(filename);
+}
+
+struct data_point {
+	double rel_abund_clean, rel_abund_visitors, rel_abund_resid,prob_Vis_Leav;
+	bool market_exp_success;
+};
+
+struct model_param {
+	double alphaC, alphaA, gamma, negReward;
+};
+
+vector<data_point> read_Data(ifstream &marketData) {
+	// open file
+	if (!marketData.is_open()) {
+		std::cerr << "error: unable to open data file\n";
+		exit(EXIT_FAILURE);
+	}
+	string header;
+	std::getline(marketData,header); // skip header
+	vector<data_point> data_set; 
+	data_point input;
+	for (;;) { // read data
+		marketData >> input.rel_abund_clean;
+		marketData >> input.rel_abund_visitors;
+		marketData >> input.rel_abund_resid;
+		marketData >> input.prob_Vis_Leav;
+		marketData >> input.market_exp_success;
+		data_set.emplace_back(input);
+		// if end of file
+		if (marketData.eof()) 	break;
+	}
+	return(data_set);
 }
 
 void initializeIndFile(ofstream &indOutput, agent &learner, 
@@ -632,16 +674,95 @@ void initializeIndFile(ofstream &indOutput, agent &learner,
 }
 
 
+
+double calculate_fit(const std::vector< data_point>& empData,
+					 const std::vector< data_point>& simData) {
+	double fit = 0.0;
+	for(int i = 0; i < empData.size(); ++i) {
+		double d = empData[i].market_exp_success - simData[i].market_exp_success;
+		fit += d * d;
+	}			 
+	return(fit);
+}
+
+model_param perturb_parameters(model_param focal_param,json &sim_param) {
+	model_param new_param;
+	// also, you can throw in your own random number generator that you want,
+	// I just add a number N(0, sd);
+	new_param.alphaA = focal_param.alphaA + rnd::normal(0, sim_param["sdPert"]);
+	clip_low(new_param.alphaA,0);
+	new_param.alphaC = focal_param.alphaC + rnd::normal(0, sim_param["sdPert"]);
+	clip_low(new_param.alphaC, 0);
+	new_param.gamma = focal_param.gamma + rnd::normal(0, sim_param["sdPert"]);
+	clip_range(new_param.alphaA,0,0.99999);
+	new_param.negReward = focal_param.negReward + rnd::normal(0, sim_param["sdPert"]);
+	clip_low(new_param.negReward, 0);
+	return(new_param);
+}
+
+
+
+std::vector<data_point> do_simulation(//del focal_model,
+	std::vector<data_point> emp_data, model_param focal_comb,
+	json sim_param) {
+	client *clientSet;
+	clientSet = new client[int(sim_param["totRounds"]) * 2];
+	int idClientSet;
+	FAATyp1 Cleaner (focal_comb.alphaC, focal_comb.gamma,focal_comb.alphaA,
+		focal_comb.negReward);
+	std::vector<data_point> sim_data(emp_data.size());
+	double VisPref, init;
+	int countRVopt;
+	// Loop through the data points
+	for (int id_data_point = 0; id_data_point < emp_data.size(); ++id_data_point) {
+		init = focal_comb.gamma*
+			(1 - pow(1 - 
+				emp_data[id_data_point].rel_abund_resid - 
+				emp_data[id_data_point].rel_abund_visitors, 2)) / (1 - focal_comb.gamma);
+		Cleaner.rebirth(init);
+		draw(clientSet, sim_param["totRounds"], 
+			emp_data[id_data_point].rel_abund_resid, 
+			emp_data[id_data_point].rel_abund_visitors);
+		idClientSet = 0;
+		VisPref = 0, countRVopt = 0;
+		// Loop through the learning rounds
+		for (int trial = 0; trial < sim_param["totRounds"]; ++trial) {
+			Cleaner.act(clientSet, idClientSet, emp_data[id_data_point].rel_abund_visitors,
+				emp_data[id_data_point].prob_Vis_Leav, sim_param["VisReward"],
+				sim_param["ResReward"], sim_param["inbr"], sim_param["outbr"],
+				learnScenario(sim_param["scenario"]));
+			Cleaner.update();
+			if (trial > int(sim_param["totRounds"]) * float(sim_param["propfullPrint"])) {
+				if (Cleaner.getstate(0) ==0) {
+					++countRVopt;
+					if(Cleaner.cleanOptionsT[Cleaner.getChoice(0)]==visitor) ++VisPref;
+				}
+			}
+		}
+		sim_data[id_data_point].rel_abund_visitors =
+			emp_data[id_data_point].rel_abund_visitors;
+		sim_data[id_data_point].rel_abund_resid =
+			emp_data[id_data_point].rel_abund_resid;
+		sim_data[id_data_point].rel_abund_clean =
+			emp_data[id_data_point].rel_abund_clean;
+		sim_data[id_data_point].prob_Vis_Leav =
+			emp_data[id_data_point].prob_Vis_Leav;
+		sim_data[id_data_point].market_exp_success = VisPref / countRVopt;
+		Cleaner.rebirth();
+	}
+	delete[] clientSet;
+	return(sim_data);
+}
+
+
 int main(int argc, char* argv[]){
 
 	mark_time(1);
 
 	// Hardwire parameter values:
 	// Only for debugging 
-
 	// input parameters provided by a JSON file with the following
 	// structure:
-
 	/*json param;
 	param["totRounds"]    = 20000;
 	param["ResReward"]    = 1;
@@ -666,112 +787,80 @@ int main(int argc, char* argv[]){
 	param["folder"]       = "S:/quinonesa/Simulations/actCrit/test_/";
 	param["initVal"]      = 1;*/
 
-	
-	ifstream input(argv[1]);
-	if (input.fail()) { cout << "JSON file failed" << endl; }
-	json param = nlohmann::json::parse(input);
+	// reading of parameters: 
+	ifstream parameters(argv[1]);
+	if (parameters.fail()) { cout << "JSON file failed" << endl; }
+	json sim_param = nlohmann::json::parse(parameters);
+
+	ifstream marketData (argv[2]);
 	
 	// Pass on parameters from JSON to c++
-	int const totRounds = param["totRounds"];
-	double ResReward = param["ResReward"];
-	double VisReward = param["VisReward"];
-	double ResProbLeav = param["ResProbLeav"];
-	double VisProbLeav = param["VisProbLeav"];
-	double negativeRew = param["negativeRew"];
-	learnScenario scenario = param["scenario"];
-	double inbr = param["inbr"];
-	double outbr = param["outbr"];
-	int trainingRep = param["trainingRep"];
-	double alphaT = param["alphaT"];
-	int numlearn = param["numlearn"];
-	int printGen = param["printGen"];
-	double propfullPrint = param["propfullPrint"];
-	int seed = param["seed"];
-	const double forRat = param["forRat"];
-	double alphaThNch = param["alphaThNch"];
+	//int const totrounds = param["totrounds"];
+	//double resreward = param["resreward"];
+	//double visreward = param["visreward"];
+	//double resprobleav = param["resprobleav"];
+	//double visprobleav = param["visprobleav"];
+	//double negativerew = param["negativerew"];
+	//learnscenario scenario = param["scenario"];
+	//double inbr = param["inbr"];
+	//double outbr = param["outbr"];
+	//int trainingrep = param["trainingrep"];
+	//double alphat = param["alphat"];
+	//int numlearn = param["numlearn"];
+	//int printgen = param["printgen"];
+	//int seed = param["seed"];
+	//const double forrat = param["forrat"];
+	//double alphathnch = param["alphathnch"];
 	
-	rnd::set_seed(seed);
+	rnd::set_seed(sim_param["seed"]);
 
-	// Set of client queuing for cleaning services
-	client *clientSet;
-	clientSet = new client[totRounds * 2];
-	int idClientSet;
+	// parameters are read!
 
-	// two types of agents
-	agent *learners[2];
+	//enum model {model1, model2, model3, model4}; // Some sort of model choice
+	//model focal_model = sim_param["model"]; // this would be nice
+	
+	vector< data_point > emp_data = read_Data(marketData); 
+	// read the data
 
-	// Iterate vectors with the different parameter combinations
-	for (json::iterator itVisProb = param["VisProb"].begin();
-		itVisProb != param["VisProb"].end(); ++itVisProb) {
-		for (json::iterator itResProb = param["ResProb"].begin();
-			itResProb != param["ResProb"].end(); ++itResProb) {
-			double tmpRes = *itResProb;
-			double tmpVis = *itVisProb;
-			if (tmpRes + tmpVis <= 1) {
-				for (json::iterator italTh = param["alphaThRange"].begin();
-					italTh != param["alphaThRange"].end(); ++italTh) {
-					for (json::iterator itn = param["netaRange"].begin();
-						itn != param["netaRange"].end(); ++itn) {
-						for (json::iterator itg = param["gammaRange"].begin();
-							itg != param["gammaRange"].end(); ++itg) {
-								double tmpGam  = *itg;
-								// set initial value according to the environemntal parameters
-								double init = tmpGam*(1 - pow(1 - tmpRes - tmpVis, 2)) / (1 - tmpGam);
+	model_param init_parameters; 
+	init_parameters.alphaA = 0, init_parameters.alphaC = 0,
+		init_parameters.gamma = 0, init_parameters.negReward = 0;
+	
+	std::ofstream outfile("Data/chain.txt");
+	outfile << "iteration	" << "alpha_actor	" << "alpha_critic	" <<
+		"gamma	" << "negReward	" << endl;
 
-							   // Initialize agents
-								learners[0] = new PAATyp1(alphaT, *itg, *itn, 
-									*italTh, init, alphaThNch);
-								learners[1] = new FAATyp1(alphaT, *itg, *itn, 
-									*italTh, init);
-								// output of learning trials
-								ofstream printTest;
-// Loop through types of agents
-for (int k = 0; k < numlearn; ++k) {
-    initializeIndFile(printTest, *learners[k],
-	param, *itVisProb, *itResProb);
-    // Loop through the number of replicates
-	for (int i = 0; i < trainingRep; i++) {
-		draw(clientSet, totRounds, *itResProb, *itVisProb);
-		idClientSet = 0;
-		// Loop through the trial rounds
-		for (int j = 0; j < totRounds; j++) {
-			learners[k]->act(clientSet, idClientSet,
-				VisProbLeav, ResProbLeav, VisReward,
-				ResReward, inbr, outbr, negativeRew,
-				scenario);
-			learners[k]->update();
-			// print the last tenth of the interations
-			// or every printGen rounds
-			if (j > totRounds*propfullPrint) {
-				learners[k]->printIndData(printTest, i,
-					outbr, *itVisProb, *itResProb);
-			}
-			else if (j%printGen == 0) {
-				learners[k]->printIndData(printTest, i,
-					outbr, *itVisProb, *itResProb);
-			}
+	// some sort of combination
+	
+	// we calculate the fit of the starting point, first we simulate data using the initial parameters
+	// we also pass on the empirical data, to use the x and y coordinates.
+	std::vector< data_point > simulated_data = 
+		do_simulation(//focal_model
+			emp_data, init_parameters, sim_param);
+
+	double fit = calculate_fit(emp_data, simulated_data); // function that calculates fit
+
+	// some kind of way to generate a number from a uniform distribution
+		
+	model_param focal_param = init_parameters;
+	for(int r = 0; r < sim_param["chain_length"]; ++r) {  // 
+		model_param new_param = perturb_parameters(focal_param,sim_param);
+		simulated_data = do_simulation(//focal_model, 
+			emp_data, new_param, sim_param);
+		double new_fit = calculate_fit(emp_data, simulated_data); 
+		double ratio = fit / new_fit;  // better fit is smaller, so ratio is > 1, so accept all.
+		if( rnd::uniform() < ratio) {
+			focal_param = new_param;
+			fit = new_fit;
 		}
-		learners[k]->rebirth(init);
+		outfile << r << " ";
+		outfile << focal_param.alphaA << "\t"
+			<< focal_param.alphaC << "\t"
+			<< focal_param.gamma << "\t"
+			<< focal_param.negReward << "\t";
+		outfile << fit << endl;
 	}
-
-	printTest.close();
-	delete learners[k];
-}
-							
-						}
-					}
-				}
-			}
-		}
-	}
-
-	delete[] clientSet;
-
-	mark_time(0);
-
-	//wait_for_return();
-
+	outfile.close();
+	// done!
 	return 0;
 }
-
-	

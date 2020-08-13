@@ -15,12 +15,13 @@ getFilelist<-
            listparam=NULL, 
            # list strings providing the parameters 
            # of interest
-           values=NULL 
+           values=NULL, 
            # list of values matching the list in 
            # listparam
+           fullNam=FALSE # Boolean. Append full path name
            ){
   posAgen<-c("PAA","FAA","DP","p1")
-  listRaw<-list.files(folder,recursive = TRUE,full.names = TRUE)
+  listRaw<-list.files(folder,recursive = TRUE,full.names = fullNam)
   if(length(listRaw)<1)warning("No files in such location",immediate. = TRUE)
   listRaw<-grep(".txt",listRaw,value = TRUE)
   fullList<-vector("list",4)
@@ -130,7 +131,7 @@ file2timeInter<-function(filename,interV,maxAge=-2){
 
 # Computes RV preference for a certain final proportion of the learning trial --
 
-file2lastProp<-function(filename,prop,outPar=NULL,genfold=NULL)
+file2lastProp<-function(filename,prop,outPar=NULL,genfold=NULL,full.path=FALSE)
 {
   if(length(outPar)>0){
     extPar<-grep(outPar,strsplit(filename,"_/")[[1]],
@@ -138,8 +139,10 @@ file2lastProp<-function(filename,prop,outPar=NULL,genfold=NULL)
     parVal<-as.numeric(gsub("[[:alpha:]]",extPar,replacement = ''))
     extPar<-gsub("[[:digit:]]",extPar,replacement = '')
   }
-  if(is.null(genfold)) tmp<-fread(filename)
-  else tmp<-fread(here(genfold=filename))
+  if(is.null(genfold)) 
+    if(full.path)   tmp<-fread(filename)
+    else tmp<-fread(here("Simulations",filename))
+    else tmp<-fread(here("Simulations",genfold,filename))
   # resPtmp<-as.numeric(gsub("[[:alpha:]]", "", grep('pR',strsplit(filename,'_')[[1]],value=TRUE)))*0.1
   # visPtmp<-as.numeric(gsub("[[:alpha:]]", "", grep('pV',strsplit(filename,'_')[[1]],value=TRUE)))*0.1
   # tmp$resProb<-rep(resPtmp,dim(tmp)[1])

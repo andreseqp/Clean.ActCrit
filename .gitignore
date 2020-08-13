@@ -6,6 +6,8 @@
 *.iobj
 *.ipdb
 *.pdb
+*.pdf
+*.docx
 messages.txt
 BaseLine.png
 /Simulations

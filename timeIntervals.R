@@ -4,9 +4,9 @@ projDir<-"d:/quinonesa/learning_models_c++/actCrit/"
 simsDir<-"s:/quinonesa/Simulations/actCrit/"
 
 # libraries ---------------------------------------------------------------------------------------
-source('d:/quinonesa/Dropbox/R_files/posPlots.R')
-source(paste(projDir,"aesth_par.R",sep=""))
-source(paste(projDir,"loadData.R",sep = ""))
+source(here("..","R_files","posPlots.R"))
+source(here("aesth_par.R"))
+source(here("loadData.R"))
 library('plotrix')
 
 # Load Data ---------------------------------------------------------------------------------------

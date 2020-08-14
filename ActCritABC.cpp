@@ -74,7 +74,7 @@ public:
 	// function that updates the value of state-action pairs according to 
 	//current reward and estimates of future values
 	void act(client newOptions[], int &idNewOptions, double &VisProbLeav, 
-		double &ResProbLeav, double VisReward, double ResReward, double inbr, 
+		double ResProbLeav, double VisReward, double ResReward, double inbr, 
 		double outbr,  learnScenario scenario);
 		// function where the agent takes the action, gets reward, see new 
 		//state and chooses future action
@@ -126,7 +126,7 @@ public:
 	virtual void updateThet(int curState) = 0;
 	// function to update the policy parameter Theta
 	int numEst;
-	// Number of estimates characterizing bhavioural options 9 for FAA
+	// Number of estimates characterizing behavioural options 9 for FAA
 	int countExp;
 protected:
 	double values[6];																							
@@ -395,7 +395,7 @@ void agent::getExtenededMarket() {
 }
 
 void agent::act(client newOptions[], int &idNewOptions, double &VisProbLeav, 
-	double &ResProbLeav, double VisReward, double ResReward, double inbr,
+	double ResProbLeav, double VisReward, double ResReward, double inbr,
 	double outbr, learnScenario scenario){
 	// taking action, obatining reward, seeing new state, choosing future action
 	++age;																		
@@ -585,21 +585,12 @@ void draw(client trainingSet[], int rounds, double probRes, double probVis){
 	}
 }
 
-string create_filename(std::string filename, agent &individual,
-	nlohmann::json param, double pV, double pR){
+string create_filename(std::string filename,nlohmann::json param){
 	// name the file with the parameter specifications
-	filename.append("alph");
-	filename.append(douts(individual.getLearnPar(alphaPar)));
-	filename.append("_gamma");
-	filename.append(douts(individual.getLearnPar(gammaPar)));
-	filename.append("_neta");
-	filename.append(douts(individual.getLearnPar(netaPar)));
-	filename.append("_pV");
-	filename.append(douts(pV));
-	filename.append("_pR");
-	filename.append(douts(pR));
-	filename.append("_alphaThNch");
-	filename.append(douts(param["alphaThNch"]));
+	filename.append("ABCchain_CL");
+	filename.append(itos(param["chain_length"]));
+	filename.append("_sdPert");
+	filename.append(douts(param["sdPert"]));
 	filename.append("_seed");
 	filename.append(itos(param["seed"]));
 	filename.append(".txt");
@@ -608,7 +599,7 @@ string create_filename(std::string filename, agent &individual,
 
 struct data_point {
 	double rel_abund_clean, rel_abund_visitors, rel_abund_resid,prob_Vis_Leav;
-	bool market_exp_success;
+	double market_exp_success;
 };
 
 struct model_param {
@@ -619,10 +610,11 @@ vector<data_point> read_Data(ifstream &marketData) {
 	// open file
 	if (!marketData.is_open()) {
 		std::cerr << "error: unable to open data file\n";
+		wait_for_return();
 		exit(EXIT_FAILURE);
 	}
 	string header;
-	std::getline(marketData,header); // skip header
+	getline(marketData,header); // skip header
 	vector<data_point> data_set; 
 	data_point input;
 	for (;;) { // read data
@@ -638,39 +630,12 @@ vector<data_point> read_Data(ifstream &marketData) {
 	return(data_set);
 }
 
-void initializeIndFile(ofstream &indOutput, agent &learner, 
-	nlohmann::json param, double pV, double pR){
+void initializeIndFile(ofstream &chainOutput,nlohmann::json param){
 	std::string namedir = param["folder"];
-	std::string namedirDP = param["folder"];
-	std::string folder;
-	
-	folder = typeid(learner).name();
-	folder.erase(0, 6).append("_");
-	cout << folder << '\t' << learner.getLearnPar(alphaPar) << '\t';
-	cout << learner.getLearnPar(gammaPar) << '\t';
-	cout << learner.getLearnPar(netaPar) << '\t'; 
-	cout << learner.getLearnPar(alphathPar) << endl;
-	namedir.append(folder);
-	string IndFile = create_filename(namedir, learner, param, pV,pR);
-	indOutput.open(IndFile.c_str());
-	
-	indOutput << "Training" << '\t' << "Age" << '\t' << "Alpha" << '\t';
-	indOutput << "Gamma" << '\t' <<  "Neta" << '\t';
-	indOutput << "AlphaTh" << '\t' << "pV" << '\t' << "pR" << '\t';
-	indOutput << "ThetaV" << '\t' << "ThetaR" << '\t';
-	indOutput << "Outbr" << '\t' << "Client1" << '\t' << "Client2" << '\t';
-	indOutput << "Choice" << '\t' << "Current.Reward" << '\t';
-	indOutput << "Cum.Reward" << '\t' << "Neg.Reward" << '\t';
-
-	if (learner.numEst > 3) {
-		indOutput << "RV" << '\t' << "V0" << '\t' << "R0" << '\t';
-		indOutput << "RR" << '\t' << "VV" << '\t' << "00_" << '\t';
-	}
-	else {
-		indOutput << "Resident" << '\t' << "Visitor" << '\t';
-		indOutput << "Absence" << '\t';
-	}
-	indOutput << endl;
+	string IndFile = create_filename(namedir, param);
+	chainOutput.open(IndFile.c_str());
+	chainOutput << "iteration	" << "alpha_actor	" << "alpha_critic	" <<
+		"gamma	" << "negReward	" << endl;
 }
 
 
@@ -727,8 +692,8 @@ std::vector<data_point> do_simulation(//del focal_model,
 		VisPref = 0, countRVopt = 0;
 		// Loop through the learning rounds
 		for (int trial = 0; trial < sim_param["totRounds"]; ++trial) {
-			Cleaner.act(clientSet, idClientSet, emp_data[id_data_point].rel_abund_visitors,
-				emp_data[id_data_point].prob_Vis_Leav, sim_param["VisReward"],
+			Cleaner.act(clientSet, idClientSet,	emp_data[id_data_point].prob_Vis_Leav, 
+				sim_param["ResProbLeav"],sim_param["VisReward"],
 				sim_param["ResReward"], sim_param["inbr"], sim_param["outbr"],
 				learnScenario(sim_param["scenario"]));
 			Cleaner.update();
@@ -763,59 +728,37 @@ int main(int argc, char* argv[]){
 	// Only for debugging 
 	// input parameters provided by a JSON file with the following
 	// structure:
-	/*json param;
-	param["totRounds"]    = 20000;
-	param["ResReward"]    = 1;
-	param["VisReward"]    = 1;
-	param["ResProb"]      = 0.3;
-	param["VisProb"]      = 0.3;
-	param["ResProbLeav"]  = 0;
-	param["VisProbLeav"]  = 1;
-	param["negativeRew"]  = -0.5;
-	param["experiment"]   = false;
-	param["inbr"]         = 0;
-	param["outbr"]        = 0;
-	param["trainingRep"]  = 10;
-	param["alphaT"]       = 0.01;
-	param["printGen"]     = 1;
-	param["seed"]         = 1;
-	param["forRat"]       = 0.0;
-	param["alphThRange"]  = { 0 };
-	param["gammaRange"]   = {  0.8 };
-	param["netaRange"]    = { 0 };
-	param["alphaThRange"] = { 0.01 };
-	param["folder"]       = "S:/quinonesa/Simulations/actCrit/test_/";
-	param["initVal"]      = 1;*/
+	//json sim_param;
+	//sim_param["totRounds"]    = 20000;
+	//sim_param["ResReward"]    = 1;
+	//sim_param["VisReward"]    = 1;
+	//sim_param["ResProbLeav"]  = 0;
+	//sim_param["scenario"]  = 0;
+	//sim_param["inbr"]         = 0;
+	//sim_param["outbr"]        = 0;
+	//sim_param["seed"]         = 1;
+	//sim_param["forRat"]       = 0.0;
+	//sim_param["propfullPrint"]       = 0.7;
+	//sim_param["sdPert"]       = 0.01;
+	//sim_param["chain_length"]       = 10000;
+	//sim_param["init"]       = {0,0,0,0};
+	//sim_param["folder"]       = "I:/Projects/Clean.ActCrit/Simulations/ABCtest_/";
+
+	//ifstream marketData ("I:/Projects/Clean.ActCrit/Data/data_ABC.txt");
+	
+
 
 	// reading of parameters: 
 	ifstream parameters(argv[1]);
 	if (parameters.fail()) { cout << "JSON file failed" << endl; }
 	json sim_param = nlohmann::json::parse(parameters);
-
 	ifstream marketData (argv[2]);
-	
-	// Pass on parameters from JSON to c++
-	//int const totrounds = param["totrounds"];
-	//double resreward = param["resreward"];
-	//double visreward = param["visreward"];
-	//double resprobleav = param["resprobleav"];
-	//double visprobleav = param["visprobleav"];
-	//double negativerew = param["negativerew"];
-	//learnscenario scenario = param["scenario"];
-	//double inbr = param["inbr"];
-	//double outbr = param["outbr"];
-	//int trainingrep = param["trainingrep"];
-	//double alphat = param["alphat"];
-	//int numlearn = param["numlearn"];
-	//int printgen = param["printgen"];
-	//int seed = param["seed"];
-	//const double forrat = param["forrat"];
-	//double alphathnch = param["alphathnch"];
-	
+
+
+
 	rnd::set_seed(sim_param["seed"]);
 
-	// parameters are read!
-
+	
 	//enum model {model1, model2, model3, model4}; // Some sort of model choice
 	//model focal_model = sim_param["model"]; // this would be nice
 	
@@ -823,12 +766,13 @@ int main(int argc, char* argv[]){
 	// read the data
 
 	model_param init_parameters; 
-	init_parameters.alphaA = 0, init_parameters.alphaC = 0,
-		init_parameters.gamma = 0, init_parameters.negReward = 0;
+	init_parameters.alphaA = sim_param["init"][0], 
+		init_parameters.alphaC = sim_param["init"][1],
+		init_parameters.gamma = sim_param["init"][2], 
+		init_parameters.negReward = sim_param["init"][3];
 	
-	std::ofstream outfile("Data/chain.txt");
-	outfile << "iteration	" << "alpha_actor	" << "alpha_critic	" <<
-		"gamma	" << "negReward	" << endl;
+	ofstream outfile;
+	initializeIndFile(outfile,sim_param);
 
 	// some sort of combination
 	
@@ -839,8 +783,6 @@ int main(int argc, char* argv[]){
 			emp_data, init_parameters, sim_param);
 
 	double fit = calculate_fit(emp_data, simulated_data); // function that calculates fit
-
-	// some kind of way to generate a number from a uniform distribution
 		
 	model_param focal_param = init_parameters;
 	for(int r = 0; r < sim_param["chain_length"]; ++r) {  // 

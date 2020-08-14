@@ -2,18 +2,15 @@
 
 library("jsonlite")
 library("here")
-
-projDir<-"D:/quinonesa/learning_models_c++/actCrit/"
+source(here("loadData.R"))
 
 simsDir<-"Simulations"
-
-visualDir<-"D:\\quinonesa/VisualStudio/ActCrit/"
 
 exedir<-'/./ActCrit.exe'
 
 fileName<-"parameters.json"
 
-scenario<-"AbundLvpAlphaTh"
+scenario<-"ABCtest"
 
 # Baseline parameter values
 param<-list(totRounds=20000,ResReward=1,VisReward=1,
@@ -26,6 +23,12 @@ param<-list(totRounds=20000,ResReward=1,VisReward=1,
             propfullPrint = 0.7,
             alphaThNch=0.01,
             folderL=paste0(here(simsDir),scenario,"_/"))
+
+param_ABC<-list(totRounds=20000,ResReward=1,VisReward=1,
+            ResProbLeav=0,scenario=0, inbr=0,outbr=0,forRat=0.0,
+            seed=1, propfullPrint = 0.7,sdPert=0.01,chain_length=10000,
+            init=c(0,0,0,0),
+            folderL=paste0(here(simsDir),"/",scenario,"_/"))
 
 clustfolderAnd="/hpcfs/home/a.quinones/Cleaner/AbundLvp_/"
 
@@ -90,6 +93,42 @@ for (i in 1:length(rangLeav)) {
 }
 # 
 for (k in 1:90) print(y)
+
+# Generate json parameter files for ABC fit-------------------------------------
+
+check_create.dir(here(simsDir),param = rep(scenario,1),
+                 values = c(""))
+
+param_ABC$folder<-param_ABC$folderL
+outParam<-toJSON(param_ABC,auto_unbox = TRUE,pretty = TRUE)
+fileName<-paste("parameters_ABC",".json",sep="")
+if(file.exists(paste(param_ABC$folderL,fileName,sep = ''))){
+  currFile<-fromJSON(paste(param_ABC$folderL,fileName,sep = ''))
+  if(sum(unlist(currFile)!=unlist(param_ABC))>0){
+    # warning("You are erasing old files!! n\ Check first!!!",immediate. = TRUE)
+    # print("OLD value")
+    # print(unlist(currFile)[unlist(currFile)!=unlist(param)])
+    # print("NEW value")
+    # print(unlist(param)[unlist(currFile)!=unlist(param)])
+    # ans<-readline("Want to continue?")
+    # if(substr(ans, 1, 1) == "y"){
+    write(outParam,paste(param_ABC$folderL,fileName,sep = "/"))
+    # jobfile(param$folderL,listfolders[i],jobid = j)
+    # }
+    # else{
+    #   jobfile(param$folderL,listfolders[i])
+    # }
+  }
+}else{
+  write(outParam,paste(param_ABC$folderL,fileName,sep = ""))
+  # jobfile(param$folderL,listfolders[i],jobid = j)
+}
+# Uncomment for running simulations directly through R:
+# system(paste(exedir,
+#   gsub("\\","/",paste(param$folder,fileName,sep="\\"),fixed=TRUE)
+#   ,sep = " "))
+
+
 
 ## Automatically produce job files ---------------------------------------------
 

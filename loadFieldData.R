@@ -18,7 +18,7 @@ market.ABC<-fieldData[,.(rel.abund.cleaners,rel.abund.visitors,
                       rel.abund.residents,prob.Vis.Leav,
                       market_binomial)]
 
-fwrite(market.ABC,here("data","data_ABC.txt"),row.names = FALSE)
+fwrite(market.ABC,here("data","data_ABC.txt"),row.names = FALSE,sep = "\t")
 
 
 # Random graphs

@@ -635,7 +635,7 @@ void initializeIndFile(ofstream &chainOutput,nlohmann::json param){
 	string IndFile = create_filename(namedir, param);
 	chainOutput.open(IndFile.c_str());
 	chainOutput << "iteration	" << "alpha_actor	" << "alpha_critic	" <<
-		"gamma	" << "negReward	" << endl;
+		"gamma	" << "negReward	" << "fit" << endl;
 }
 
 
@@ -654,7 +654,7 @@ model_param perturb_parameters(model_param focal_param,json &sim_param) {
 	model_param new_param;
 	// also, you can throw in your own random number generator that you want,
 	// I just add a number N(0, sd);
-	new_param.alphaA = focal_param.alphaA + rnd::normal(0, sim_param["sdPert"]);
+	new_param.alphaA = focal_param.alphaA + rnd::normal(-1, sim_param["sdPert"]);
 	clip_low(new_param.alphaA,0);
 	new_param.alphaC = focal_param.alphaC + rnd::normal(0, sim_param["sdPert"]);
 	clip_low(new_param.alphaC, 0);
@@ -728,31 +728,31 @@ int main(int argc, char* argv[]){
 	// Only for debugging 
 	// input parameters provided by a JSON file with the following
 	// structure:
-	//json sim_param;
-	//sim_param["totRounds"]    = 20000;
-	//sim_param["ResReward"]    = 1;
-	//sim_param["VisReward"]    = 1;
-	//sim_param["ResProbLeav"]  = 0;
-	//sim_param["scenario"]  = 0;
-	//sim_param["inbr"]         = 0;
-	//sim_param["outbr"]        = 0;
-	//sim_param["seed"]         = 1;
-	//sim_param["forRat"]       = 0.0;
-	//sim_param["propfullPrint"]       = 0.7;
-	//sim_param["sdPert"]       = 0.01;
-	//sim_param["chain_length"]       = 10000;
-	//sim_param["init"]       = {0,0,0,0};
-	//sim_param["folder"]       = "I:/Projects/Clean.ActCrit/Simulations/ABCtest_/";
+	json sim_param;
+	sim_param["totRounds"]    = 20000;
+	sim_param["ResReward"]    = 1;
+	sim_param["VisReward"]    = 1;
+	sim_param["ResProbLeav"]  = 0;
+	sim_param["scenario"]  = 0;
+	sim_param["inbr"]         = 0;
+	sim_param["outbr"]        = 0;
+	sim_param["seed"]         = 1;
+	sim_param["forRat"]       = 0.0;
+	sim_param["propfullPrint"]       = 0.7;
+	sim_param["sdPert"]       = 0.01;
+	sim_param["chain_length"]       = 10000;
+	sim_param["init"]       = {0,0,0,0};
+	sim_param["folder"]       = "I:/Projects/Clean.ActCrit/Simulations/ABCtest_/";
 
-	//ifstream marketData ("I:/Projects/Clean.ActCrit/Data/data_ABC.txt");
+	ifstream marketData ("I:/Projects/Clean.ActCrit/Data/data_ABC.txt");
 	
 
 
 	// reading of parameters: 
-	ifstream parameters(argv[1]);
+	/*ifstream parameters(argv[1]);
 	if (parameters.fail()) { cout << "JSON file failed" << endl; }
 	json sim_param = nlohmann::json::parse(parameters);
-	ifstream marketData (argv[2]);
+	ifstream marketData (argv[2]);*/
 
 
 
@@ -782,7 +782,7 @@ int main(int argc, char* argv[]){
 		do_simulation(//focal_model
 			emp_data, init_parameters, sim_param);
 
-	double fit = calculate_fit(emp_data, simulated_data); // function that calculates fit
+   double fit = calculate_fit(emp_data, simulated_data); // function that calculates fit
 		
 	model_param focal_param = init_parameters;
 	for(int r = 0; r < sim_param["chain_length"]; ++r) {  // 

@@ -10,7 +10,7 @@ exedir<-'/./ActCrit.exe'
 
 fileName<-"parameters.json"
 
-scenario<-"ABCtest"
+scenario<-"ABC_gam_Nrew"
 
 # Baseline parameter values
 param<-list(totRounds=20000,ResReward=1,VisReward=1,
@@ -26,8 +26,9 @@ param<-list(totRounds=20000,ResReward=1,VisReward=1,
 
 param_ABC<-list(totRounds=20000,ResReward=1,VisReward=1,
             ResProbLeav=0,scenario=0, inbr=0,outbr=0,forRat=0.0,
-            seed=1, propfullPrint = 0.7,sdPert=0.01,chain_length=10000,
-            init=c(0,0,0,0),
+            seed=1, propfullPrint = 0.7,sdPert=0.001,chain_length=1000000,
+            init=c(0.01,0.01,0,0),# alphaA,AlphaC, Gamma, NegRew
+            pertScen = 1, 	# enum perturnScen {all,  bothFut, justGam, justNegRew};
             folderL=paste0(here(simsDir),"/",scenario,"_/"))
 
 clustfolderAnd="/hpcfs/home/a.quinones/Cleaner/AbundLvp_/"

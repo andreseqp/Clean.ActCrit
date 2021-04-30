@@ -635,7 +635,7 @@ void initializeIndFile(ofstream &chainOutput,nlohmann::json param){
 	string IndFile = create_filename(namedir, param);
 	chainOutput.open(IndFile.c_str());
 	chainOutput << "iteration	" << "alpha_actor	" << "alpha_critic	" <<
-		"gamma	" << "negReward	" << "fit" << endl;
+		"gamma	" << "negReward	" << "fit	" << "ratio" << endl;
 }
 
 
@@ -654,14 +654,28 @@ model_param perturb_parameters(model_param focal_param,json &sim_param) {
 	model_param new_param;
 	// also, you can throw in your own random number generator that you want,
 	// I just add a number N(0, sd);
-	new_param.alphaA = focal_param.alphaA + rnd::normal(-1, sim_param["sdPert"]);
-	clip_low(new_param.alphaA,0);
-	new_param.alphaC = focal_param.alphaC + rnd::normal(0, sim_param["sdPert"]);
-	clip_low(new_param.alphaC, 0);
-	new_param.gamma = focal_param.gamma + rnd::normal(0, sim_param["sdPert"]);
-	clip_range(new_param.alphaA,0,0.99999);
-	new_param.negReward = focal_param.negReward + rnd::normal(0, sim_param["sdPert"]);
-	clip_low(new_param.negReward, 0);
+	if (sim_param["pertScen"] == 0) {
+		new_param.alphaA = focal_param.alphaA + rnd::normal(0, sim_param["sdPert"]);
+		clip_low(new_param.alphaA, 0);
+		new_param.alphaC = focal_param.alphaC + rnd::normal(0, sim_param["sdPert"]);
+		clip_low(new_param.alphaC, 0);
+	}
+	if (sim_param["pertScen"] < 2) {
+		new_param.gamma = focal_param.gamma + rnd::normal(0, sim_param["sdPert"]);
+		clip_range(new_param.gamma, 0, 0.99999);
+		new_param.negReward = focal_param.negReward + rnd::normal(0, sim_param["sdPert"]);
+		clip_low(new_param.negReward, 0);
+	}
+	else if (sim_param["pertScen"] == 2)
+	{
+		new_param.gamma = focal_param.gamma + rnd::normal(0, sim_param["sdPert"]);
+		clip_range(new_param.gamma, 0, 0.99999);
+	}
+	else
+	{
+		new_param.negReward = focal_param.negReward + rnd::normal(0, sim_param["sdPert"]);
+		clip_low(new_param.negReward, 0);
+	}
 	return(new_param);
 }
 
@@ -712,7 +726,8 @@ std::vector<data_point> do_simulation(//del focal_model,
 			emp_data[id_data_point].rel_abund_clean;
 		sim_data[id_data_point].prob_Vis_Leav =
 			emp_data[id_data_point].prob_Vis_Leav;
-		sim_data[id_data_point].market_exp_success = VisPref / countRVopt;
+		if (countRVopt == 0) sim_data[id_data_point].market_exp_success = 0.5;
+		else sim_data[id_data_point].market_exp_success = VisPref / countRVopt;
 		Cleaner.rebirth();
 	}
 	delete[] clientSet;
@@ -728,8 +743,8 @@ int main(int argc, char* argv[]){
 	// Only for debugging 
 	// input parameters provided by a JSON file with the following
 	// structure:
-	json sim_param;
-	sim_param["totRounds"]    = 20000;
+	/*json sim_param;
+	sim_param["totRounds"]    = 10000;
 	sim_param["ResReward"]    = 1;
 	sim_param["VisReward"]    = 1;
 	sim_param["ResProbLeav"]  = 0;
@@ -740,19 +755,21 @@ int main(int argc, char* argv[]){
 	sim_param["forRat"]       = 0.0;
 	sim_param["propfullPrint"]       = 0.7;
 	sim_param["sdPert"]       = 0.01;
-	sim_param["chain_length"]       = 10000;
+	sim_param["chain_length"]       = 1000;
 	sim_param["init"]       = {0,0,0,0};
-	sim_param["folder"]       = "I:/Projects/Clean.ActCrit/Simulations/ABCtest_/";
+	sim_param["pertScen"] = 0;
+	//enum perturnScen {all,  bothFut, justGam, justNegRew};
+	sim_param["folder"]       = "I:/Projects/Clean.ActCrit/Simulations/ABCtest_/";*/
 
 	ifstream marketData ("I:/Projects/Clean.ActCrit/Data/data_ABC.txt");
 	
 
 
 	// reading of parameters: 
-	/*ifstream parameters(argv[1]);
+	ifstream parameters(argv[1]);
 	if (parameters.fail()) { cout << "JSON file failed" << endl; }
 	json sim_param = nlohmann::json::parse(parameters);
-	ifstream marketData (argv[2]);*/
+	//ifstream marketData (argv[2]);
 
 
 
@@ -776,7 +793,8 @@ int main(int argc, char* argv[]){
 
 	// some sort of combination
 	
-	// we calculate the fit of the starting point, first we simulate data using the initial parameters
+	// we calculate the fit of the starting point, first we simulate data using 
+	// the initial parameters
 	// we also pass on the empirical data, to use the x and y coordinates.
 	std::vector< data_point > simulated_data = 
 		do_simulation(//focal_model
@@ -790,17 +808,19 @@ int main(int argc, char* argv[]){
 		simulated_data = do_simulation(//focal_model, 
 			emp_data, new_param, sim_param);
 		double new_fit = calculate_fit(emp_data, simulated_data); 
-		double ratio = fit / new_fit;  // better fit is smaller, so ratio is > 1, so accept all.
+		double ratio = fit / new_fit;  
+		// better fit is smaller, so ratio is > 1, so accept all.
 		if( rnd::uniform() < ratio) {
 			focal_param = new_param;
 			fit = new_fit;
 		}
-		outfile << r << " ";
+		outfile << r << "\t";
 		outfile << focal_param.alphaA << "\t"
 			<< focal_param.alphaC << "\t"
 			<< focal_param.gamma << "\t"
-			<< focal_param.negReward << "\t";
-		outfile << fit << endl;
+			<< focal_param.negReward << "\t"
+			<< fit << "\t";
+		outfile << ratio << endl;
 	}
 	outfile.close();
 	// done!

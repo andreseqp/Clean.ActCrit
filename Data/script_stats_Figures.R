@@ -81,8 +81,12 @@ ylab("Percentage of visitors \n swimming away if not serviced")+
   theme(panel.border = element_rect(colour = "black", fill=NA, size=0.5),
         axis.title.x=element_text(margin=margin(15)))
 
+str(market)
+market[,unique(site_year)]
 
-plot1
+plot1+geom_point(data=market,aes(x=sabundance_cleaner,y=spercentage_swim_off,
+                                 color=as.factor(market_binomial)))+
+  scale_color_grey(start=0.8, end=0.2)
 
 ## model2: cleaner fish abundance-----
 
@@ -115,6 +119,10 @@ plot2 <- visreg2d(model2, y= "spercentage_swim_off", x= "scleaner_client_ratio",
   scale_fill_gradientn(colors=pal,
                        limits=c(0,1))+theme(legend.position="none")+
   theme(panel.border = element_rect(colour = "black", fill=NA, size=0.5))
+  
+plot2+geom_point(data=market,aes(x=scleaner_client_ratio,y=spercentage_swim_off))
+
+
 visreg2d(model2, y= "spercentage_swim_off", x= "scleaner_client_ratio",
          zlab="",scale="response",plot.type="persp",ylim=c(0,0.2),)
 

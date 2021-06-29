@@ -10,11 +10,18 @@ str(fieldData)
 ### Adjust data to fit IBD
 
 fieldData[,rel.abund.cleaners:=abundance_cleaners_100m2/
-         (max(abundance_cleaners_100m2)+min(abundance_cleaners_100m2))]
+         (abundance_cleaners_100m2+abundance_clients_100m2)]
+
+
 fieldData[,`:=`(rel.abund.visitors=(1-rel.abund.cleaners)*abundance_large_100m2/abundance_clients_100m2,
              rel.abund.residents=(1-rel.abund.cleaners)*abundance_small_100m2/abundance_clients_100m2)]
 
 fieldData[,prob.Vis.Leav:=percentage_swim_off/100]
+
+fieldData[,.(min(rel.abund.cleaners),max(rel.abund.cleaners))]
+fieldData[,.(min(rel.abund.visitors),max(rel.abund.visitors))]
+fieldData[,.(min(rel.abund.residents),max(rel.abund.residents))]
+fieldData[rel.abund.residents==min(rel.abund.residents),rel.abund.cleaners*rel.abund.visitors]
 
 market.ABC<-fieldData[,.(rel.abund.cleaners,rel.abund.visitors,
                       rel.abund.residents,prob.Vis.Leav,
@@ -22,6 +29,19 @@ market.ABC<-fieldData[,.(rel.abund.cleaners,rel.abund.visitors,
 
 fwrite(market.ABC,here("data","data_ABC.txt"),row.names = FALSE,sep = "\t")
 
+
+
+str(fieldData)
+
+fieldData[,rowsum(.SD),.SDcol=grep("rel.abund",names(fieldData),value = TRUE)]
+
+plot(data=fieldData,abundance_large_100m2~rel.abund.cleaners)
+abline(lm(data=fieldData,abundance_large_100m2~rel.abund.cleaners))
+
+mod.1<-lm(data=fieldData,abundance_large_100m2~rel.abund.cleaners*rel.abund.visitors)
+summary(mod.1)
+library(car)
+avPlots(mod.1)
 
 # Random graphs
 

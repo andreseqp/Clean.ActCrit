@@ -603,8 +603,23 @@ struct data_point {
 };
 
 struct model_param {
+	//model_param(model_param const &obj);
 	double alphaC, alphaA, gamma, negReward;
+	model_param &operator= (model_param const &rhs) {
+		alphaA = rhs.alphaA;
+		alphaC = rhs.alphaC;
+		gamma = rhs.gamma;
+		negReward = rhs.negReward;
+		return *this;
+	}
 };
+
+//model_param::model_param(model_param const &obj) {
+//	alphaA = obj.alphaA;
+//	alphaC = obj.alphaC;
+//	gamma = obj.gamma;
+//	negReward = obj.negReward;
+//}
 
 vector<data_point> read_Data(ifstream &marketData) {
 	// open file
@@ -640,14 +655,25 @@ void initializeIndFile(ofstream &chainOutput,nlohmann::json param){
 
 
 
+//double calculate_fit(const std::vector< data_point>& empData,
+//					 const std::vector< data_point>& simData) {
+//	double fit = 0.0;
+//	for(int i = 0; i < empData.size(); ++i) {
+//		double d = empData[i].market_exp_success - simData[i].market_exp_success;
+//		fit += d * d;
+//	}			 
+//	return(fit);
+//}
+
 double calculate_fit(const std::vector< data_point>& empData,
-					 const std::vector< data_point>& simData) {
-	double fit = 0.0;
-	for(int i = 0; i < empData.size(); ++i) {
-		double d = empData[i].market_exp_success - simData[i].market_exp_success;
-		fit += d * d;
-	}			 
-	return(fit);
+	const std::vector< data_point>& simData) {
+	double sum_log_likelihood = 0.0;
+	for (int i = 0; i < empData.size(); ++i) {
+		sum_log_likelihood += log(simData[i].market_exp_success*empData[i].market_exp_success +
+			(1 - simData[i].market_exp_success)*(1 - empData[i].market_exp_success)+
+		0.0000000001);
+	}
+	return(sum_log_likelihood);
 }
 
 model_param perturb_parameters(model_param focal_param,json &sim_param) {
@@ -659,8 +685,12 @@ model_param perturb_parameters(model_param focal_param,json &sim_param) {
 		clip_low(new_param.alphaA, 0);
 		new_param.alphaC = focal_param.alphaC + rnd::normal(0, sim_param["sdPert"]);
 		clip_low(new_param.alphaC, 0);
+		new_param.negReward = focal_param.negReward;
+		new_param.gamma = focal_param.gamma;
 	}
 	if (sim_param["pertScen"] < 2) {
+		new_param.alphaA = focal_param.alphaA;
+		new_param.alphaC = focal_param.alphaC;
 		new_param.gamma = focal_param.gamma + rnd::normal(0, sim_param["sdPert"]);
 		clip_range(new_param.gamma, 0, 0.99999);
 		new_param.negReward = focal_param.negReward + rnd::normal(0, sim_param["sdPert"]);
@@ -668,13 +698,19 @@ model_param perturb_parameters(model_param focal_param,json &sim_param) {
 	}
 	else if (sim_param["pertScen"] == 2)
 	{
+		new_param.alphaA = focal_param.alphaA;
+		new_param.alphaC = focal_param.alphaC;
 		new_param.gamma = focal_param.gamma + rnd::normal(0, sim_param["sdPert"]);
 		clip_range(new_param.gamma, 0, 0.99999);
+		new_param.negReward = focal_param.negReward;
 	}
 	else
 	{
+		new_param.alphaA = focal_param.alphaA;
+		new_param.alphaC = focal_param.alphaC;
 		new_param.negReward = focal_param.negReward + rnd::normal(0, sim_param["sdPert"]);
 		clip_low(new_param.negReward, 0);
+		new_param.gamma = focal_param.gamma;
 	}
 	return(new_param);
 }
@@ -694,41 +730,57 @@ std::vector<data_point> do_simulation(//del focal_model,
 	int countRVopt;
 	// Loop through the data points
 	for (int id_data_point = 0; id_data_point < emp_data.size(); ++id_data_point) {
-		init = focal_comb.gamma*
-			(1 - pow(1 - 
-				emp_data[id_data_point].rel_abund_resid - 
-				emp_data[id_data_point].rel_abund_visitors, 2)) / (1 - focal_comb.gamma);
-		Cleaner.rebirth(init);
-		draw(clientSet, sim_param["totRounds"], 
-			emp_data[id_data_point].rel_abund_resid, 
-			emp_data[id_data_point].rel_abund_visitors);
-		idClientSet = 0;
-		VisPref = 0, countRVopt = 0;
-		// Loop through the learning rounds
-		for (int trial = 0; trial < sim_param["totRounds"]; ++trial) {
-			Cleaner.act(clientSet, idClientSet,	emp_data[id_data_point].prob_Vis_Leav, 
-				sim_param["ResProbLeav"],sim_param["VisReward"],
-				sim_param["ResReward"], sim_param["inbr"], sim_param["outbr"],
-				learnScenario(sim_param["scenario"]));
-			Cleaner.update();
-			if (trial > int(sim_param["totRounds"]) * float(sim_param["propfullPrint"])) {
-				if (Cleaner.getstate(0) ==0) {
-					++countRVopt;
-					if(Cleaner.cleanOptionsT[Cleaner.getChoice(0)]==visitor) ++VisPref;
+		if (id_data_point > 0 &&
+			emp_data[id_data_point].rel_abund_clean == emp_data[id_data_point - 1].rel_abund_clean) {
+			sim_data[id_data_point].rel_abund_visitors =
+				emp_data[id_data_point].rel_abund_visitors;
+			sim_data[id_data_point].rel_abund_resid =
+				emp_data[id_data_point].rel_abund_resid;
+			sim_data[id_data_point].rel_abund_clean =
+				emp_data[id_data_point].rel_abund_clean;
+			sim_data[id_data_point].prob_Vis_Leav =
+				emp_data[id_data_point].prob_Vis_Leav;
+			sim_data[id_data_point].market_exp_success =
+				sim_data[id_data_point - 1].market_exp_success;
+		}
+		else
+		{
+			init = focal_comb.gamma*
+				(1 - pow(1 -
+					emp_data[id_data_point].rel_abund_resid -
+					emp_data[id_data_point].rel_abund_visitors, 2)) / (1 - focal_comb.gamma);
+			Cleaner.rebirth(init);
+			draw(clientSet, sim_param["totRounds"],
+				emp_data[id_data_point].rel_abund_resid,
+				emp_data[id_data_point].rel_abund_visitors);
+			idClientSet = 0;
+			VisPref = 0, countRVopt = 0;
+			// Loop through the learning rounds
+			for (int trial = 0; trial < sim_param["totRounds"]; ++trial) {
+				Cleaner.act(clientSet, idClientSet, emp_data[id_data_point].prob_Vis_Leav,
+					sim_param["ResProbLeav"], sim_param["VisReward"],
+					sim_param["ResReward"], sim_param["inbr"], sim_param["outbr"],
+					learnScenario(sim_param["scenario"]));
+				Cleaner.update();
+				if (trial > int(sim_param["totRounds"]) * float(sim_param["propfullPrint"])) {
+					if (Cleaner.getstate(0) == 0) {
+						++countRVopt;
+						if (Cleaner.cleanOptionsT[Cleaner.getChoice(0)] == visitor) ++VisPref;
+					}
 				}
 			}
+			sim_data[id_data_point].rel_abund_visitors =
+				emp_data[id_data_point].rel_abund_visitors;
+			sim_data[id_data_point].rel_abund_resid =
+				emp_data[id_data_point].rel_abund_resid;
+			sim_data[id_data_point].rel_abund_clean =
+				emp_data[id_data_point].rel_abund_clean;
+			sim_data[id_data_point].prob_Vis_Leav =
+				emp_data[id_data_point].prob_Vis_Leav;
+			if (countRVopt == 0) sim_data[id_data_point].market_exp_success = 0.5;
+			else sim_data[id_data_point].market_exp_success = VisPref / countRVopt;
+			Cleaner.rebirth();
 		}
-		sim_data[id_data_point].rel_abund_visitors =
-			emp_data[id_data_point].rel_abund_visitors;
-		sim_data[id_data_point].rel_abund_resid =
-			emp_data[id_data_point].rel_abund_resid;
-		sim_data[id_data_point].rel_abund_clean =
-			emp_data[id_data_point].rel_abund_clean;
-		sim_data[id_data_point].prob_Vis_Leav =
-			emp_data[id_data_point].prob_Vis_Leav;
-		if (countRVopt == 0) sim_data[id_data_point].market_exp_success = 0.5;
-		else sim_data[id_data_point].market_exp_success = VisPref / countRVopt;
-		Cleaner.rebirth();
 	}
 	delete[] clientSet;
 	return(sim_data);
@@ -743,23 +795,23 @@ int main(int argc, char* argv[]){
 	// Only for debugging 
 	// input parameters provided by a JSON file with the following
 	// structure:
-	/*json sim_param;
-	sim_param["totRounds"]    = 10000;
-	sim_param["ResReward"]    = 1;
-	sim_param["VisReward"]    = 1;
-	sim_param["ResProbLeav"]  = 0;
-	sim_param["scenario"]  = 0;
-	sim_param["inbr"]         = 0;
-	sim_param["outbr"]        = 0;
-	sim_param["seed"]         = 1;
-	sim_param["forRat"]       = 0.0;
-	sim_param["propfullPrint"]       = 0.7;
-	sim_param["sdPert"]       = 0.01;
-	sim_param["chain_length"]       = 1000;
-	sim_param["init"]       = {0,0,0,0};
-	sim_param["pertScen"] = 0;
-	//enum perturnScen {all,  bothFut, justGam, justNegRew};
-	sim_param["folder"]       = "I:/Projects/Clean.ActCrit/Simulations/ABCtest_/";*/
+	//json sim_param;
+	//sim_param["totRounds"]    = 30000;
+	//sim_param["ResReward"]    = 1;
+	//sim_param["VisReward"]    = 1;
+	//sim_param["ResProbLeav"]  = 0;
+	//sim_param["scenario"]  = 0;
+	//sim_param["inbr"]         = 0;
+	//sim_param["outbr"]        = 0;
+	//sim_param["seed"]         = 1;
+	//sim_param["forRat"]       = 0.0;
+	//sim_param["propfullPrint"]       = 0.7;
+	//sim_param["sdPert"]       = 0.01;
+	//sim_param["chain_length"]       = 1000;
+	//sim_param["init"]       = {0.01, 0.01 ,0.0 ,0.0};
+	//sim_param["pertScen"] = 0;
+	////enum perturnScen {all,  bothFut, justGam, justNegRew};
+	//sim_param["folder"]       = "I:/Projects/Clean.ActCrit/Simulations/ABCtest_/";
 
 	ifstream marketData ("I:/Projects/Clean.ActCrit/Data/data_ABC.txt");
 	
@@ -769,6 +821,8 @@ int main(int argc, char* argv[]){
 	ifstream parameters(argv[1]);
 	if (parameters.fail()) { cout << "JSON file failed" << endl; }
 	json sim_param = nlohmann::json::parse(parameters);
+	
+	
 	//ifstream marketData (argv[2]);
 
 
@@ -783,10 +837,10 @@ int main(int argc, char* argv[]){
 	// read the data
 
 	model_param init_parameters; 
-	init_parameters.alphaA = sim_param["init"][0], 
-		init_parameters.alphaC = sim_param["init"][1],
-		init_parameters.gamma = sim_param["init"][2], 
-		init_parameters.negReward = sim_param["init"][3];
+	init_parameters.alphaA = sim_param["init"][0];
+	init_parameters.alphaC = sim_param["init"][1];
+	init_parameters.gamma = sim_param["init"][2];
+	init_parameters.negReward = sim_param["init"][3];
 	
 	ofstream outfile;
 	initializeIndFile(outfile,sim_param);
@@ -796,7 +850,7 @@ int main(int argc, char* argv[]){
 	// we calculate the fit of the starting point, first we simulate data using 
 	// the initial parameters
 	// we also pass on the empirical data, to use the x and y coordinates.
-	std::vector< data_point > simulated_data = 
+ 	std::vector< data_point > simulated_data = 
 		do_simulation(//focal_model
 			emp_data, init_parameters, sim_param);
 
@@ -808,8 +862,8 @@ int main(int argc, char* argv[]){
 		simulated_data = do_simulation(//focal_model, 
 			emp_data, new_param, sim_param);
 		double new_fit = calculate_fit(emp_data, simulated_data); 
-		double ratio = fit / new_fit;  
-		// better fit is smaller, so ratio is > 1, so accept all.
+		double ratio = new_fit/ fit;  
+		// better fit is larger, so ratio is > 1, so accept all.
 		if( rnd::uniform() < ratio) {
 			focal_param = new_param;
 			fit = new_fit;

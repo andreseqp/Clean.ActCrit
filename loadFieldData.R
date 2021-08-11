@@ -6,7 +6,6 @@ fieldData<-fread(here("Data","market_model.csv"))
 str(fieldData)
 
 
-
 ### Adjust data to fit IBD
 
 fieldData[,rel.abund.cleaners:=abundance_cleaners_100m2/

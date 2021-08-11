@@ -589,8 +589,6 @@ string create_filename(std::string filename,nlohmann::json param){
 	// name the file with the parameter specifications
 	filename.append("ABCchain_CL");
 	filename.append(itos(param["chain_length"]));
-	filename.append("_sdPert");
-	filename.append(douts(param["sdPert"]));
 	filename.append("_seed");
 	filename.append(itos(param["seed"]));
 	filename.append(".txt");
@@ -681,9 +679,11 @@ model_param perturb_parameters(model_param focal_param,json &sim_param) {
 	// also, you can throw in your own random number generator that you want,
 	// I just add a number N(0, sd);
 	if (sim_param["pertScen"] == 0) {
-		new_param.alphaA = focal_param.alphaA + rnd::normal(0, sim_param["sdPert"]);
+		new_param.alphaA = focal_param.alphaA + rnd::normal(0, 
+			float(sim_param["sdPert"][0]));
 		clip_low(new_param.alphaA, 0);
-		new_param.alphaC = focal_param.alphaC + rnd::normal(0, sim_param["sdPert"]);
+		new_param.alphaC = focal_param.alphaC + rnd::normal(0, 
+			float(sim_param["sdPert"][1]));
 		clip_low(new_param.alphaC, 0);
 		new_param.negReward = focal_param.negReward;
 		new_param.gamma = focal_param.gamma;
@@ -691,16 +691,19 @@ model_param perturb_parameters(model_param focal_param,json &sim_param) {
 	if (sim_param["pertScen"] < 2) {
 		new_param.alphaA = focal_param.alphaA;
 		new_param.alphaC = focal_param.alphaC;
-		new_param.gamma = focal_param.gamma + rnd::normal(0, sim_param["sdPert"]);
+		new_param.gamma = focal_param.gamma + rnd::normal(0, 
+			float(sim_param["sdPert"][2]));
 		clip_range(new_param.gamma, 0, 0.99999);
-		new_param.negReward = focal_param.negReward + rnd::normal(0, sim_param["sdPert"]);
+		new_param.negReward = focal_param.negReward + rnd::normal(0, 
+			float(sim_param["sdPert"][3]));
 		clip_low(new_param.negReward, 0);
 	}
 	else if (sim_param["pertScen"] == 2)
 	{
 		new_param.alphaA = focal_param.alphaA;
 		new_param.alphaC = focal_param.alphaC;
-		new_param.gamma = focal_param.gamma + rnd::normal(0, sim_param["sdPert"]);
+		new_param.gamma = focal_param.gamma + rnd::normal(0, 
+			float(sim_param["sdPert"][2]));
 		clip_range(new_param.gamma, 0, 0.99999);
 		new_param.negReward = focal_param.negReward;
 	}
@@ -708,7 +711,8 @@ model_param perturb_parameters(model_param focal_param,json &sim_param) {
 	{
 		new_param.alphaA = focal_param.alphaA;
 		new_param.alphaC = focal_param.alphaC;
-		new_param.negReward = focal_param.negReward + rnd::normal(0, sim_param["sdPert"]);
+		new_param.negReward = focal_param.negReward + rnd::normal(0, 
+			float(sim_param["sdPert"][3]));
 		clip_low(new_param.negReward, 0);
 		new_param.gamma = focal_param.gamma;
 	}
@@ -806,7 +810,7 @@ int main(int argc, char* argv[]){
 	//sim_param["seed"]         = 1;
 	//sim_param["forRat"]       = 0.0;
 	//sim_param["propfullPrint"]       = 0.7;
-	//sim_param["sdPert"]       = 0.01;
+	//sim_param["sdPert"]       = {0.01, 0.01 ,0.01 ,0.01}; // alphaA, alphaC, Gamma, NegRew
 	//sim_param["chain_length"]       = 1000;
 	//sim_param["init"]       = {0.01, 0.01 ,0.0 ,0.0};
 	//sim_param["pertScen"] = 0;
@@ -832,7 +836,7 @@ int main(int argc, char* argv[]){
 	
 	//enum model {model1, model2, model3, model4}; // Some sort of model choice
 	//model focal_model = sim_param["model"]; // this would be nice
-	
+
 	vector< data_point > emp_data = read_Data(marketData); 
 	// read the data
 
@@ -841,7 +845,7 @@ int main(int argc, char* argv[]){
 	init_parameters.alphaC = sim_param["init"][1];
 	init_parameters.gamma = sim_param["init"][2];
 	init_parameters.negReward = sim_param["init"][3];
-	
+
 	ofstream outfile;
 	initializeIndFile(outfile,sim_param);
 

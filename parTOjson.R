@@ -26,7 +26,8 @@ param<-list(totRounds=20000,ResReward=1,VisReward=1,
 
 param_ABC<-list(totRounds=20000,ResReward=1,VisReward=1,
             ResProbLeav=0,scenario=0, inbr=0,outbr=0,forRat=0.0,
-            seed=1, propfullPrint = 0.7,sdPert=0.005,chain_length=100000,
+            seed=1, propfullPrint = 0.7,sdPert=c(0.1,0.1,0.1,1),
+            chain_length=500000,
             init=c(0.01,0.01,0.8,0.8),# alphaA,AlphaC, Gamma, NegRew
             pertScen = 3, 	# enum perturnScen {all,  bothFut, justGam, justNegRew};
             folderL=paste0(here(simsDir),"/",scenario,"_/"))
@@ -100,29 +101,34 @@ for (k in 1:90) print(y)
 check_create.dir(here(simsDir),param = rep(scenario,1),
                  values = c(""))
 
-param_ABC$folder<-param_ABC$folderL
-outParam<-toJSON(param_ABC,auto_unbox = TRUE,pretty = TRUE)
-fileName<-paste("parameters_ABC",".json",sep="")
-if(file.exists(paste(param_ABC$folderL,fileName,sep = ''))){
-  currFile<-fromJSON(paste(param_ABC$folderL,fileName,sep = ''))
-  if(sum(unlist(currFile)!=unlist(param_ABC))>0){
-    # warning("You are erasing old files!! n\ Check first!!!",immediate. = TRUE)
-    # print("OLD value")
-    # print(unlist(currFile)[unlist(currFile)!=unlist(param)])
-    # print("NEW value")
-    # print(unlist(param)[unlist(currFile)!=unlist(param)])
-    # ans<-readline("Want to continue?")
-    # if(substr(ans, 1, 1) == "y"){
-    write(outParam,paste(param_ABC$folderL,fileName,sep = "/"))
+
+for(seed in 1:5){
+  param_ABC$folder<-param_ABC$folderL
+  param_ABC$init<-c(0.01,0.01,0,runif(1,max = 5))#c(0.01,0.01,runif(1),runif(1,max = 5))
+  param_ABC$seed <- seed
+  fileName<-paste("parameters_ABC_",seed,".json",sep="")
+  outParam<-toJSON(param_ABC,auto_unbox = TRUE,pretty = TRUE)
+  if(file.exists(paste(param_ABC$folderL,fileName,sep = ''))){
+    currFile<-fromJSON(paste(param_ABC$folderL,fileName,sep = ''))
+    if(sum(unlist(currFile)!=unlist(param_ABC))>0){
+      # warning("You are erasing old files!! n\ Check first!!!",immediate. = TRUE)
+      # print("OLD value")
+      # print(unlist(currFile)[unlist(currFile)!=unlist(param)])
+      # print("NEW value")
+      # print(unlist(param)[unlist(currFile)!=unlist(param)])
+      # ans<-readline("Want to continue?")
+      # if(substr(ans, 1, 1) == "y"){
+      write(outParam,paste(param_ABC$folderL,fileName,sep = "/"))
+      # jobfile(param$folderL,listfolders[i],jobid = j)
+      # }
+      # else{
+      #   jobfile(param$folderL,listfolders[i])
+      # }
+    }
+  }else{
+    write(outParam,paste(param_ABC$folderL,fileName,sep = ""))
     # jobfile(param$folderL,listfolders[i],jobid = j)
-    # }
-    # else{
-    #   jobfile(param$folderL,listfolders[i])
-    # }
   }
-}else{
-  write(outParam,paste(param_ABC$folderL,fileName,sep = ""))
-  # jobfile(param$folderL,listfolders[i],jobid = j)
 }
 # Uncomment for running simulations directly through R:
 # system(paste(exedir,

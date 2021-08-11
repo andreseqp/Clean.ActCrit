@@ -1,3 +1,3 @@
 ## List of things to do
 
-* using sum of squares does not seem to work. Try computing loglikelihood
+* Nrew does not seem to reach a stationnary distribution. Why?

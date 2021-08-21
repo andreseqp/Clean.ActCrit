@@ -812,7 +812,7 @@ int main(int argc, char* argv[]){
 	//sim_param["propfullPrint"]       = 0.7;
 	//sim_param["sdPert"]       = {0.01, 0.01 ,0.01 ,0.01}; // alphaA, alphaC, Gamma, NegRew
 	//sim_param["chain_length"]       = 1000;
-	//sim_param["init"]       = {0.01, 0.01 ,0.0 ,0.0};
+	//sim_param["init"]       = {0.01, 0.01 ,0.0 ,1};
 	//sim_param["pertScen"] = 0;
 	////enum perturnScen {all,  bothFut, justGam, justNegRew};
 	//sim_param["folder"]       = "I:/Projects/Clean.ActCrit/Simulations/ABCtest_/";

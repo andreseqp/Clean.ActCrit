@@ -10,7 +10,7 @@ library(coda)
 source("../R_files/posPlots.R")
 
 
-scen<-"ABC_gam_Nrew_perts_"
+scen<-"ABC_Nrew_"
 
 (listFiles<-list.files(here("Simulations",scen)))
 ABCruns<-grep("chain",listFiles,value = TRUE)
@@ -120,7 +120,7 @@ lines(y=predict.lm(mod1.2,data.frame(negReward=seq(0,5,length=1000))),
 
 ## MCMC analisis with coda
 
-ABC.mcmc<-mcmc(ABCraw[,.(gamma,negReward)])
+ABC.mcmc<-mcmc(ABCraw[,.(negReward)])
 effectiveSize(ABC.mcmc)
 summary(ABC.mcmc)
 plot(ABC.mcmc)

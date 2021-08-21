@@ -502,8 +502,8 @@ void agent::choice() {
 
 class FAATyp1 :public agent{			// Fully Aware Agent (FAA)			
 	public:
-	FAATyp1(double alphaI, double gammaI, 
-		double alphaThI, double initVal=1):agent(alphaI, gammaI,  
+	FAATyp1(double alphaI, double gammaI, double NegRewI, 
+		double alphaThI, double initVal=1):agent(alphaI, gammaI, NegRewI, 
 			alphaThI, initVal){
 	}
 	virtual int mapOptions(client options[], int &choice){
@@ -727,8 +727,8 @@ std::vector<data_point> do_simulation(//del focal_model,
 	client *clientSet;
 	clientSet = new client[int(sim_param["totRounds"]) * 2];
 	int idClientSet;
-	FAATyp1 Cleaner (focal_comb.alphaC, focal_comb.gamma,focal_comb.alphaA,
-		focal_comb.negReward);
+	FAATyp1 Cleaner (focal_comb.alphaC, focal_comb.gamma, focal_comb.negReward,
+		focal_comb.alphaA);
 	std::vector<data_point> sim_data(emp_data.size());
 	double VisPref, init;
 	int countRVopt;

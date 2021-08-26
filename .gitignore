@@ -5,6 +5,7 @@
 *.exe
 *.iobj
 *.ipdb
+*.ilk
 *.pdb
 *.pdf
 *.docx

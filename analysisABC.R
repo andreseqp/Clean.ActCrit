@@ -9,10 +9,12 @@ require(data.table)
 library(coda)
 source("../R_files/posPlots.R")
 
+simdir<-"D:/Neuch_simulations/ABCfit/Simulations/"
 
-scen<-"ABC_Nrew1_"
+scen<-"ABC_gam_Nrew_"
 
-(listFiles<-list.files(here("Simulations",scen)))
+
+(listFiles<-list.files(paste0(simdir,scen),full.names = TRUE))
 ABCruns<-grep("chain",listFiles,value = TRUE)
 
 
@@ -120,9 +122,12 @@ lines(y=predict.lm(mod1.2,data.frame(negReward=seq(0,5,length=1000))),
 
 ## MCMC analisis with coda
 
-ABCraw<-fread(here("Simulations",scen,ABCruns[3]))
+ABCraw<-fread(ABCruns[1])
 
-ABC.mcmc<-mcmc(ABCraw[,.(negReward)])
+ABC.mcmc<-mcmc(ABCraw[,.(gamma,negReward)])
 effectiveSize(ABC.mcmc)
+
 summary(ABC.mcmc)
 plot(ABC.mcmc)
+
+

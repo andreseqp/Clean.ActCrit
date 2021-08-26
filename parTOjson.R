@@ -10,7 +10,7 @@ exedir<-'/./ActCrit.exe'
 
 fileName<-"parameters.json"
 
-scenario<-"ABC_Nrew1"
+scenario<-"ABCtest"
 
 # Baseline parameter values
 param<-list(totRounds=20000,ResReward=1,VisReward=1,
@@ -27,7 +27,7 @@ param<-list(totRounds=20000,ResReward=1,VisReward=1,
 param_ABC<-list(totRounds=5000,ResReward=1,VisReward=1,
             ResProbLeav=0,scenario=0, inbr=0,outbr=0,forRat=0.0,
             seed=1, propfullPrint = 0.7,sdPert=c(0.1,0.1,0.1,1),
-            chain_length=100000,
+            chain_length=10000,
             init=c(0.05,0.05,0.8,0.8),# alphaA,AlphaC, Gamma, NegRew
             pertScen = 3, 	# enum perturnScen {all,  bothFut, justGam, justNegRew};
             folderL=paste0(here(simsDir),"/",scenario,"_/"))
@@ -102,9 +102,9 @@ check_create.dir(here(simsDir),param = rep(scenario,1),
                  values = c(""))
 
 
-for(seed in 1:5){
+for(seed in 1:3){
   param_ABC$folder<-param_ABC$folderL
-  param_ABC$init<-c(0.05,0.05,0,runif(1,max = 5))#c(0.01,0.01,runif(1),runif(1,max = 5))
+  param_ABC$init<-c(0.05,0.05,0,runif(1,max = 10))#runif(1,max = 1),0)#
   param_ABC$seed <- seed
   fileName<-paste("parameters_ABC_",seed,".json",sep="")
   outParam<-toJSON(param_ABC,auto_unbox = TRUE,pretty = TRUE)

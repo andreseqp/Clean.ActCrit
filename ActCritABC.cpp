@@ -252,7 +252,9 @@ void agent::getNewOptions(client newOptions[], int &idNewOptions,
 				cleanOptionsT1[0] = cleanOptionsT[1], negRew_curr = 0; 
 			}
 			// if the unttended client is a visitor, it leaves with probability VisPropLeave
-			else { negRew_curr = negRew_const; }
+			else { 
+				negRew_curr = negRew_const; 
+			}
 		}
 		else { negRew_curr = 0; }
 	}
@@ -273,7 +275,7 @@ void agent::getNewOptions(client newOptions[], int &idNewOptions,
 			// if the unattended client is a visitor, it leaves with probability VisPropLeave
 			else { negRew_curr = negRew_const; }
 		}
-		else { negRew_const = 0; }
+		else { negRew_curr = 0; }
 	}
 	switch (scenario) {
 	case nature: getExternalOptions(newOptions, idNewOptions, inbr, outbr);
@@ -668,8 +670,7 @@ double calculate_fit(const std::vector< data_point>& empData,
 	double sum_log_likelihood = 0.0;
 	for (int i = 0; i < empData.size(); ++i) {
 		sum_log_likelihood += log(simData[i].market_exp_success*empData[i].market_exp_success +
-			(1 - simData[i].market_exp_success)*(1 - empData[i].market_exp_success)+
-		0.0000000001);
+			(1 - simData[i].market_exp_success)*(1 - empData[i].market_exp_success));
 	}
 	return(sum_log_likelihood);
 }
@@ -696,7 +697,7 @@ model_param perturb_parameters(model_param focal_param,json &sim_param) {
 		clip_range(new_param.gamma, 0, 0.99999);
 		new_param.negReward = focal_param.negReward + rnd::normal(0, 
 			float(sim_param["sdPert"][3]));
-		clip_low(new_param.negReward, 0);
+		clip_range(new_param.negReward, 0,10);
 	}
 	else if (sim_param["pertScen"] == 2)
 	{
@@ -713,7 +714,7 @@ model_param perturb_parameters(model_param focal_param,json &sim_param) {
 		new_param.alphaC = focal_param.alphaC;
 		new_param.negReward = focal_param.negReward + rnd::normal(0, 
 			float(sim_param["sdPert"][3]));
-		clip_low(new_param.negReward, 0);
+		clip_range(new_param.negReward, 0, 10);
 		new_param.gamma = focal_param.gamma;
 	}
 	return(new_param);
@@ -727,7 +728,8 @@ std::vector<data_point> do_simulation(//del focal_model,
 	client *clientSet;
 	clientSet = new client[int(sim_param["totRounds"]) * 2];
 	int idClientSet;
-	FAATyp1 Cleaner (focal_comb.alphaC, focal_comb.gamma, focal_comb.negReward,
+	FAATyp1 Cleaner (focal_comb.alphaC, focal_comb.gamma,
+		focal_comb.negReward,
 		focal_comb.alphaA);
 	std::vector<data_point> sim_data(emp_data.size());
 	double VisPref, init;
@@ -812,12 +814,12 @@ int main(int argc, char* argv[]){
 	//sim_param["propfullPrint"]       = 0.7;
 	//sim_param["sdPert"]       = {0.01, 0.01 ,0.01 ,0.01}; // alphaA, alphaC, Gamma, NegRew
 	//sim_param["chain_length"]       = 1000;
-	//sim_param["init"]       = {0.01, 0.01 ,0.0 ,1};
+	//sim_param["init"]       = {0.01, 0.01 ,0.0 ,10};
 	//sim_param["pertScen"] = 0;
 	////enum perturnScen {all,  bothFut, justGam, justNegRew};
 	//sim_param["folder"]       = "I:/Projects/Clean.ActCrit/Simulations/ABCtest_/";
 
-	ifstream marketData ("I:/Projects/Clean.ActCrit/Data/data_ABC.txt");
+	ifstream marketData ("E:/Projects/Clean.ActCrit/Data/data_ABC.txt");
 	
 
 

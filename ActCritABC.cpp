@@ -40,7 +40,6 @@ Start date:
 #include <iostream>
 #include <fstream>
 #include <omp.h>
-// #include "tchar.h"
 #include "../Cpp/Routines/C++/RandomNumbers/random.h"
 //H for house pc, E for laptop, M for office
 #include "../Cpp/json.hpp"       
@@ -422,7 +421,7 @@ void agent::update(){
 	// change policy parameter according to TD error
 	currState = mapOptions(cleanOptionsT,choiceT);
 	nextState = mapOptions(cleanOptionsT1, choiceT);
-	delta = currentReward +
+	delta = currentReward -
 		negRew_curr*neta + gamma*values[nextState] - values[currState];
 	// construct the TD error
 	values[currState] += alpha*delta;
@@ -599,7 +598,15 @@ string create_filename(std::string filename,nlohmann::json param){
 
 struct data_point {
 	double rel_abund_clean, rel_abund_visitors, rel_abund_resid,prob_Vis_Leav;
-	double market_exp_success;
+	bool market_exp_success;
+};
+
+struct locat_point {
+	double rel_abund_clean, rel_abund_visitors, rel_abund_resid, prob_Vis_Leav;
+	string site_year;
+	int countMarket, totalMarket;
+	float market_exp_success;
+	double marketPred;
 };
 
 struct model_param {
@@ -621,7 +628,7 @@ struct model_param {
 //	negReward = obj.negReward;
 //}
 
-vector<data_point> read_Data(ifstream &marketData) {
+vector <locat_point> read_locData(ifstream& marketData) {
 	// open file
 	if (!marketData.is_open()) {
 		std::cerr << "error: unable to open data file\n";
@@ -630,14 +637,17 @@ vector<data_point> read_Data(ifstream &marketData) {
 	}
 	string header;
 	getline(marketData,header); // skip header
-	vector<data_point> data_set; 
-	data_point input;
+	vector<locat_point> data_set; 
+	locat_point input;
 	for (;;) { // read data
+		marketData >> input.site_year;
 		marketData >> input.rel_abund_clean;
 		marketData >> input.rel_abund_visitors;
 		marketData >> input.rel_abund_resid;
 		marketData >> input.prob_Vis_Leav;
 		marketData >> input.market_exp_success;
+		marketData >> input.countMarket;
+		marketData >> input.totalMarket;
 		data_set.emplace_back(input);
 		// if end of file
 		if (marketData.eof()) 	break;
@@ -645,7 +655,31 @@ vector<data_point> read_Data(ifstream &marketData) {
 	return(data_set);
 }
 
-void initializeIndFile(ofstream &chainOutput,nlohmann::json param){
+//vector<data_point> read_Data(ifstream &marketData) {
+//	// open file
+//	if (!marketData.is_open()) {
+//		std::cerr << "error: unable to open data file\n";
+//		wait_for_return();
+//		exit(EXIT_FAILURE);
+//	}
+//	string header;
+//	getline(marketData,header); // skip header
+//	vector<data_point> data_set; 
+//	data_point input;
+//	for (;;) { // read data
+//		marketData >> input.rel_abund_clean;
+//		marketData >> input.rel_abund_visitors;
+//		marketData >> input.rel_abund_resid;
+//		marketData >> input.prob_Vis_Leav;
+//		marketData >> input.market_exp_success;
+//		data_set.emplace_back(input);
+//		// if end of file
+//		if (marketData.eof()) 	break;
+//	}
+//	return(data_set);
+//}
+
+void initializeChainFile(ofstream &chainOutput,nlohmann::json param){
 	std::string namedir = param["folder"];
 	string IndFile = create_filename(namedir, param);
 	chainOutput.open(IndFile.c_str());
@@ -653,24 +687,113 @@ void initializeIndFile(ofstream &chainOutput,nlohmann::json param){
 		"gamma	" << "negReward	" << "fit	" << "ratio" << endl;
 }
 
+void initializeRoundFile(ofstream& RoundOutput, nlohmann::json param,
+	model_param focals) {
+	// File to record the predictions and data for one parameter combination
+	std::string namedir = param["folder"];
+	namedir.append("round_");
+	namedir.append("gamma_");
+	namedir.append(douts(std::ceil(focals.gamma*100)/100));
+	namedir.append("regRew_");
+	namedir.append(douts(std::ceil(focals.negReward * 100) / 100)); 
+	namedir.append("_seed");
+	namedir.append(itos(param["seed"]));
+	namedir.append(".txt");
+	RoundOutput.open(namedir.c_str());
+	RoundOutput << "site_year	" 
+		<< "rel.abund.cleaners	" 
+		<<	"rel.abund.visitors	" 
+		<<  "rel.abund.residents	"
+		<<  "prob.Vis.Leav	"
+		<<  "market_binomial_data	" 
+		<<	"market_binomial_pred" << endl;
+}
+
+void printRoundFile(ofstream& roundOut, const std::vector<locat_point>& emp_data,
+	const std::vector< data_point>& simData) {
+	for (int id_data_point = 0; id_data_point < emp_data.size(); ++id_data_point) {
+		roundOut << emp_data[id_data_point].site_year << '\t' <<
+			emp_data[id_data_point].rel_abund_clean << '\t' <<
+			emp_data[id_data_point].rel_abund_resid << '\t' <<
+			emp_data[id_data_point].prob_Vis_Leav << '\t' <<
+			emp_data[id_data_point].market_exp_success << '\t' <<
+			emp_data[id_data_point].marketPred << endl;
+	}
+}
+
+double	getkforGamma(double& mode, double var) {
+	double k1 = (2 + (pow(mode, 2)) / var + 
+		mode * sqrt((4 + pow(mode, 2) / var) / var)) / 2;
+	double k2 = (2 + pow(mode, 2) / var - 
+		mode * sqrt((4 + pow(mode, 2) / var) / var)) / 2;
+	if (k1 > 0 || k2 < 0) return(k1);
+	else
+		if (k1 < 0 || k2 >0) return(k2);
+		else error("result out of range", CURRENT_FUNCTION);
+}
+
+double getthetaforGamma(double& mode, double var) {
+	return	sqrt(var / getkforGamma(mode, var));
+}
+
+double getAlphaforBeta(double& mean, double var) {
+	double alpha = ((mean * (1 - mean) / var) - 1) * mean;
+	if(alpha>0)	return alpha;
+	else {
+		cout << "Alpha values smaller than 0 for beta distribution!!" << endl;
+		return 1;
+	}
+}
+
+double getbetaforBeta(double& mean, double var) {
+	double beta = ((mean * (1 - mean) / var) - 1) * (1 - mean);
+	if (beta > 0) return beta;
+	else {
+		cout << "Alpha values smaller than 0 for beta distribution!!" << endl;
+		return 1;
+	}
+}
+
+double calcTransProbRatio(model_param focalParam, model_param newParam,
+	json &sim_param) {
+	double Pold2new = 1, Pnew2old=1, alphaBeta, 
+		betaBeta, kgamma,thetaGamma, ratio;
+	//gamma parameter
+	alphaBeta = getAlphaforBeta(newParam.gamma, sim_param["sdPert"][2]);
+	betaBeta = getbetaforBeta(newParam.gamma, sim_param["sdPert"][2]);
+	Pnew2old *= rnd::beta_pdf(focalParam.gamma, alphaBeta, betaBeta);
+	alphaBeta = getAlphaforBeta(focalParam.gamma, sim_param["sdPert"][2]);
+	betaBeta = getbetaforBeta(focalParam.gamma, sim_param["sdPert"][2]);
+	Pold2new *= rnd::beta_pdf(newParam.gamma, alphaBeta, betaBeta);
+	//NegReward parameter
+	kgamma = getkforGamma(newParam.negReward, sim_param["sdPert"][3]);
+	thetaGamma = getthetaforGamma(newParam.negReward, sim_param["sdPert"][3]);
+	Pnew2old *= rnd::pdf_gamma(focalParam.negReward, kgamma, thetaGamma);
+	kgamma = getkforGamma(focalParam.negReward, sim_param["sdPert"][3]);
+	thetaGamma = getthetaforGamma(focalParam.negReward, sim_param["sdPert"][3]);
+	Pold2new *= rnd::pdf_gamma(newParam.negReward, kgamma, thetaGamma);
+
+	ratio = Pnew2old / Pold2new;
+	return ratio;
+}
 
 
 //double calculate_fit(const std::vector< data_point>& empData,
-//					 const std::vector< data_point>& simData) {
-//	double fit = 0.0;
-//	for(int i = 0; i < empData.size(); ++i) {
-//		double d = empData[i].market_exp_success - simData[i].market_exp_success;
-//		fit += d * d;
-//	}			 
-//	return(fit);
+//	const std::vector< data_point>& simData) {
+//	double sum_log_likelihood = 0.0;
+//	for (int i = 0; i < empData.size(); ++i) {
+//		sum_log_likelihood += log(simData[i].market_exp_success*empData[i].market_exp_success +
+//			(1 - simData[i].market_exp_success)*(1 - empData[i].market_exp_success));
+//	}
+//	return(sum_log_likelihood);
 //}
 
-double calculate_fit(const std::vector< data_point>& empData,
-	const std::vector< data_point>& simData) {
+double calculate_fit(const std::vector<locat_point>& empData) {
 	double sum_log_likelihood = 0.0;
 	for (int i = 0; i < empData.size(); ++i) {
-		sum_log_likelihood += log(simData[i].market_exp_success*empData[i].market_exp_success +
-			(1 - simData[i].market_exp_success)*(1 - empData[i].market_exp_success));
+		sum_log_likelihood +=
+			log(rnd::pdf_binomial(empData[i].countMarket, 
+				empData[i].totalMarket, empData[i].marketPred));
 	}
 	return(sum_log_likelihood);
 }
@@ -682,30 +805,30 @@ model_param perturb_parameters(model_param focal_param,json &sim_param) {
 	if (sim_param["pertScen"] == 0) {
 		new_param.alphaA = focal_param.alphaA + rnd::normal(0, 
 			float(sim_param["sdPert"][0]));
-		clip_low(new_param.alphaA, 0);
 		new_param.alphaC = focal_param.alphaC + rnd::normal(0, 
 			float(sim_param["sdPert"][1]));
-		clip_low(new_param.alphaC, 0);
 		new_param.negReward = focal_param.negReward;
 		new_param.gamma = focal_param.gamma;
 	}
 	if (sim_param["pertScen"] < 2) {
+		double alphaBeta = getAlphaforBeta(focal_param.gamma, sim_param["sdPert"][2]);
+		double betaBeta = getbetaforBeta(focal_param.gamma, sim_param["sdPert"][2]);
+		new_param.gamma = rnd::beta(alphaBeta,betaBeta);
+		double kgamma = getkforGamma(focal_param.negReward, sim_param["sdPert"][3]);
+		double thetaGamma = getthetaforGamma(focal_param.negReward, 
+			sim_param["sdPert"][3]);
+		new_param.negReward = rnd::gamma(kgamma,thetaGamma);
 		new_param.alphaA = focal_param.alphaA;
 		new_param.alphaC = focal_param.alphaC;
-		new_param.gamma = focal_param.gamma + rnd::normal(0, 
-			float(sim_param["sdPert"][2]));
-		clip_range(new_param.gamma, 0, 0.99999);
-		new_param.negReward = focal_param.negReward + rnd::normal(0, 
-			float(sim_param["sdPert"][3]));
-		clip_range(new_param.negReward, 0,10);
+
 	}
 	else if (sim_param["pertScen"] == 2)
 	{
 		new_param.alphaA = focal_param.alphaA;
 		new_param.alphaC = focal_param.alphaC;
-		new_param.gamma = focal_param.gamma + rnd::normal(0, 
-			float(sim_param["sdPert"][2]));
-		clip_range(new_param.gamma, 0, 0.99999);
+		double alphaBeta = getAlphaforBeta(focal_param.gamma, sim_param["sdPert"][2]);
+		double betaBeta = getbetaforBeta(focal_param.gamma, sim_param["sdPert"][2]);
+		new_param.gamma = rnd::beta(alphaBeta, betaBeta);
 		new_param.negReward = focal_param.negReward;
 	}
 	else
@@ -714,7 +837,7 @@ model_param perturb_parameters(model_param focal_param,json &sim_param) {
 		new_param.alphaC = focal_param.alphaC;
 		new_param.negReward = focal_param.negReward + rnd::normal(0, 
 			float(sim_param["sdPert"][3]));
-		clip_range(new_param.negReward, 0, 10);
+		//clip_range(new_param.negReward, 0, 10);
 		new_param.gamma = focal_param.gamma;
 	}
 	return(new_param);
@@ -722,8 +845,8 @@ model_param perturb_parameters(model_param focal_param,json &sim_param) {
 
 
 
-std::vector<data_point> do_simulation(//del focal_model,
-	std::vector<data_point> emp_data, model_param focal_comb,
+void do_simulation(//del focal_model,
+	std::vector<locat_point> &emp_data, model_param focal_comb,
 	json sim_param) {
 	client *clientSet;
 	clientSet = new client[int(sim_param["totRounds"]) * 2];
@@ -731,65 +854,40 @@ std::vector<data_point> do_simulation(//del focal_model,
 	FAATyp1 Cleaner (focal_comb.alphaC, focal_comb.gamma,
 		focal_comb.negReward,
 		focal_comb.alphaA);
-	std::vector<data_point> sim_data(emp_data.size());
 	double VisPref, init;
 	int countRVopt;
 	// Loop through the data points
 	for (int id_data_point = 0; id_data_point < emp_data.size(); ++id_data_point) {
-		if (id_data_point > 0 &&
-			emp_data[id_data_point].rel_abund_clean == emp_data[id_data_point - 1].rel_abund_clean) {
-			sim_data[id_data_point].rel_abund_visitors =
-				emp_data[id_data_point].rel_abund_visitors;
-			sim_data[id_data_point].rel_abund_resid =
-				emp_data[id_data_point].rel_abund_resid;
-			sim_data[id_data_point].rel_abund_clean =
-				emp_data[id_data_point].rel_abund_clean;
-			sim_data[id_data_point].prob_Vis_Leav =
-				emp_data[id_data_point].prob_Vis_Leav;
-			sim_data[id_data_point].market_exp_success =
-				sim_data[id_data_point - 1].market_exp_success;
-		}
-		else
-		{
-			init = focal_comb.gamma*
-				(1 - pow(1 -
-					emp_data[id_data_point].rel_abund_resid -
-					emp_data[id_data_point].rel_abund_visitors, 2)) / (1 - focal_comb.gamma);
-			Cleaner.rebirth(init);
-			draw(clientSet, sim_param["totRounds"],
-				emp_data[id_data_point].rel_abund_resid,
-				emp_data[id_data_point].rel_abund_visitors);
-			idClientSet = 0;
-			VisPref = 0, countRVopt = 0;
-			// Loop through the learning rounds
-			for (int trial = 0; trial < sim_param["totRounds"]; ++trial) {
-				Cleaner.act(clientSet, idClientSet, emp_data[id_data_point].prob_Vis_Leav,
-					sim_param["ResProbLeav"], sim_param["VisReward"],
-					sim_param["ResReward"], sim_param["inbr"], sim_param["outbr"],
-					learnScenario(sim_param["scenario"]));
-				Cleaner.update();
-				if (trial > int(sim_param["totRounds"]) * float(sim_param["propfullPrint"])) {
-					if (Cleaner.getstate(0) == 0) {
-						++countRVopt;
-						if (Cleaner.cleanOptionsT[Cleaner.getChoice(0)] == visitor) ++VisPref;
-					}
+		init = focal_comb.gamma*
+			(1 - pow(1 -
+				emp_data[id_data_point].rel_abund_resid -
+				emp_data[id_data_point].rel_abund_visitors, 2)) / (1 - focal_comb.gamma);
+		Cleaner.rebirth(init);
+		draw(clientSet, sim_param["totRounds"],
+			emp_data[id_data_point].rel_abund_resid,
+			emp_data[id_data_point].rel_abund_visitors);
+		idClientSet = 0;
+		VisPref = 0, countRVopt = 0;
+		// Loop through the learning rounds
+		for (int trial = 0; trial < sim_param["totRounds"]; ++trial) {
+			Cleaner.act(clientSet, idClientSet, emp_data[id_data_point].prob_Vis_Leav,
+				sim_param["ResProbLeav"], sim_param["VisReward"],
+				sim_param["ResReward"], sim_param["inbr"], sim_param["outbr"],
+				learnScenario(sim_param["scenario"]));
+			Cleaner.update();
+			if (trial > int(sim_param["totRounds"]) * float(sim_param["propfullPrint"])) {
+				if (Cleaner.getstate(0) == 0) {
+					++countRVopt;
+					if (Cleaner.cleanOptionsT[Cleaner.getChoice(0)] == visitor) ++VisPref;
 				}
 			}
-			sim_data[id_data_point].rel_abund_visitors =
-				emp_data[id_data_point].rel_abund_visitors;
-			sim_data[id_data_point].rel_abund_resid =
-				emp_data[id_data_point].rel_abund_resid;
-			sim_data[id_data_point].rel_abund_clean =
-				emp_data[id_data_point].rel_abund_clean;
-			sim_data[id_data_point].prob_Vis_Leav =
-				emp_data[id_data_point].prob_Vis_Leav;
-			if (countRVopt == 0) sim_data[id_data_point].market_exp_success = 0.5;
-			else sim_data[id_data_point].market_exp_success = VisPref / countRVopt;
-			Cleaner.rebirth();
 		}
-	}
+		if (countRVopt == 0) emp_data[id_data_point].marketPred = 0.5;
+		else emp_data[id_data_point].marketPred = VisPref / countRVopt;
+		Cleaner.rebirth();
+		}
 	delete[] clientSet;
-	return(sim_data);
+	return;
 }
 
 
@@ -802,25 +900,26 @@ int main(int argc, char* argv[]){
 	// input parameters provided by a JSON file with the following
 	// structure:
 	//json sim_param;
-	//sim_param["totRounds"]    = 30000;
+	//sim_param["totRounds"]    = 10000;
 	//sim_param["ResReward"]    = 1;
 	//sim_param["VisReward"]    = 1;
 	//sim_param["ResProbLeav"]  = 0;
 	//sim_param["scenario"]  = 0;
 	//sim_param["inbr"]         = 0;
 	//sim_param["outbr"]        = 0;
-	//sim_param["seed"]         = 1;
+	//sim_param["seed"]         = 3;
 	//sim_param["forRat"]       = 0.0;
 	//sim_param["propfullPrint"]       = 0.7;
-	//sim_param["sdPert"]       = {0.01, 0.01 ,0.01 ,0.01}; // alphaA, alphaC, Gamma, NegRew
+	//sim_param["sdPert"]       = {0.1, 0.1 ,0.001 ,0.1}; 
+	//// alphaA, alphaC, Gamma, NegRew
 	//sim_param["chain_length"]       = 1000;
-	//sim_param["init"]       = {0.01, 0.01 ,0.0 ,10};
-	//sim_param["pertScen"] = 0;
+	//sim_param["init"]       = {0.05, 0.05 , 0.23,0.4398};
+	//sim_param["pertScen"] = 1;
 	////enum perturnScen {all,  bothFut, justGam, justNegRew};
-	//sim_param["folder"]       = "I:/Projects/Clean.ActCrit/Simulations/ABCtest_/";
+	//sim_param["folder"]       = "E:/Projects/Clean.ActCrit/Simulations/ABCtest_/";
 
-	ifstream marketData ("E:/Projects/Clean.ActCrit/Data/data_ABC.txt");
-	
+	//ifstream marketData ("E:/Projects/Clean.ActCrit/Data/data_ABC.txt");
+	ifstream marketData_site("E:/Projects/Clean.ActCrit/Data/data_ABC_site.txt");
 
 
 	// reading of parameters: 
@@ -829,18 +928,15 @@ int main(int argc, char* argv[]){
 	json sim_param = nlohmann::json::parse(parameters);
 	
 	
-	//ifstream marketData (argv[2]);
-
-
-
 	rnd::set_seed(sim_param["seed"]);
 
-	
+		
 	//enum model {model1, model2, model3, model4}; // Some sort of model choice
 	//model focal_model = sim_param["model"]; // this would be nice
 
-	vector< data_point > emp_data = read_Data(marketData); 
-	// read the data
+	//vector< data_point > emp_data = read_Data(marketData); 
+	vector <locat_point> emp_data_loc = read_locData(marketData_site);
+	// read the data structured by locations
 
 	model_param init_parameters; 
 	init_parameters.alphaA = sim_param["init"][0];
@@ -849,40 +945,68 @@ int main(int argc, char* argv[]){
 	init_parameters.negReward = sim_param["init"][3];
 
 	ofstream outfile;
-	initializeIndFile(outfile,sim_param);
+	initializeChainFile(outfile,sim_param);
+
 
 	// some sort of combination
 	
 	// we calculate the fit of the starting point, first we simulate data using 
 	// the initial parameters
 	// we also pass on the empirical data, to use the x and y coordinates.
- 	std::vector< data_point > simulated_data = 
-		do_simulation(//focal_model
-			emp_data, init_parameters, sim_param);
+ 	do_simulation(//focal_model
+			emp_data_loc, init_parameters, sim_param);
+	//double meanSucc_pred = 0;
+	//double meanSucc_emp = 0;
+	//for (int i = 0; i < emp_data_loc.size(); ++i) {
+	//	cout << emp_data_loc[1].site_year << '\t'
+	//		<< emp_data_loc[i].market_exp_success << '\t'
+	//		<< emp_data_loc[i].marketPred << endl;
+	//	meanSucc_pred += emp_data_loc[i].marketPred;
+	//	meanSucc_emp += emp_data_loc[i].market_exp_success;
+	//}
+	//cout << "Total	" << meanSucc_emp / emp_data_loc.size() << '\t'
+	//	 << meanSucc_pred / emp_data_loc.size() << endl;
+	//wait_for_return();
 
-   double fit = calculate_fit(emp_data, simulated_data); // function that calculates fit
-		
 	model_param focal_param = init_parameters;
-	for(int r = 0; r < sim_param["chain_length"]; ++r) {  // 
-		model_param new_param = perturb_parameters(focal_param,sim_param);
-		simulated_data = do_simulation(//focal_model, 
-			emp_data, new_param, sim_param);
-		double new_fit = calculate_fit(emp_data, simulated_data); 
-		double ratio = new_fit/ fit;  
+	double curr_loglike = calculate_fit(emp_data_loc);
+	while (isinf(-curr_loglike))
+	{
+		focal_param = perturb_parameters(focal_param, sim_param);
+		curr_loglike = curr_loglike = calculate_fit(emp_data_loc);
+	}
+	// function that calculates fit
+	double new_loglike, ratio;
+	for (int r = 0; r < sim_param["chain_length"]; ++r) {  // 
+		//cout << "Iteration	" << r << endl;
+		model_param new_param = perturb_parameters(focal_param, sim_param);
+		if ((new_param.gamma < 1 && new_param.gamma >= 0) &&
+			(new_param.negReward <= 10 && new_param.negReward >= 0)) {
+			do_simulation(//focal_model, 
+				emp_data_loc, new_param, sim_param);
+			new_loglike = calculate_fit(emp_data_loc);
+			ratio = calcTransProbRatio(focal_param, new_param, sim_param);
+		}
+		else
+		{
+			new_loglike = -INFINITY, ratio = 1;
+		}
+		ratio *= exp(new_loglike-curr_loglike);  
 		// better fit is larger, so ratio is > 1, so accept all.
 		if( rnd::uniform() < ratio) {
 			focal_param = new_param;
-			fit = new_fit;
+			curr_loglike = new_loglike;
 		}
 		outfile << r << "\t";
 		outfile << focal_param.alphaA << "\t"
 			<< focal_param.alphaC << "\t"
 			<< focal_param.gamma << "\t"
 			<< focal_param.negReward << "\t"
-			<< fit << "\t";
+			<< curr_loglike << "\t";
 		outfile << ratio << endl;
 	}
 	outfile.close();
 	// done!
+	//wait_for_return();
 	return 0;
 }

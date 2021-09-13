@@ -1,5 +1,9 @@
 library("data.table")
 library("here")
+library("readxl")
+
+
+## Load field data based on the market experiment performance criteria
 
 fieldData<-fread(here("Data","market_model.csv"))
 
@@ -8,7 +12,7 @@ str(fieldData)
 
 ### Adjust data to fit IBD
 
-fieldData[,rel.abund.cleaners:=abundance_cleaners_100m2/
+fieldData[,rel.abund.cleaners:=10*abundance_cleaners_100m2/
          (abundance_cleaners_100m2+abundance_clients_100m2)]
 
 
@@ -22,15 +26,135 @@ fieldData[,.(min(rel.abund.visitors),max(rel.abund.visitors))]
 fieldData[,.(min(rel.abund.residents),max(rel.abund.residents))]
 fieldData[rel.abund.residents==min(rel.abund.residents),rel.abund.cleaners*rel.abund.visitors]
 
-market.ABC<-fieldData[,.(rel.abund.cleaners,rel.abund.visitors,
+market.ABC<-fieldData[,.(site_year,rel.abund.cleaners,rel.abund.visitors,
                       rel.abund.residents,prob.Vis.Leav,
                       market_binomial)]
 
+hist(market.ABC[,rel.abund.cleaners])
+
 fwrite(market.ABC,here("data","data_ABC.txt"),row.names = FALSE,sep = "\t")
 
+marketABC.site<-market.ABC[,lapply(.SD,mean),by=site_year,.SDcols=c("rel.abund.cleaners",
+                                                    "rel.abund.visitors",
+                                                    "rel.abund.residents",
+                                                    "prob.Vis.Leav",
+                                                    "market_binomial")]
+marketABC.site[,countMarket:=market.ABC[,sum(market_binomial),by=site_year]$V1]
+marketABC.site[,totalMarket:=market.ABC[,length(market_binomial),by=site_year]$V1]
+marketABC.site[,site_year:=gsub(" ","_",site_year)]
 
+marketABC.site.fake<-marketABC.site
+marketABC.site.fake[,prob.Vis.Leav:=1]
+marketABC.site.fake[,rel.abund.cleaners:=seq(0.01,0.95,length.out = 12)]
+marketABC.site.fake[,rel.abund.visitors:=(1-rel.abund.cleaners)/2]
+marketABC.site.fake[,rel.abund.residents:=(1-rel.abund.cleaners)/2]
+
+fwrite(marketABC.site,here("data","data_ABC_site.txt"),
+       row.names = FALSE,sep = "\t")
+
+
+## Load raw field data including the number of visitor choices out of each 
+## 10 trial test session
+
+fieldData.raw<-read_xlsx(here("Data","market_raw_data.xlsx"),sheet = "round_data")
+
+fieldData.raw<-data.table(fieldData.raw)
+
+str(fieldData.raw)
+
+fieldData.raw[,use_sims:=ifelse(is.na(use_sims),0,1)]
+fieldData.raw[,use_sims:=as.logical(use_sims)]
+
+fieldData.filt<-fieldData.raw[use_sims==T,]
+fieldData.filt[,score_visitor:=as.numeric(score_visitor)]
+fieldData.filt[,stage:=as.factor(stage)]
+
+str(fieldData.filt)
+
+fieldData.sum<-fieldData.filt[,sum(score_visitor),
+                              by=.(site_year,cleaner_ID)]
+
+str(fieldData.sum)
+
+names(fieldData.sum)[3]<-"score_visitor"
+names(fieldData.sum)[1]<-"site.year"
+
+fieldData.sum[,unique(site.year)]
+marketABC.site$site_year
+
+fieldData.sum[site.year=="NHS2017",site.year:="NHS 2017"]
+
+fieldData.sum[,rel.abund.cleaners:=
+                marketABC.site[match(site.year,site_year),rel.abund.cleaners]]
+
+fieldData.sum[order(rel.abund.cleaners),max(rel.abund.cleaners),by=site.year]$site.year==
+
+marketABC.site[order(rel.abund.cleaners),.(site_year,rel.abund.cleaners)]$site_year
+
+fieldData.sum[,rel.abund.visitors:=
+                marketABC.site[match(site.year,site_year),rel.abund.visitors]]
+
+fieldData.sum[,rel.abund.residents:=
+                marketABC.site[match(site.year,site_year),rel.abund.residents]]
+
+fieldData.sum[,prob.Vis.Leav:=
+                marketABC.site[match(site.year,site_year),prob.Vis.Leav]]
+
+
+
+### Adjust data to fit IBD
 
 str(fieldData)
+
+fieldData[,rel.abund.cleaners:=10*abundance_cleaners_100m2/
+            (abundance_cleaners_100m2+abundance_clients_100m2)]
+
+
+fieldData[,`:=`(rel.abund.visitors=(1-rel.abund.cleaners)*abundance_large_100m2/abundance_clients_100m2,
+                rel.abund.residents=(1-rel.abund.cleaners)*abundance_small_100m2/abundance_clients_100m2)]
+
+fieldData[,prob.Vis.Leav:=percentage_swim_off/100]
+
+fieldData[,.(min(rel.abund.cleaners),max(rel.abund.cleaners))]
+fieldData[,.(min(rel.abund.visitors),max(rel.abund.visitors))]
+fieldData[,.(min(rel.abund.residents),max(rel.abund.residents))]
+fieldData[rel.abund.residents==min(rel.abund.residents),rel.abund.cleaners*rel.abund.visitors]
+
+market.ABC<-fieldData[,.(site_year,rel.abund.cleaners,rel.abund.visitors,
+                         rel.abund.residents,prob.Vis.Leav,
+                         market_binomial)]
+
+
+marketABC.site<-market.ABC[,lapply(.SD,mean),by=site_year,.SDcols=c("rel.abund.cleaners",
+                                                                    "rel.abund.visitors",
+                                                                    "rel.abund.residents",
+                                                                    "prob.Vis.Leav",
+                                                                    "market_binomial")]
+marketABC.site[,countMarket:=market.ABC[,sum(market_binomial),by=site_year]$V1]
+marketABC.site[,totalMarket:=market.ABC[,length(market_binomial),by=site_year]$V1]
+marketABC.site[,site_year:=gsub(" ","_",site_year)]
+
+marketABC.site.fake<-marketABC.site
+marketABC.site.fake[,prob.Vis.Leav:=1]
+marketABC.site.fake[,rel.abund.cleaners:=seq(0.01,0.95,length.out = 12)]
+marketABC.site.fake[,rel.abund.visitors:=(1-rel.abund.cleaners)/2]
+marketABC.site.fake[,rel.abund.residents:=(1-rel.abund.cleaners)/2]
+
+fwrite(marketABC.site,here("data","data_ABC_site.txt"),
+       row.names = FALSE,sep = "\t")
+
+
+
+
+head(fieldData.raw,n = 30)
+
+tmp.max.round<-fieldData.raw[,max(round),by=.(site_year,stage,cleaner_ID)]
+
+
+
+
+
+
 
 fieldData[,rowsum(.SD),.SDcol=grep("rel.abund",names(fieldData),value = TRUE)]
 

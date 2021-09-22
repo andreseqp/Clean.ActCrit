@@ -1,0 +1,18 @@
+{
+  "totRounds": 10000,
+  "ResReward": 1,
+  "VisReward": 1,
+  "ResProbLeav": 0,
+  "scenario": 0,
+  "inbr": 0,
+  "outbr": 0,
+  "forRat": 0,
+  "seed": 2,
+  "propfullPrint": 0.7,
+  "sdPert": [0.05, 0.05, 0.001, 0.1],
+  "chain_length": 500000,
+  "init": [0.05, 0.05, 0.179, 0.0085],
+  "pertScen": 1,
+  "folderL": "E:/Projects/Clean.ActCrit/Simulations/ABC_gam_Nrew_/",
+  "folder": "E:/Projects/Clean.ActCrit/Simulations/ABC_gam_Nrew_/"
+}

@@ -1,0 +1,18 @@
+{
+  "totRounds": 5000,
+  "ResReward": 1,
+  "VisReward": 1,
+  "ResProbLeav": 0,
+  "scenario": 0,
+  "inbr": 0,
+  "outbr": 0,
+  "forRat": 0,
+  "seed": 2,
+  "propfullPrint": 0.7,
+  "sdPert": [0.1, 0.1, 0.1, 1],
+  "chain_length": 100000,
+  "init": [0, 0, 0.554, 0],
+  "pertScen": 2,
+  "folderL": "E:/Projects/Clean.ActCrit/Simulations/ABC_gammaTest_/",
+  "folder": "E:/Projects/Clean.ActCrit/Simulations/ABC_gammaTest_/"
+}

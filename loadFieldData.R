@@ -84,6 +84,8 @@ marketABC.site$site_year
 
 fieldData.sum[site.year=="NHS2017",site.year:="NHS 2017"]
 
+fieldData.sum[,site.year:=gsub("_",replacement = " ",x = site.year)]
+
 fieldData.sum[,rel.abund.cleaners:=
                 marketABC.site[match(site.year,site_year),rel.abund.cleaners]]
 

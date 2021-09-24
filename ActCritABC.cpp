@@ -696,6 +696,10 @@ void initializeRoundFile(ofstream& RoundOutput, nlohmann::json param,
 	namedir.append(douts(std::ceil(focals.gamma*100)/100));
 	namedir.append("regRew_");
 	namedir.append(douts(std::ceil(focals.negReward * 100) / 100)); 
+	namedir.append("alphA_");
+	namedir.append(douts(std::ceil(focals.alphaA * 100) / 100));
+	namedir.append("alphC_");
+	namedir.append(douts(std::ceil(focals.alphaC * 100) / 100));
 	namedir.append("_seed");
 	namedir.append(itos(param["seed"]));
 	namedir.append(".txt");
@@ -709,8 +713,7 @@ void initializeRoundFile(ofstream& RoundOutput, nlohmann::json param,
 		<<	"market_binomial_pred" << endl;
 }
 
-void printRoundFile(ofstream& roundOut, const std::vector<locat_point>& emp_data,
-	const std::vector< data_point>& simData) {
+void printRoundFile(ofstream& roundOut, const std::vector<locat_point>& emp_data) {
 	for (int id_data_point = 0; id_data_point < emp_data.size(); ++id_data_point) {
 		roundOut << emp_data[id_data_point].site_year << '\t' <<
 			emp_data[id_data_point].rel_abund_clean << '\t' <<
@@ -798,14 +801,15 @@ double calculate_fit(const std::vector<locat_point>& empData) {
 	return(sum_log_likelihood);
 }
 
-model_param perturb_parameters(model_param focal_param,json &sim_param) {
+
+model_param perturb_parameters(model_param focal_param, json &sim_param) {
 	model_param new_param;
 	// also, you can throw in your own random number generator that you want,
 	// I just add a number N(0, sd);
 	if (sim_param["pertScen"] == 0) {
-		new_param.alphaA = focal_param.alphaA + rnd::normal(0, 
+		new_param.alphaA = focal_param.alphaA + rnd::normal(0,
 			float(sim_param["sdPert"][0]));
-		new_param.alphaC = focal_param.alphaC + rnd::normal(0, 
+		new_param.alphaC = focal_param.alphaC + rnd::normal(0,
 			float(sim_param["sdPert"][1]));
 		new_param.negReward = focal_param.negReward;
 		new_param.gamma = focal_param.gamma;
@@ -813,11 +817,11 @@ model_param perturb_parameters(model_param focal_param,json &sim_param) {
 	if (sim_param["pertScen"] < 2) {
 		double alphaBeta = getAlphaforBeta(focal_param.gamma, sim_param["sdPert"][2]);
 		double betaBeta = getbetaforBeta(focal_param.gamma, sim_param["sdPert"][2]);
-		new_param.gamma = rnd::beta(alphaBeta,betaBeta);
+		new_param.gamma = rnd::beta(alphaBeta, betaBeta);
 		double kgamma = getkforGamma(focal_param.negReward, sim_param["sdPert"][3]);
-		double thetaGamma = getthetaforGamma(focal_param.negReward, 
+		double thetaGamma = getthetaforGamma(focal_param.negReward,
 			sim_param["sdPert"][3]);
-		new_param.negReward = rnd::gamma(kgamma,thetaGamma);
+		new_param.negReward = rnd::gamma(kgamma, thetaGamma);
 		new_param.alphaA = focal_param.alphaA;
 		new_param.alphaC = focal_param.alphaC;
 
@@ -835,9 +839,62 @@ model_param perturb_parameters(model_param focal_param,json &sim_param) {
 	{
 		new_param.alphaA = focal_param.alphaA;
 		new_param.alphaC = focal_param.alphaC;
-		new_param.negReward = focal_param.negReward + rnd::normal(0, 
-			float(sim_param["sdPert"][3]));
-		//clip_range(new_param.negReward, 0, 10);
+		double kgamma = getkforGamma(focal_param.negReward, sim_param["sdPert"][3]);
+		double thetaGamma = getthetaforGamma(focal_param.negReward,
+			sim_param["sdPert"][3]);
+		new_param.negReward = rnd::gamma(kgamma, thetaGamma);
+		new_param.gamma = focal_param.gamma;
+	}
+	return(new_param);
+}
+
+double boundedParUnifPert(double & parVal, float pertRang ,double min, double max) {
+	if (parVal - pertRang * 0.5 < min) {
+		return rnd::uniform(min, pertRang);
+	}
+	else if (parVal + pertRang * 0.5 > max){
+		return rnd::uniform(max-pertRang,max);
+	}
+	else	{
+		return rnd::uniform(parVal - pertRang*0.5, parVal + pertRang*0.5);
+	}
+}
+
+model_param perturb_parameters_uniform(model_param focal_param, json &sim_param) {
+	model_param new_param;
+	// also, you can throw in your own random number generator that you want,
+	// I just add a number N(0, sd);
+	if (sim_param["pertScen"] == 0) {
+		new_param.alphaA = boundedParUnifPert(focal_param.alphaA,
+			float(sim_param["sdPert"][0]),0,INFINITY);
+		new_param.alphaC = boundedParUnifPert(focal_param.alphaC,
+			float(sim_param["sdPert"][1]),0,INFINITY);
+		new_param.negReward = focal_param.negReward;
+		new_param.gamma = focal_param.gamma;
+	}
+	if (sim_param["pertScen"] < 2) {
+		new_param.gamma = boundedParUnifPert(focal_param.gamma, 
+			sim_param["sdPert"][2],0,1);
+		new_param.negReward = boundedParUnifPert(focal_param.negReward,
+			sim_param["sdPert"][3], 0, INFINITY);
+		new_param.alphaA = focal_param.alphaA;
+		new_param.alphaC = focal_param.alphaC;
+
+	}
+	else if (sim_param["pertScen"] == 2)
+	{
+		new_param.alphaA = focal_param.alphaA;
+		new_param.alphaC = focal_param.alphaC;
+		new_param.gamma = boundedParUnifPert(focal_param.gamma,
+			sim_param["sdPert"][2], 0, 1);
+		new_param.negReward = focal_param.negReward;
+	}
+	else
+	{
+		new_param.alphaA = focal_param.alphaA;
+		new_param.alphaC = focal_param.alphaC;
+		new_param.negReward = boundedParUnifPert(focal_param.negReward,
+			sim_param["sdPert"][3], 0, INFINITY);
 		new_param.gamma = focal_param.gamma;
 	}
 	return(new_param);
@@ -910,16 +967,17 @@ int main(int argc, char* argv[]){
 	//sim_param["seed"]         = 3;
 	//sim_param["forRat"]       = 0.0;
 	//sim_param["propfullPrint"]       = 0.7;
-	//sim_param["sdPert"]       = {0.1, 0.1 ,0.001 ,0.1}; 
+	//sim_param["sdPert"]       = {0.1, 0.1 ,0.1 ,0.2}; 
 	//// alphaA, alphaC, Gamma, NegRew
 	//sim_param["chain_length"]       = 1000;
 	//sim_param["init"]       = {0.05, 0.05 , 0.23,0.4398};
 	//sim_param["pertScen"] = 1;
+	//sim_param["MCMC"] = 0;
 	////enum perturnScen {all,  bothFut, justGam, justNegRew};
-	//sim_param["folder"]       = "E:/Projects/Clean.ActCrit/Simulations/ABCtest_/";
+	//sim_param["folder"]       = "I:/Projects/Clean.ActCrit/Simulations/ABCtest_/";
 
 	//ifstream marketData ("E:/Projects/Clean.ActCrit/Data/data_ABC.txt");
-	ifstream marketData_site("E:/Projects/Clean.ActCrit/Data/data_ABC_site.txt");
+	ifstream marketData_site("I:/Projects/Clean.ActCrit/Data/data_ABC_site.txt");
 
 
 	// reading of parameters: 
@@ -944,11 +1002,6 @@ int main(int argc, char* argv[]){
 	init_parameters.gamma = sim_param["init"][2];
 	init_parameters.negReward = sim_param["init"][3];
 
-	ofstream outfile;
-	initializeChainFile(outfile,sim_param);
-
-
-	// some sort of combination
 	
 	// we calculate the fit of the starting point, first we simulate data using 
 	// the initial parameters
@@ -969,44 +1022,55 @@ int main(int argc, char* argv[]){
 	//wait_for_return();
 
 	model_param focal_param = init_parameters;
+	// function that calculates fit
 	double curr_loglike = calculate_fit(emp_data_loc);
 	while (isinf(-curr_loglike))
 	{
 		focal_param = perturb_parameters(focal_param, sim_param);
 		curr_loglike = curr_loglike = calculate_fit(emp_data_loc);
 	}
-	// function that calculates fit
-	double new_loglike, ratio;
-	for (int r = 0; r < sim_param["chain_length"]; ++r) {  // 
-		//cout << "Iteration	" << r << endl;
-		model_param new_param = perturb_parameters(focal_param, sim_param);
-		if ((new_param.gamma < 1 && new_param.gamma >= 0) &&
-			(new_param.negReward <= 10 && new_param.negReward >= 0)) {
-			do_simulation(//focal_model, 
-				emp_data_loc, new_param, sim_param);
-			new_loglike = calculate_fit(emp_data_loc);
-			ratio = calcTransProbRatio(focal_param, new_param, sim_param);
+
+	if (sim_param["MCMC"]==1) {
+		ofstream outfile;
+		initializeChainFile(outfile, sim_param);
+		double new_loglike, ratio;
+		for (int r = 0; r < sim_param["chain_length"]; ++r) {  // 
+			//cout << "Iteration	" << r << endl;
+			model_param new_param = perturb_parameters_uniform(focal_param, sim_param);
+			if ((new_param.gamma < 1 && new_param.gamma >= 0) &&
+				(new_param.negReward <= INFINITY && new_param.negReward >= 0)) {
+				do_simulation(//focal_model, 
+					emp_data_loc, new_param, sim_param);
+				new_loglike = calculate_fit(emp_data_loc);
+				ratio = 1;// calcTransProbRatio(focal_param, new_param, sim_param);
+			}
+			else
+			{
+				new_loglike = -INFINITY, ratio = 1;
+			}
+			ratio *= exp(new_loglike - curr_loglike);
+			// better fit is larger, so ratio is > 1, so accept all.
+			if (rnd::uniform() < ratio) {
+				focal_param = new_param;
+				curr_loglike = new_loglike;
+			}
+			outfile << r << "\t";
+			outfile << focal_param.alphaA << "\t"
+				<< focal_param.alphaC << "\t"
+				<< focal_param.gamma << "\t"
+				<< focal_param.negReward << "\t"
+				<< curr_loglike << "\t";
+			outfile << ratio << endl;
 		}
-		else
-		{
-			new_loglike = -INFINITY, ratio = 1;
-		}
-		ratio *= exp(new_loglike-curr_loglike);  
-		// better fit is larger, so ratio is > 1, so accept all.
-		if( rnd::uniform() < ratio) {
-			focal_param = new_param;
-			curr_loglike = new_loglike;
-		}
-		outfile << r << "\t";
-		outfile << focal_param.alphaA << "\t"
-			<< focal_param.alphaC << "\t"
-			<< focal_param.gamma << "\t"
-			<< focal_param.negReward << "\t"
-			<< curr_loglike << "\t";
-		outfile << ratio << endl;
+		outfile.close();
+		// done!
+		//wait_for_return();
 	}
-	outfile.close();
-	// done!
-	//wait_for_return();
-	return 0;
+	else {
+		ofstream roundOut;
+		initializeRoundFile(roundOut, sim_param, init_parameters);
+		printRoundFile(roundOut, emp_data_loc);
+		roundOut.close();
+	}
+		return 0;
 }

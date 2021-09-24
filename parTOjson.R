@@ -10,7 +10,9 @@ exedir<-'/./ActCrit.exe'
 
 fileName<-"parameters.json"
 
-scenario<-"ABC_gam_Nrew"
+scenario<-"ABC_gam_Nrew_unif2"
+
+scenario<-"predictions"
 
 # Baseline parameter values
 param<-list(totRounds=20000,ResReward=1,VisReward=1,
@@ -26,10 +28,11 @@ param<-list(totRounds=20000,ResReward=1,VisReward=1,
 
 param_ABC<-list(totRounds=10000,ResReward=1,VisReward=1,
             ResProbLeav=0,scenario=0, inbr=0,outbr=0,forRat=0.0,
-            seed=1, propfullPrint = 0.7,sdPert=c(0.05,0.05,0.001,0.1),
+            seed=1, propfullPrint = 0.7,sdPert=c(0.05,0.05,0.2,0.2),
             chain_length=500000,
-            init=c(0.05,0.05,0.8,0.8),# alphaA,AlphaC, Gamma, NegRew
+            init=c(0.05,0.05,0,0),# alphaA,AlphaC, Gamma, NegRew
             pertScen = 1, 	# enum perturnScen {all,  bothFut, justGam, justNegRew};
+            MCMC =0,
             folderL=paste0(here(simsDir),"/",scenario,"_/"))
 
 clustfolderAnd="/hpcfs/home/a.quinones/Cleaner/AbundLvp_/"
@@ -102,7 +105,7 @@ check_create.dir(here(simsDir),param = rep(scenario,1),
                  values = c(""))
 
 
-for(seed in 1:3){
+for(seed in 1:1){
   param_ABC$folder<-param_ABC$folderL
   param_ABC$init<-c(0.05,0.05,runif(1,max = 1),runif(1,max = 2))##
   param_ABC$seed <- seed

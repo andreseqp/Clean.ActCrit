@@ -8,12 +8,13 @@ library(plot3D)
 require(data.table)
 library(coda)
 library(mcmcplots)
+library(bayesplot) 
 library(lattice)
 source(here("../R_files/posPlots.R"))
 
 simdir<-"D:/Neuch_simulations/ABCfit/Simulations/"
 
-scen<-"ABC_gam_Nrew_"
+scen<-"ABC_gam_Nrew_unif_"
 
 
 (listFiles<-list.files(paste0(simdir,scen),full.names = TRUE))
@@ -30,7 +31,7 @@ ABCraw<-do.call(rbind,lapply(ABCruns, function(file){
 }))
 
 # One per onject
-ABCraw<-fread(here("Simulations",scen,ABCruns[1]))
+ABCraw<-fread(here("Simulations",scen,ABCruns[3]))
 
 # All in a list
 mcmcList<-mcmc.list(do.call(list,lapply(ABCruns, function(file){
@@ -53,9 +54,24 @@ ABCburned<-ABCraw[iteration>burn.in]
 
 ABCfiltered<-ABCraw[iteration>burn.in & iteration %% thinning==0]
 
-ABCburned[seed==1]
+ABCburned[seed==1,]
 ABC.gamma.time.short<-dcast(ABCburned,iteration~seed,value.var = c("gamma"))
 ABC.nRew.time.short<-dcast(ABCburned,iteration~seed,value.var = "negReward")
+
+par(plt=posPlot(numploty = 2,idploty = 2),mfrow=c(1,1),las=1)
+matplot(y=ABC.gamma.time.short[,c(2,3,4)],
+        x=ABC.gamma.time.short[,iteration],
+        type="l",lty=1,col=2:5,ylab = "",
+        xlab="",xaxt="n",lwd=0.1)
+title(main = expression(gamma),line = -2,cex=3,new=T)
+par(plt=posPlot(numploty = 2,idploty = 1),mfrow=c(1,1),las=1)
+matplot(y=ABC.nRew.time.short[,c(2,3,4)],
+        x=ABC.nRew.time.short[,iteration],
+        type="l",lty=1,col=2:5,ylab = "",
+        xlab="",xaxt="n",lwd=0.1)
+title(main = expression(gamma),line = -2,cex=3)
+
+
 
 par(plt=posPlot(numploty = 2,idploty = 2),mfrow=c(1,1),las=1)
 matplot(y=ABCburned[,gamma],
@@ -163,22 +179,22 @@ raftery.diag(mcmcList)
 geweke.plot(mcmcList)
 gelman.plot(mcmcList)
 autocorr(mcmcList)
+mcmc_acf(mcmcList, pars = c("gamma", "negReward"), 
+         lags = 50)
 rejectionRate(mcmcList)
 densGamma<-density(mcmcList[[1]][,1])
 densGamma$x[sort(densGamma$y,decreasing = TRUE,index.return=T)$ix[1:10]]
 denplot(mcmcList,collapse = FALSE)
-densplot(mcmcList[[1]][,1])
-densplot(mcmcList[[1]][,2])
+densplot(mcmcList[[3]][,1])
+densplot(mcmcList[[3]][,2])
 points(x=densGamma$x,densGamma$y,col="red")
 
 points(x=densGamma$x[sort(densGamma$y,decreasing = TRUE,index.return=T)$ix[1:20]],
        densGamma$y[sort(densGamma$y,decreasing = TRUE,index.return=T)$ix[1:20]],
        col="red")
 
-hist(mcmcList[[1]][mcmcList[[1]][,1]!=0.99999 && 
-                mcmcList[[1]][,1]!=0.0,1])
 
-mcmcList[[1]][mcmcList[[1]][,1]==max(mcmcList[[1]][,1]),1]
+
 str(mcmcList[[1]])
 
 
@@ -194,12 +210,12 @@ funcTheta.gammaD<-function(mod,v){
 }
 
 # parameterazing gamma distribution
-mode<-0.24;varGam<-0.1
+mode<-0.5;varGam<-0.001
 funcK.gammaD(mode,varGam)
 funcTheta.gammaD(mode,varGam)
 
 k<-funcK.gammaD(mode,varGam);theta<-funcTheta.gammaD(mode,varGam)
-k<-1;theta<-2
+# k<-1;theta<-2
 plot(y=dgamma(seq(0,5,length.out = 2000),k,scale = theta),
      x=seq(0,5,length.out = 2000),type="l")
 lines(x=c(k*theta,k*theta),y=c(0,10))
@@ -242,7 +258,7 @@ funcAlpha.beta<-function(meanBet,varBet){
 funcBeta.beta<-function(meanBet,varBet){
   ((meanBet*(1-meanBet)/varBet)-1)*(1-meanBet)
 }
-meanBet<-0.0038660764724149179; varBet<-0.01
+meanBet<-0.005; varBet<-0.005
 alph.beta<-funcAlpha.beta(meanBet,varBet)
 beta.beta<-funcBeta.beta(meanBet,varBet)
 alph.beta;beta.beta

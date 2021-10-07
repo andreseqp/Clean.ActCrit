@@ -11,7 +11,7 @@
   "propfullPrint": 0.7,
   "sdPert": [0.05, 0.05, 0.2, 0.2],
   "chain_length": 500000,
-  "init": [0.05, 0.05, 0.8377, 1.3553],
+  "init": [0.05, 0.05, 0, 0],
   "pertScen": 1,
   "MCMC": 0,
   "folderL": "I:/Projects/Clean.ActCrit/Simulations/predictions_/",

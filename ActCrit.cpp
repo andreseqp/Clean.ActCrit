@@ -719,9 +719,9 @@ int main(int argc, char* argv[]){
 								double init = tmpGam*(1 - pow(1 - tmpRes - tmpVis, 2)) / (1 - tmpGam);
 
 							   // Initialize agents
-								learners[0] = new PAATyp1(alphaT, *itg, *itn, 
+								learners[1] = new PAATyp1(alphaT, *itg, *itn,
 									*italTh, init, alphaThNch);
-								learners[1] = new FAATyp1(alphaT, *itg, *itn, 
+								learners[0] = new FAATyp1(alphaT, *itg, *itn, 
 									*italTh, init);
 								// output of learning trials
 								ofstream printTest;

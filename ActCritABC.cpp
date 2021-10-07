@@ -596,15 +596,21 @@ string create_filename(std::string filename,nlohmann::json param){
 	return(filename);
 }
 
-struct data_point {
-	double rel_abund_clean, rel_abund_visitors, rel_abund_resid,prob_Vis_Leav;
-	bool market_exp_success;
-};
+
 
 struct locat_point {
 	double rel_abund_clean, rel_abund_visitors, rel_abund_resid, prob_Vis_Leav;
 	string site_year;
 	int countMarket, totalMarket;
+	float market_exp_success;
+	double marketPred;
+};
+
+struct cleaner_point {
+	double rel_abund_clean, rel_abund_visitors, rel_abund_resid, prob_Vis_Leav;
+	string site_year;
+	string cleanerID;
+	int countVisitor, totalMarket;
 	float market_exp_success;
 	double marketPred;
 };
@@ -640,6 +646,7 @@ vector <locat_point> read_locData(ifstream& marketData) {
 	vector<locat_point> data_set; 
 	locat_point input;
 	for (;;) { // read data
+	    // if end of file
 		marketData >> input.site_year;
 		marketData >> input.rel_abund_clean;
 		marketData >> input.rel_abund_visitors;
@@ -648,12 +655,41 @@ vector <locat_point> read_locData(ifstream& marketData) {
 		marketData >> input.market_exp_success;
 		marketData >> input.countMarket;
 		marketData >> input.totalMarket;
-		data_set.emplace_back(input);
-		// if end of file
 		if (marketData.eof()) 	break;
+		data_set.emplace_back(input);
 	}
 	return(data_set);
 }
+
+vector <cleaner_point> read_CleanData(ifstream& marketData) {
+	// open file
+	if (!marketData.is_open()) {
+		std::cerr << "error: unable to open data file\n";
+		wait_for_return();
+		exit(EXIT_FAILURE);
+	}
+	string header;
+	getline(marketData, header); // skip header
+	vector<cleaner_point> data_set;
+	cleaner_point input;
+	for (;;) { // read data
+		marketData >> input.site_year;
+		marketData >> input.cleanerID;
+		marketData >> input.countVisitor;
+		marketData >> input.rel_abund_clean;
+		marketData >> input.rel_abund_visitors;
+		marketData >> input.rel_abund_resid;
+		marketData >> input.prob_Vis_Leav;
+		if (marketData.eof()) 	break;
+		input.totalMarket =20;
+		input.market_exp_success = double(input.countVisitor) / 
+			double(input.totalMarket);
+		data_set.emplace_back(input);
+		// if end of file
+	}
+	return(data_set);
+}
+
 
 //vector<data_point> read_Data(ifstream &marketData) {
 //	// open file
@@ -704,22 +740,49 @@ void initializeRoundFile(ofstream& RoundOutput, nlohmann::json param,
 	namedir.append(itos(param["seed"]));
 	namedir.append(".txt");
 	RoundOutput.open(namedir.c_str());
-	RoundOutput << "site_year	" 
-		<< "rel.abund.cleaners	" 
-		<<	"rel.abund.visitors	" 
-		<<  "rel.abund.residents	"
-		<<  "prob.Vis.Leav	"
-		<<  "market_binomial_data	" 
-		<<	"market_binomial_pred" << endl;
+	if (param["data"] == "loc") {
+		RoundOutput << "site_year	"
+			<< "rel.abund.cleaners	"
+			<< "rel.abund.visitors	"
+			<< "rel.abund.residents	"
+			<< "prob.Vis.Leav	"
+			<< "market_binomial_data	"
+			<< "market_binomial_pred" << endl;
+	}
+	else{
+		RoundOutput << "site_year	"
+			<< "CleanerID	"
+			<< "rel.abund.cleaners	"
+			<< "rel.abund.visitors	"
+			<< "rel.abund.residents	"
+			<< "prob.Vis.Leav	"
+			<< "visitorChoices	"
+			<< "visitorChoices_pred" << endl;
+	}
+	
 }
 
 void printRoundFile(ofstream& roundOut, const std::vector<locat_point>& emp_data) {
 	for (int id_data_point = 0; id_data_point < emp_data.size(); ++id_data_point) {
 		roundOut << emp_data[id_data_point].site_year << '\t' <<
 			emp_data[id_data_point].rel_abund_clean << '\t' <<
+			emp_data[id_data_point].rel_abund_visitors << '\t' <<
 			emp_data[id_data_point].rel_abund_resid << '\t' <<
 			emp_data[id_data_point].prob_Vis_Leav << '\t' <<
 			emp_data[id_data_point].market_exp_success << '\t' <<
+			emp_data[id_data_point].marketPred << endl;
+	}
+}
+
+void printRoundFile(ofstream& roundOut, const std::vector<cleaner_point>& emp_data) {
+	for (int id_data_point = 0; id_data_point < emp_data.size(); ++id_data_point) {
+		roundOut << emp_data[id_data_point].site_year << '\t' <<
+			emp_data[id_data_point].cleanerID << '\t' <<
+			emp_data[id_data_point].rel_abund_clean << '\t' <<
+			emp_data[id_data_point].rel_abund_visitors << '\t' <<
+			emp_data[id_data_point].rel_abund_resid << '\t' <<
+			emp_data[id_data_point].prob_Vis_Leav << '\t' <<
+			emp_data[id_data_point].countVisitor << '\t' <<
 			emp_data[id_data_point].marketPred << endl;
 	}
 }
@@ -801,6 +864,14 @@ double calculate_fit(const std::vector<locat_point>& empData) {
 	return(sum_log_likelihood);
 }
 
+double calculate_fit(const std::vector<cleaner_point>& empData) {
+	double sum_log_likelihood = 0.0;
+	for (int i = 0; i < empData.size(); ++i) {
+		sum_log_likelihood +=log(rnd::pdf_binomial(empData[i].countVisitor,
+			empData[i].totalMarket, empData[i].marketPred))	;
+	}
+	return(sum_log_likelihood);
+}
 
 model_param perturb_parameters(model_param focal_param, json &sim_param) {
 	model_param new_param;
@@ -850,13 +921,13 @@ model_param perturb_parameters(model_param focal_param, json &sim_param) {
 
 double boundedParUnifPert(double & parVal, float pertRang ,double min, double max) {
 	if (parVal - pertRang * 0.5 < min) {
-		return rnd::uniform(min, pertRang);
+		return (pertRang*rnd::uniform());
 	}
 	else if (parVal + pertRang * 0.5 > max){
-		return rnd::uniform(max-pertRang,max);
+		return (pertRang*rnd::uniform() + 1);
 	}
 	else	{
-		return rnd::uniform(parVal - pertRang*0.5, parVal + pertRang*0.5);
+		return (pertRang*(rnd::uniform() - 0.5) + parVal);
 	}
 }
 
@@ -873,7 +944,7 @@ model_param perturb_parameters_uniform(model_param focal_param, json &sim_param)
 		new_param.gamma = focal_param.gamma;
 	}
 	if (sim_param["pertScen"] < 2) {
-		new_param.gamma = boundedParUnifPert(focal_param.gamma, 
+		new_param.gamma = boundedParUnifPert(focal_param.gamma,
 			sim_param["sdPert"][2],0,1);
 		new_param.negReward = boundedParUnifPert(focal_param.negReward,
 			sim_param["sdPert"][3], 0, INFINITY);
@@ -948,6 +1019,58 @@ void do_simulation(//del focal_model,
 }
 
 
+void do_simulation(//del focal_model,
+	std::vector<cleaner_point> &emp_data, model_param focal_comb,
+	json sim_param) {
+	client *clientSet;
+	clientSet = new client[int(sim_param["totRounds"]) * 2];
+	int idClientSet;
+	FAATyp1 Cleaner(focal_comb.alphaC, focal_comb.gamma,
+		focal_comb.negReward,
+		focal_comb.alphaA);
+	double VisPref, init;
+	int countRVopt;
+	// Loop through the data points
+	for (int id_data_point = 0; id_data_point < emp_data.size(); ++id_data_point) {
+		if (id_data_point > 0 &&
+			emp_data[id_data_point].site_year == emp_data[id_data_point - 1].site_year) {
+			emp_data[id_data_point].marketPred = emp_data[id_data_point - 1].marketPred;
+		}
+		else
+		{
+			init = focal_comb.gamma*
+				(1 - pow(1 -
+					emp_data[id_data_point].rel_abund_resid -
+					emp_data[id_data_point].rel_abund_visitors, 2)) / (1 - focal_comb.gamma);
+			Cleaner.rebirth(init);
+			draw(clientSet, sim_param["totRounds"],
+				emp_data[id_data_point].rel_abund_resid,
+				emp_data[id_data_point].rel_abund_visitors);
+			idClientSet = 0;
+			VisPref = 0, countRVopt = 0;
+			// Loop through the learning rounds
+			for (int trial = 0; trial < sim_param["totRounds"]; ++trial) {
+				Cleaner.act(clientSet, idClientSet, emp_data[id_data_point].prob_Vis_Leav,
+					sim_param["ResProbLeav"], sim_param["VisReward"],
+					sim_param["ResReward"], sim_param["inbr"], sim_param["outbr"],
+					learnScenario(sim_param["scenario"]));
+				Cleaner.update();
+				if (trial > int(sim_param["totRounds"]) * float(sim_param["propfullPrint"])) {
+					if (Cleaner.getstate(0) == 0) {
+						++countRVopt;
+						if (Cleaner.cleanOptionsT[Cleaner.getChoice(0)] == visitor) ++VisPref;
+					}
+				}
+			}
+			if (countRVopt == 0) emp_data[id_data_point].marketPred = 0.5;
+			else emp_data[id_data_point].marketPred = VisPref / countRVopt;
+			Cleaner.rebirth();
+		}
+	}
+	delete[] clientSet;
+	return;
+}
+
 int main(int argc, char* argv[]){
 
 	mark_time(1);
@@ -957,7 +1080,7 @@ int main(int argc, char* argv[]){
 	// input parameters provided by a JSON file with the following
 	// structure:
 	//json sim_param;
-	//sim_param["totRounds"]    = 10000;
+	//sim_param["totRounds"]    = 5000;
 	//sim_param["ResReward"]    = 1;
 	//sim_param["VisReward"]    = 1;
 	//sim_param["ResProbLeav"]  = 0;
@@ -967,88 +1090,118 @@ int main(int argc, char* argv[]){
 	//sim_param["seed"]         = 3;
 	//sim_param["forRat"]       = 0.0;
 	//sim_param["propfullPrint"]       = 0.7;
-	//sim_param["sdPert"]       = {0.1, 0.1 ,0.1 ,0.2}; 
+	//sim_param["sdPert"]       = {0.1, 0.1 ,0.1 ,0.01}; 
 	//// alphaA, alphaC, Gamma, NegRew
 	//sim_param["chain_length"]       = 1000;
-	//sim_param["init"]       = {0.05, 0.05 , 0.23,0.4398};
+	//sim_param["init"]       = {0.05, 0.05 , 0.23,0.134};
 	//sim_param["pertScen"] = 1;
-	//sim_param["MCMC"] = 0;
 	////enum perturnScen {all,  bothFut, justGam, justNegRew};
+	//sim_param["MCMC"] = 0;
+	//sim_param["data"] = "clean"; // "loc", "clean"
+	//sim_param["nRep"] = 30 ;
 	//sim_param["folder"]       = "I:/Projects/Clean.ActCrit/Simulations/ABCtest_/";
+	//sim_param["dataFile"] = "I:/Projects/Clean.ActCrit/Data/data_ABC_cleaner_30.txt";
 
-	//ifstream marketData ("E:/Projects/Clean.ActCrit/Data/data_ABC.txt");
-	ifstream marketData_site("I:/Projects/Clean.ActCrit/Data/data_ABC_site.txt");
-
+	////ifstream marketData ("E:/Projects/Clean.ActCrit/Data/data_ABC.txt");
+	
 
 	// reading of parameters: 
 	ifstream parameters(argv[1]);
 	if (parameters.fail()) { cout << "JSON file failed" << endl; }
 	json sim_param = nlohmann::json::parse(parameters);
 	
+
 	
 	rnd::set_seed(sim_param["seed"]);
 
 		
+
 	//enum model {model1, model2, model3, model4}; // Some sort of model choice
 	//model focal_model = sim_param["model"]; // this would be nice
 
+	
 	//vector< data_point > emp_data = read_Data(marketData); 
-	vector <locat_point> emp_data_loc = read_locData(marketData_site);
-	// read the data structured by locations
+	ifstream marketData(sim_param["dataFile"].get<std::string>());//("I:/Projects/Clean.ActCrit/Data/data_ABC_site.txt");
+	//marketData.open(, ifstream::in);
+	vector <locat_point> emp_data_loc;
+	//ifstream marketData_cleaner; // ("I:/Projects/Clean.ActCrit/Data/data_ABC_cleaner.txt");
+	vector <cleaner_point> emp_data_clean; 
+	
+	if (sim_param["data"] == "loc") emp_data_loc = read_locData(marketData);
+	else emp_data_clean = read_CleanData(marketData);
 
+	// read the data structured by locations
 	model_param init_parameters; 
 	init_parameters.alphaA = sim_param["init"][0];
 	init_parameters.alphaC = sim_param["init"][1];
 	init_parameters.gamma = sim_param["init"][2];
 	init_parameters.negReward = sim_param["init"][3];
 
-	
-	// we calculate the fit of the starting point, first we simulate data using 
-	// the initial parameters
-	// we also pass on the empirical data, to use the x and y coordinates.
- 	do_simulation(//focal_model
-			emp_data_loc, init_parameters, sim_param);
-	//double meanSucc_pred = 0;
-	//double meanSucc_emp = 0;
-	//for (int i = 0; i < emp_data_loc.size(); ++i) {
-	//	cout << emp_data_loc[1].site_year << '\t'
-	//		<< emp_data_loc[i].market_exp_success << '\t'
-	//		<< emp_data_loc[i].marketPred << endl;
-	//	meanSucc_pred += emp_data_loc[i].marketPred;
-	//	meanSucc_emp += emp_data_loc[i].market_exp_success;
-	//}
-	//cout << "Total	" << meanSucc_emp / emp_data_loc.size() << '\t'
-	//	 << meanSucc_pred / emp_data_loc.size() << endl;
-	//wait_for_return();
-
 	model_param focal_param = init_parameters;
-	// function that calculates fit
-	double curr_loglike = calculate_fit(emp_data_loc);
-	while (isinf(-curr_loglike))
-	{
-		focal_param = perturb_parameters(focal_param, sim_param);
-		curr_loglike = curr_loglike = calculate_fit(emp_data_loc);
-	}
+	
+	if (sim_param["MCMC"] == 1) {
 
-	if (sim_param["MCMC"]==1) {
+		double curr_loglike;
+
+		// we calculate the fit of the starting point, first we simulate data using 
+		// the initial parameters
+		// we also pass on the empirical data, to use the x and y coordinates.
+		if (sim_param["data"] == "loc") {
+			do_simulation(//focal_model
+				emp_data_loc, init_parameters, sim_param);
+			// function that calculates fit
+			curr_loglike = calculate_fit(emp_data_loc);
+			while (isinf(-curr_loglike)) {
+				focal_param = perturb_parameters_uniform(focal_param, sim_param);
+				curr_loglike  = calculate_fit(emp_data_loc);
+			}
+		}
+		else {
+			do_simulation(//focal_model
+			emp_data_clean, init_parameters, sim_param);
+			curr_loglike = calculate_fit(emp_data_clean);
+			while (isinf(-curr_loglike)) {
+				focal_param = perturb_parameters_uniform(focal_param, sim_param);
+				curr_loglike  = calculate_fit(emp_data_clean);
+			}
+		}
+
+
 		ofstream outfile;
 		initializeChainFile(outfile, sim_param);
 		double new_loglike, ratio;
 		for (int r = 0; r < sim_param["chain_length"]; ++r) {  // 
 			//cout << "Iteration	" << r << endl;
 			model_param new_param = perturb_parameters_uniform(focal_param, sim_param);
+			cout << focal_param.gamma - new_param.gamma << '\t'
+				<< focal_param.negReward - new_param.negReward << '\t';
 			if ((new_param.gamma < 1 && new_param.gamma >= 0) &&
 				(new_param.negReward <= INFINITY && new_param.negReward >= 0)) {
-				do_simulation(//focal_model, 
-					emp_data_loc, new_param, sim_param);
-				new_loglike = calculate_fit(emp_data_loc);
+				if (sim_param["data"] == "loc") {
+					do_simulation(//focal_model, 
+						emp_data_loc, focal_param, sim_param);	
+					curr_loglike = calculate_fit(emp_data_loc);
+					do_simulation(//focal_model, 
+						emp_data_loc, new_param, sim_param);
+					new_loglike = calculate_fit(emp_data_loc);
+				}
+				else {
+					do_simulation(//focal_model, 
+						emp_data_clean, focal_param, sim_param);
+					curr_loglike = calculate_fit(emp_data_clean);
+					do_simulation(//focal_model, 
+						emp_data_clean, new_param, sim_param);
+					new_loglike = calculate_fit(emp_data_clean);
+				}
 				ratio = 1;// calcTransProbRatio(focal_param, new_param, sim_param);
 			}
 			else
 			{
 				new_loglike = -INFINITY, ratio = 1;
-			}
+			} 
 			ratio *= exp(new_loglike - curr_loglike);
+			cout << curr_loglike - new_loglike << '\t'
+				<< ratio << endl;
 			// better fit is larger, so ratio is > 1, so accept all.
 			if (rnd::uniform() < ratio) {
 				focal_param = new_param;
@@ -1067,10 +1220,43 @@ int main(int argc, char* argv[]){
 		//wait_for_return();
 	}
 	else {
-		ofstream roundOut;
-		initializeRoundFile(roundOut, sim_param, init_parameters);
-		printRoundFile(roundOut, emp_data_loc);
-		roundOut.close();
+		if (sim_param["data"] == "loc") {
+			ofstream roundOut;
+			initializeRoundFile(roundOut, sim_param, init_parameters);
+			double average_prediction[12];
+			for (int j = 0; j < 12; ++j) average_prediction[j] = 0;
+			for (int rep = 0; rep < int(sim_param["nRep"]); ++rep) {
+				do_simulation(emp_data_loc, init_parameters, sim_param);
+				for (int foc_datapoint = 0; foc_datapoint < emp_data_loc.size();
+					++foc_datapoint) {
+					average_prediction[foc_datapoint] +=
+						emp_data_loc[foc_datapoint].marketPred;
+				}
+			}
+			for (int j = 0; j < emp_data_loc.size(); ++j)
+				emp_data_loc[j].marketPred = average_prediction[j] / sim_param["nRep"];
+			printRoundFile(roundOut, emp_data_loc);
+			roundOut.close();
+		}
+		else {
+			ofstream roundOut;
+			initializeRoundFile(roundOut, sim_param, init_parameters);
+			double average_prediction[120];
+			for (int j = 0; j < 120; ++j) average_prediction[j] = 0;
+			for (int rep = 0; rep < int(sim_param["nRep"]); ++rep) {
+				do_simulation(emp_data_clean, init_parameters, sim_param);
+				for (int foc_datapoint = 0; foc_datapoint < emp_data_clean.size();
+					++foc_datapoint) {
+					average_prediction[foc_datapoint] +=
+						emp_data_clean[foc_datapoint].marketPred;
+				}
+			}
+			for (int j = 0; j < emp_data_clean.size(); ++j) 
+				emp_data_clean[j].marketPred = average_prediction[j]/sim_param["nRep"];
+			printRoundFile(roundOut, emp_data_clean);
+			roundOut.close();
+		}
+		
 	}
 		return 0;
 }

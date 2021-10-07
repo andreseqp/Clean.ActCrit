@@ -9,10 +9,11 @@
   "forRat": 0,
   "seed": 1,
   "propfullPrint": 0.7,
-  "sdPert": [0.05, 0.05, 0.2, 0.2],
+  "sdPert": [0.05, 0.05, 0.2, 0.1],
   "chain_length": 500000,
-  "init": [0.05, 0.05, 0.0448, 0.2968],
+  "init": [0.05, 0.05, 0.5996, 0.1408],
   "pertScen": 1,
+  "MCMC": 1,
   "folderL": "I:/Projects/Clean.ActCrit/Simulations/ABC_gam_Nrew_unif_/",
   "folder": "I:/Projects/Clean.ActCrit/Simulations/ABC_gam_Nrew_unif_/"
 }

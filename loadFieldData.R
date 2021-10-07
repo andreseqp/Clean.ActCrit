@@ -12,7 +12,9 @@ str(fieldData)
 
 ### Adjust data to fit IBD
 
-fieldData[,rel.abund.cleaners:=10*abundance_cleaners_100m2/
+clean.abund.scale<-30
+
+fieldData[,rel.abund.cleaners:=clean.abund.scale*abundance_cleaners_100m2/
          (abundance_cleaners_100m2+abundance_clients_100m2)]
 
 
@@ -32,7 +34,8 @@ market.ABC<-fieldData[,.(site_year,rel.abund.cleaners,rel.abund.visitors,
 
 hist(market.ABC[,rel.abund.cleaners])
 
-fwrite(market.ABC,here("data","data_ABC.txt"),row.names = FALSE,sep = "\t")
+fwrite(market.ABC,here("data",paste0("data_ABC_",clean.abund.scale,".txt")),
+       row.names = FALSE,sep = "\t")
 
 marketABC.site<-market.ABC[,lapply(.SD,mean),by=site_year,.SDcols=c("rel.abund.cleaners",
                                                     "rel.abund.visitors",
@@ -43,13 +46,13 @@ marketABC.site[,countMarket:=market.ABC[,sum(market_binomial),by=site_year]$V1]
 marketABC.site[,totalMarket:=market.ABC[,length(market_binomial),by=site_year]$V1]
 marketABC.site[,site_year:=gsub(" ","_",site_year)]
 
-marketABC.site.fake<-marketABC.site
-marketABC.site.fake[,prob.Vis.Leav:=1]
-marketABC.site.fake[,rel.abund.cleaners:=seq(0.01,0.95,length.out = 12)]
-marketABC.site.fake[,rel.abund.visitors:=(1-rel.abund.cleaners)/2]
-marketABC.site.fake[,rel.abund.residents:=(1-rel.abund.cleaners)/2]
+# marketABC.site.fake<-marketABC.site
+# marketABC.site.fake[,prob.Vis.Leav:=1]
+# marketABC.site.fake[,rel.abund.cleaners:=seq(0.01,0.95,length.out = 12)]
+# marketABC.site.fake[,rel.abund.visitors:=(1-rel.abund.cleaners)/2]
+# marketABC.site.fake[,rel.abund.residents:=(1-rel.abund.cleaners)/2]
 
-fwrite(marketABC.site,here("data","data_ABC_site.txt"),
+fwrite(marketABC.site,here("data",paste0("data_ABC_site_",clean.abund.scale,".txt")),
        row.names = FALSE,sep = "\t")
 
 
@@ -84,8 +87,6 @@ marketABC.site$site_year
 
 fieldData.sum[site.year=="NHS2017",site.year:="NHS 2017"]
 
-fieldData.sum[,site.year:=gsub("_",replacement = " ",x = site.year)]
-
 fieldData.sum[,rel.abund.cleaners:=
                 marketABC.site[match(site.year,site_year),rel.abund.cleaners]]
 
@@ -102,6 +103,14 @@ fieldData.sum[,rel.abund.residents:=
 fieldData.sum[,prob.Vis.Leav:=
                 marketABC.site[match(site.year,site_year),prob.Vis.Leav]]
 
+fieldData.sum[,site.year:=gsub(" ",replacement = "_",x = site.year)]
+
+fieldData.sum[,cleaner_ID:=gsub(" ",replacement = "",x = cleaner_ID)]
+
+str(fieldData.sum)
+
+fwrite(fieldData.sum,here("data",paste0("data_ABC_cleaner_",clean.abund.scale,".txt")),
+       row.names = FALSE,sep = "\t")
 
 
 ### Adjust data to fit IBD

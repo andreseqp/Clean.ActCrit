@@ -1,0 +1,22 @@
+{
+  "totRounds": 10000,
+  "ResReward": 1,
+  "VisReward": 1,
+  "ResProbLeav": 0,
+  "scenario": 0,
+  "inbr": 0,
+  "outbr": 0,
+  "forRat": 0,
+  "seed": 2,
+  "propfullPrint": 0.7,
+  "sdPert": [0.05, 0.05, 0.1, 0.05],
+  "chain_length": 100000,
+  "init": [0.05, 0.05, 0.4683, 0.0812],
+  "pertScen": 1,
+  "MCMC": 1,
+  "data": "clean",
+  "nRep": 1,
+  "dataFile": "I:/Projects/Clean.ActCrit/Data/data_ABC_cleaner_30.txt",
+  "folderL": "I:/Projects/Clean.ActCrit/Simulations/ABCclean_gam_Nrew_unif_sca30_/",
+  "folder": "I:/Projects/Clean.ActCrit/Simulations/ABCclean_gam_Nrew_unif_sca30_/"
+}

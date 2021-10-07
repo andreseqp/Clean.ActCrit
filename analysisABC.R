@@ -14,10 +14,10 @@ source(here("../R_files/posPlots.R"))
 
 simdir<-"D:/Neuch_simulations/ABCfit/Simulations/"
 
-scen<-"ABC_gam_Nrew_unif_"
+scen<-"ABCclean_gam_Nrew_exp_sca30_"
 
 
-(listFiles<-list.files(paste0(simdir,scen),full.names = TRUE))
+# (listFiles<-list.files(paste0(simdir,scen),full.names = TRUE))
 (listFiles<-list.files(here("Simulations",scen)))
 ABCruns<-grep("chain",listFiles,value = TRUE)
 
@@ -31,7 +31,7 @@ ABCraw<-do.call(rbind,lapply(ABCruns, function(file){
 }))
 
 # One per onject
-ABCraw<-fread(here("Simulations",scen,ABCruns[3]))
+ABCraw<-fread(here("Simulations",scen,ABCruns[1]))
 
 # All in a list
 mcmcList<-mcmc.list(do.call(list,lapply(ABCruns, function(file){
@@ -57,6 +57,7 @@ ABCfiltered<-ABCraw[iteration>burn.in & iteration %% thinning==0]
 ABCburned[seed==1,]
 ABC.gamma.time.short<-dcast(ABCburned,iteration~seed,value.var = c("gamma"))
 ABC.nRew.time.short<-dcast(ABCburned,iteration~seed,value.var = "negReward")
+ABC.logLike.time.short<-dcast(ABCburned,iteration~seed,value.var = "fit")
 
 par(plt=posPlot(numploty = 2,idploty = 2),mfrow=c(1,1),las=1)
 matplot(y=ABC.gamma.time.short[,c(2,3,4)],
@@ -64,13 +65,19 @@ matplot(y=ABC.gamma.time.short[,c(2,3,4)],
         type="l",lty=1,col=2:5,ylab = "",
         xlab="",xaxt="n",lwd=0.1)
 title(main = expression(gamma),line = -2,cex=3,new=T)
-par(plt=posPlot(numploty = 2,idploty = 1),mfrow=c(1,1),las=1)
+par(plt=posPlot(numploty = 2,idploty = 1),mfrow=c(1,1),las=1,new=TRUE)
 matplot(y=ABC.nRew.time.short[,c(2,3,4)],
         x=ABC.nRew.time.short[,iteration],
         type="l",lty=1,col=2:5,ylab = "",
         xlab="",xaxt="n",lwd=0.1)
-title(main = expression(gamma),line = -2,cex=3)
+title(main = expression(eta),line = -2,cex=3)
+axis(1)
 
+par(plt=posPlot(numploty = 1,idploty = 1),mfrow=c(1,1),las=1)
+matplot(y=ABC.logLike.time.short[,c(2,3,4)],
+        x=ABC.logLike.time.short[,iteration],
+        type="l",lty=1,col=2:5,ylab = "",
+        xlab="",xaxt="n",lwd=0.1)
 
 
 par(plt=posPlot(numploty = 2,idploty = 2),mfrow=c(1,1),las=1)
@@ -78,6 +85,7 @@ matplot(y=ABCburned[,gamma],
         x=ABCburned[,iteration],
         type="l",lty=1,col=2:5,ylab = "",
         xlab="",xaxt="n",lwd=0.1)
+
 title(main = expression(gamma),line = -2,cex=3)
 par(plt=posPlot(numploty = 2,idploty = 1),new=TRUE)
 matplot(y=ABCburned[,negReward],
@@ -151,7 +159,7 @@ lines(y=predict.lm(mod1.2,data.frame(negReward=seq(0,5,length=1000))),
 ## MCMC analisis with coda
 
 # ABCraw<-fread(ABCruns[3])
-ABCraw<-fread(here("Simulations",scen,ABCruns[1]))
+ABCraw<-fread(here("Simulations",scen,ABCruns[3]))
 
 ABC.mcmc<-mcmc(ABCraw[,.(gamma,negReward)])
 effectiveSize(ABC.mcmc)
@@ -164,7 +172,6 @@ density(ABC.mcmc)
 geweke.plot(ABC.mcmc)
 HPDinterval(ABC.mcmc)
 raftery.diag(ABC.mcmc)
-gelman.plot(ABC.mcmc)
 autocorr(ABC.mcmc)
 rejectionRate(ABC.mcmc)
 
@@ -172,22 +179,24 @@ hist(ABC.mcmc[,1],breaks = 100)
 hist(ABC.mcmc[,2],breaks = 100)
 
 
-summary(mcmcList)
+(sumMCMClist<-summary(mcmcList))
+sumMCMClist$statistics[,1]
 effectiveSize(mcmcList)
+par(plt=posPlot())
 plot(mcmcList)
 raftery.diag(mcmcList)
 geweke.plot(mcmcList)
 gelman.plot(mcmcList)
 autocorr(mcmcList)
 mcmc_acf(mcmcList, pars = c("gamma", "negReward"), 
-         lags = 50)
+         lags = 100)
 rejectionRate(mcmcList)
 densGamma<-density(mcmcList[[1]][,1])
 densGamma$x[sort(densGamma$y,decreasing = TRUE,index.return=T)$ix[1:10]]
 denplot(mcmcList,collapse = FALSE)
-densplot(mcmcList[[3]][,1])
-densplot(mcmcList[[3]][,2])
-points(x=densGamma$x,densGamma$y,col="red")
+densplot(mcmcList[[1]][,1])
+densplot(mcmcList[[2]][,2])
+
 
 points(x=densGamma$x[sort(densGamma$y,decreasing = TRUE,index.return=T)$ix[1:20]],
        densGamma$y[sort(densGamma$y,decreasing = TRUE,index.return=T)$ix[1:20]],

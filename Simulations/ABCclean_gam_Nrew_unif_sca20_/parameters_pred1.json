@@ -1,0 +1,21 @@
+{
+  "totRounds": 10000,
+  "ResReward": 1,
+  "VisReward": 1,
+  "ResProbLeav": 0,
+  "scenario": 0,
+  "inbr": 0,
+  "outbr": 0,
+  "forRat": 0,
+  "seed": 1,
+  "propfullPrint": 0.7,
+  "sdPert": [0.05, 0.05, 0.1, 0.05],
+  "chain_length": 0,
+  "init": [0.05, 0.05, 0.1307, 0.0204],
+  "pertScen": 1,
+  "MCMC": 0,
+  "data": "loc",
+  "dataFile": "I:/Projects/Clean.ActCrit/Data/data_ABC_site_20.txt",
+  "folderL": "I:/Projects/Clean.ActCrit/Simulations/ABCclean_gam_Nrew_unif_sca20_/",
+  "folder": "I:/Projects/Clean.ActCrit/Simulations/ABCclean_gam_Nrew_unif_sca20_/"
+}

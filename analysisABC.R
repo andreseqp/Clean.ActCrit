@@ -14,12 +14,13 @@ source(here("../R_files/posPlots.R"))
 
 simdir<-"D:/Neuch_simulations/ABCfit/Simulations/"
 
-scen<-"ABCclean_gam_Nrew_exp_sca30_"
+scen<-"ABCclean_gam_Nrew_sca_"
 
+## Load files --------------------------------------------------------------
 
 # (listFiles<-list.files(paste0(simdir,scen),full.names = TRUE))
 (listFiles<-list.files(here("Simulations",scen)))
-ABCruns<-grep("chain",listFiles,value = TRUE)
+(ABCruns<-grep("MCMCchain_CL75",listFiles,value = TRUE))
 
 
 # all in a single object
@@ -31,22 +32,22 @@ ABCraw<-do.call(rbind,lapply(ABCruns, function(file){
 }))
 
 # One per onject
-ABCraw<-fread(here("Simulations",scen,ABCruns[1]))
+ABCraw<-fread(here("Simulations",scen,ABCruns[3]))
 
 # All in a list
 mcmcList<-mcmc.list(do.call(list,lapply(ABCruns, function(file){
   rundata<-fread(here("Simulations",scen,file))
-  mcmcRun<-mcmc(rundata[,.(gamma,negReward)])
+  mcmcRun<-mcmc(rundata[,.(gamma,negReward,scaleConst)],thin = 100)#
   return(mcmcRun)
 })))
 
 
-
+## Base R plots -----------------------------------------------------------------
 
 head(ABCraw)
 
 burn.in<-1000
-thinning<-10
+thinning<-100
 
 # filter
 
@@ -55,46 +56,128 @@ ABCburned<-ABCraw[iteration>burn.in]
 ABCfiltered<-ABCraw[iteration>burn.in & iteration %% thinning==0]
 
 ABCburned[seed==1,]
-ABC.gamma.time.short<-dcast(ABCburned,iteration~seed,value.var = c("gamma"))
-ABC.nRew.time.short<-dcast(ABCburned,iteration~seed,value.var = "negReward")
-ABC.logLike.time.short<-dcast(ABCburned,iteration~seed,value.var = "fit")
+ABC.gamma.time.short<-dcast(ABCfiltered,iteration~seed,value.var = c("gamma"))
+ABC.nRew.time.short<-dcast(ABCfiltered,iteration~seed,value.var = "negReward")
+ABC.sca.time.short<-dcast(ABCfiltered,iteration~seed,value.var = "scaleConst")
+ABC.logLike.time.short<-dcast(ABCfiltered,iteration~seed,value.var = "fit")
 
-par(plt=posPlot(numploty = 2,idploty = 2),mfrow=c(1,1),las=1)
+par(plt=posPlot(numploty = 4,idploty = 4,numplotx = 2,idplotx = 1)-c(0.05,0.05,0,0),
+    mfrow=c(1,1),las=1)
 matplot(y=ABC.gamma.time.short[,c(2,3,4)],
         x=ABC.gamma.time.short[,iteration],
         type="l",lty=1,col=2:5,ylab = "",
         xlab="",xaxt="n",lwd=0.1)
-title(main = expression(gamma),line = -2,cex=3,new=T)
-par(plt=posPlot(numploty = 2,idploty = 1),mfrow=c(1,1),las=1,new=TRUE)
+quantile()
+mtext(text =  expression(gamma),cex=3,side = 2,line = 3)
+
+par(plt=posPlot(numploty = 4,idploty = 4,numplotx = 2,idplotx = 2)-c(0.05,0.05,0,0),
+    mfrow=c(1,1),
+    las=1,new=TRUE)
+densGamma<-density(ABCfiltered$gamma)
+plot(densGamma,yaxt="n",ylab="",xlab="",cex.axis=0.7)
+axis(4)
+modeGam<-densGamma$x[densGamma$y==max(densGamma$y)]
+lines(x = rep(modeGam,2),y = range(densGamma$y))
+meanGam<-mean(ABCfiltered$gamma)
+lines(x = rep(meanGam,2),y = range(densGamma$y),col="red")
+medianGam<-median(ABCfiltered$gamma)
+lines(x = rep(medianGam,2),y = range(densGamma$y),col="green")
+
+par(plt=posPlot(numploty = 4,idploty = 3,numplotx = 2,idplotx = 1)-c(0.05,0.05,0,0),
+    mfrow=c(1,1),las=1,new=TRUE)
 matplot(y=ABC.nRew.time.short[,c(2,3,4)],
         x=ABC.nRew.time.short[,iteration],
         type="l",lty=1,col=2:5,ylab = "",
         xlab="",xaxt="n",lwd=0.1)
-title(main = expression(eta),line = -2,cex=3)
-axis(1)
+mtext(text = expression(eta),line = 3,cex = 3,side = 2)
 
-par(plt=posPlot(numploty = 1,idploty = 1),mfrow=c(1,1),las=1)
+par(plt=posPlot(numploty = 4,idploty = 3,numplotx = 2,idplotx = 2)-c(0.05,0.05,0,0),
+    mfrow=c(1,1), las=1,new=TRUE)
+densnegReward<-density(ABCfiltered$negReward)
+plot(densnegReward,yaxt="n",ylab="",xlab="",cex.axis=0.7,xlim=c(0,5),
+     main="")
+axis(4)
+
+modenegReward<-densnegReward$x[densnegReward$y==max(densnegReward$y)]
+lines(x = rep(modenegReward,2),y = range(densnegReward$y))
+meannegReward<-mean(ABCfiltered$negReward)
+lines(x = rep(meannegReward,2),y = range(densnegReward$y),col="red")
+mediannegReward<-median(ABCfiltered$negReward)
+lines(x = rep(mediannegReward,2),y = range(densnegReward$y),col="green")
+
+
+par(plt=posPlot(numploty = 4,idploty = 2,numplotx = 2,idplotx = 1)-c(0.05,0.05,0,0),
+    mfrow=c(1,1),las=1,new=TRUE)
+matplot(y=ABC.sca.time.short[,c(2,3,4)],
+        x=ABC.sca.time.short[,iteration],
+        type="l",lty=1,col=2:5,ylab = "",
+        xlab="",xaxt="n",lwd=0.1)
+mtext(text = "Scale const." ,line = 3,cex = 1,side = 2,las=0)
+par(plt=posPlot(numploty = 4,idploty = 2,numplotx = 2,idplotx = 2)-c(0.05,0.05,0,0),
+    mfrow=c(1,1),
+    las=1,new=TRUE)
+densScal<-density(ABCfiltered$scaleConst)
+plot(densScal,yaxt="n",ylab="",xlab="",cex.axis=0.7,
+     main="")
+axis(4)
+
+modeScal<-densScal$x[densScal$y==max(densScal$y)]
+lines(x = rep(modeScal,2),y = range(densScal$y))
+meanScal<-mean(ABCfiltered$scaleConst)
+lines(x = rep(meanScal,2),y = range(densScal$y),col="red")
+medianScal<-median(ABCfiltered$scaleConst)
+lines(x = rep(medianScal,2),y = range(densScal$y),col="green")
+
+legend("right",legend = c("mode","mean","median"),col = c("black","red","green"),
+       lty=1,lwd=2,cex=0.8)
+
+
+par(plt=posPlot(numploty = 4,idploty = 1)-c(0.05,0.05,0.05,0.05),mfrow=c(1,1),las=1,new=TRUE)
 matplot(y=ABC.logLike.time.short[,c(2,3,4)],
         x=ABC.logLike.time.short[,iteration],
         type="l",lty=1,col=2:5,ylab = "",
         xlab="",xaxt="n",lwd=0.1)
+axis(1)
+mtext(text = "loglikelihood" ,line = 3,cex = 1,side = 2,las=0)
+mtext(text = "iteration" ,line = 2,cex = 1,side = 1,las=0)
 
 
-par(plt=posPlot(numploty = 2,idploty = 2),mfrow=c(1,1),las=1)
+par(plt=posPlot(numploty = 4,idploty = 4),mfrow=c(1,1),las=1)
 matplot(y=ABCburned[,gamma],
         x=ABCburned[,iteration],
         type="l",lty=1,col=2:5,ylab = "",
         xlab="",xaxt="n",lwd=0.1)
-
 title(main = expression(gamma),line = -2,cex=3)
-par(plt=posPlot(numploty = 2,idploty = 1),new=TRUE)
+
+par(plt=posPlot(numploty = 4,idploty = 3),new=TRUE)
 matplot(y=ABCburned[,negReward],
         x=ABCburned[,iteration],
         type="l",lty=1,col=2:5,ylab = "",
         xlab="",xaxt="n",lwd=0.1)
-title(sub = expression(eta))
+
+
+par(plt=posPlot(numploty = 4,idploty = 2),new=TRUE)
+matplot(y=ABCburned[,scaleConst],
+        x=ABCburned[,iteration],
+        type="l",lty=1,col=2:5,ylab = "",
+        xlab="",xaxt="n",lwd=0.1)
+
+par(plt=posPlot(numploty = 4,idploty = 1),new=TRUE)
+matplot(y=ABCburned[,fit],
+        x=ABCburned[,iteration],
+        type="l",lty=1,col=2:5,ylab = "",
+        xlab="",xaxt="n",lwd=0.1)
+
 axis(1)
 
+par(plt=posPlot())
+plot(dnorm(seq(0,500,by=0.01),30,1)~seq(0,500,by=0.01),type="l")
+
+
+     
+ABCburned[match(max(gamma),gamma)]
+
+2/-Inf
 
 par(plt=posPlot(numploty = 1,idploty = 1))
 matplot(y=ABCburned[,6],x=ABCburned[,1],
@@ -156,15 +239,16 @@ lines(y=predict.lm(mod1.2,data.frame(negReward=seq(0,5,length=1000))),
       x=seq(0,5,length=1000),col="red")
 
 
-## MCMC analisis with coda
+## MCMC analisis with coda --------------------------------------------------
 
 # ABCraw<-fread(ABCruns[3])
-ABCraw<-fread(here("Simulations",scen,ABCruns[3]))
+ABCraw<-fread(here("Simulations",scen,ABCruns[2]))
 
-ABC.mcmc<-mcmc(ABCraw[,.(gamma,negReward)])
+ABC.mcmc<-mcmc(ABCraw[,.(gamma,negReward,scaleConst)])
 effectiveSize(ABC.mcmc)
 
-summary(ABC.mcmc)
+(sumMCMC<-summary(ABC.mcmc))
+sumMCMC$statistics[,1]
 plot(ABC.mcmc)
 crosscorr.plot(ABC.mcmc)
 crosscorr(ABC.mcmc)
@@ -178,6 +262,7 @@ rejectionRate(ABC.mcmc)
 hist(ABC.mcmc[,1],breaks = 100)
 hist(ABC.mcmc[,2],breaks = 100)
 
+## Coda lists --------------------------------------------------------------------
 
 (sumMCMClist<-summary(mcmcList))
 sumMCMClist$statistics[,1]
@@ -188,19 +273,31 @@ raftery.diag(mcmcList)
 geweke.plot(mcmcList)
 gelman.plot(mcmcList)
 autocorr(mcmcList)
-mcmc_acf(mcmcList, pars = c("gamma", "negReward"), 
+mcmc_acf(mcmcList, pars = c("gamma", "negReward","scaleConst"), 
          lags = 100)
 rejectionRate(mcmcList)
-densGamma<-density(mcmcList[[1]][,1])
-densGamma$x[sort(densGamma$y,decreasing = TRUE,index.return=T)$ix[1:10]]
+
 denplot(mcmcList,collapse = FALSE)
 densplot(mcmcList[[1]][,1])
-densplot(mcmcList[[2]][,2])
-
+densplot(mcmcList[[1]][,2])
+densplot(mcmcList[[1]][,3])
 
 points(x=densGamma$x[sort(densGamma$y,decreasing = TRUE,index.return=T)$ix[1:20]],
        densGamma$y[sort(densGamma$y,decreasing = TRUE,index.return=T)$ix[1:20]],
        col="red")
+
+median(c(mcmcList[[1]][,1],mcmcList[[2]][,1],mcmcList[[3]][,1]))
+(c(mcmcList[[1]][,2],mcmcList[[2]][,2],mcmcList[[3]][,2]))
+sumMCMClist
+
+densEta<-density(c(mcmcList[[1]][,2],mcmcList[[1]][,2],mcmcList[[1]][,2]))
+densEta$x[densEta$y==max(densEta$y)]
+
+densGamma<-density(c(mcmcList[[1]][,1],mcmcList[[1]][,1],mcmcList[[1]][,1]))
+densGamma$x[densGamma$y==max(densGamma$y)]
+
+densScal<-density(c(mcmcList[[1]][,3],mcmcList[[1]][,3],mcmcList[[1]][,3]))
+densScal$x[densScal$y==max(densScal$y)]
 
 
 

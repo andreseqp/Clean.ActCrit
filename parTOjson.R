@@ -10,30 +10,33 @@ exedir<-'/./ActCrit.exe'
 
 fileName<-"parameters.json"
 
-scenario<-"ABCclean_gam_Nrew_unif_sca30"
+scenario<-"ABCclean_gam_Nrew_sca"
 
-# scenario<-"predictions"
+
 
 # For predictions on the observed values ---------------------------------------
 
-scenario<-"ABCclean_gam_Nrew_exp_sca30"
+scenario<-"MCMCfakedata"
 
 param_pred<-list(totRounds=10000,ResReward=1,VisReward=1,
             ResProbLeav=0,scenario=0, inbr=0,outbr=0,forRat=0.0,
-            seed=1, propfullPrint = 0.7,sdPert=c(0.05,0.05,0.1,0.05),
+            seed=1, propfullPrint = 0.7,sdPert=c(0.05,0.05,0.1,0.05,1),
             chain_length=0,
-            init=c(0.05,0.05,0,0),# alphaA,AlphaC, Gamma, NegRew
-            pertScen = 1, 	# enum perturnScen {all,  bothFut, justGam, justNegRew};
+            init=c(0.05,0.05,0,0,35),# alphaA,AlphaC, Gamma, NegRew, scalConst
+            pertScen = c(FALSE,FALSE,FALSE,FALSE,TRUE), 	
             MCMC =0, data="clean",nRep=30,
-            dataFile = here("Data","data_ABC_cleaner_30.txt"),
+            dataFile = here("Data","data_ABC_cleaner_fakePartial.txt"),
             folderL=paste0(here(simsDir),"/",scenario,"_/"))
 
 
-
+check_create.dir(here(simsDir),param = rep(scenario,1),values = c(""))
 
 param_pred$folder<-param_pred$folderL
-param_pred$init[c(3,4)]<-sumMCMClist$statistics[,1]
-fileName<-paste("parameters_pred",param_pred$seed,".json",sep="")
+param_pred$init[c(3,4,5)]<-c(runif(1,max = 0.6),runif(1,max = 1),
+                             runif(1,max = 500,min = 1))
+  #c(modeGam,modenegReward,modeScal)
+  #sumMCMC$statistics[,1]
+fileName<-paste("parameters_pred_",param_pred$seed,".json",sep="")
 outParam.pred<-toJSON(param_pred,auto_unbox = TRUE,pretty = TRUE)
 if(file.exists(paste(param_pred$folderL,fileName,sep = ''))){
   currFile<-fromJSON(paste(param_pred$folderL,fileName,sep = ''))
@@ -63,10 +66,10 @@ if(file.exists(paste(param_pred$folderL,fileName,sep = ''))){
 param<-list(totRounds=10000,ResReward=1,VisReward=1,
             ResProb=c(0.2),
             VisProb=c(0.2),
-            ResProbLeav=0,VisProbLeav=1,negativeRew=-sumMCMClist$statistics[,1][2],
+            ResProbLeav=0,VisProbLeav=1,negativeRew=-modenegReward,#sumMCMClist$statistics[,1][2],
             scenario=0,
             inbr=0,outbr=0,trainingRep=10,forRat=0.0,
-            alphaT=0.05,printGen=1,seed=1, gammaRange=I(c(sumMCMClist$statistics[,1][1])),
+            alphaT=0.05,printGen=1,seed=1, gammaRange=I(c(modeGam)),#c(0,sumMCMClist$statistics[,1][1])),#,
             netaRange=I(c(1)),alphaThRange=I(c(0.05)),numlearn=1,
             propfullPrint = 0.7,
             alphaThNch=0.05,
@@ -80,14 +83,14 @@ folderSims<-paste0("e:/NeuchSims/AC/",paste0(scenario,"_"))
 
 setwd(paste("./",simsDir,sep=""))
 
-fieldData<-fread(here("Data","data_ABC_cleaner_30.txt"))
+fieldData<-fread(here("Data","data_ABC_cleaner_absolute.txt"))
 
-range(fieldData$rel.abund.cleaners)
-range(fieldData$prob.Vis.Leav)
+range(fieldData.sum$rel.abund.cleaners)
+range(fieldData.sum$prob.Vis.Leav)
 
 # Arrays with the values of external parameters
 rangLeav<-seq(0.02,0.4,length.out = 10)
-rangAbund<-seq(0.01,0.7,length=10)
+rangAbund<-seq(0.1,0.75,length=10)
 rangScen<-c(0)
 rangAlphNC<-c(0,0.5,1)
 
@@ -99,9 +102,6 @@ listfolders<-check_create.dir(here("Simulations",paste0(scenario,"_")),
                               param = rep("Vlp",length(rangLeav)),
                               values = round(rangLeav,2))
 
-listfolders<-check_create.dir(folderSims,
-                              param = rep("Vlp",length(rangLeav)),
-                              values = round(rangLeav,2))
 
 
 # Loop through parameter names and values creating JSONs -----------------------
@@ -109,13 +109,13 @@ listfolders<-check_create.dir(folderSims,
 for (i in 1:length(rangLeav)) {
   for(j in 1:length(rangAbund)){
     param$folderL<-paste0(here("Simulations",paste0(scenario,"_"),listfolders[i]),"/")
-    param$folder<-paste0(folderSims,"/",listfolders[i],"/") #param$folderL
+    param$folder<-param$folderL #paste0(folderSims,"/",listfolders[i],"/") 
     #paste0(clustfolderNeu,listfolders[i],"/")
     param$ResProb<-c((1-rangAbund[j])/2)
     param$VisProb<-c((1-rangAbund[j])/2)
     param$VisProbLeav<-rangLeav[i]
     outParam<-toJSON(param,auto_unbox = TRUE,pretty = TRUE)
-    fileName<-paste("parameters",j,".json",sep="")
+    fileName<-paste("parameters_",j,".json",sep="")
     if(file.exists(paste(param$folderL,fileName,sep = ''))){
       currFile<-fromJSON(paste(param$folderL,fileName,sep = ''))
       if(sum(unlist(currFile)!=unlist(param))>0){
@@ -147,19 +147,39 @@ for (i in 1:length(rangLeav)) {
 # 
 for (k in 1:90) print(y)
 
-# Generate json parameter files for ABC fit-------------------------------------
+# MCMC fit - Generate json parameter files for -------------------------------------
 
-scenario<-"ABCclean_gam_Nrew_exp_sca30"
+scenario<-"MCMCfakedata"
+
+fake.data.pred<-fread(here("Simulations","MCMCfakedata_",
+                           "round_gamma_0.2regRew_0.05scaC_359.96alphA_0.05alphC_0.05_seed1.txt "))
+
+fake.data.pred<-fake.data.pred[,.(site_year,CleanerID,
+                                  score_visitor=sapply(visitorChoices_pred,
+                                                       rbinom,n = 1,size = 20),
+                                  rel.abund.cleaners,rel.abund.visitors,
+                                  rel.abund.residents,prob.Vis.Leav)]
+
+fake.data.pred<-fake.data.pred[fakeData,on=.(site_year=site.year,CleanerID=cleaner_ID)]
+
+fake.data.pred<-fake.data.pred[,.(site_year,CleanerID,score_visitor,abund.cleaners,
+                  abund.visitors,abund.residents,prob.Vis.Leav),]
+
+fwrite(fake.data.pred,file = here("Simulations","MCMCfakedata_","data_MCMC_fake.txt"),
+       row.names = FALSE,sep = "\t")
 
 # for MCMC
-param_ABC<-list(totRounds=10000,ResReward=1,VisReward=1,
-                ResProbLeav=0,scenario=1, inbr=0,outbr=0,forRat=0.0,
-                seed=1, propfullPrint = 0.7,sdPert=c(0.05,0.05,0.1,0.05),
+param_mcmc<-list(totRounds=10000,ResReward=1,VisReward=1,
+                ResProbLeav=0,scenario=0, 
+                #nature, experiment, marketExperiment, ExtendedMarket
+                inbr=0,outbr=0,forRat=0.0,
+                seed=1, propfullPrint = 0.7,sdPert=c(0.05,0.05,0.2,3,250),
                 chain_length=100000,
-                init=c(0.05,0.05,0,0),# alphaA,AlphaC, Gamma, NegRew
-                pertScen = 1, 	# enum perturnScen {all,  bothFut, justGam, justNegRew};
+                init=c(0.05,0.05,0,0,30),# alphaA,AlphaC, Gamma, NegRew
+                pertScen = c(FALSE,FALSE,TRUE,TRUE,TRUE), 
                 MCMC =1, data="clean",nRep=1,
-                dataFile = here("Data","data_ABC_cleaner_30.txt"),
+                dataFile = here("Simulations","MCMCfakedata_","data_MCMC_fake.txt"),
+                  #here("Data","data_ABC_cleaner_absolute.txt"),
                 ##here("Data","data_ABC_site_20.txt")
                 folderL=paste0(here(simsDir),"/",scenario,"_/"))
 
@@ -168,14 +188,16 @@ check_create.dir(here(simsDir),param = rep(scenario,1),
 
 
 for(seed in 1:3){
-  param_ABC$folder<-param_ABC$folderL
-  param_ABC$init<-c(0.05,0.05,runif(1,max = 0.6),runif(1,max = 0.5))##
-  param_ABC$seed <- seed
-  fileName<-paste("parameters_ABC_",seed,".json",sep="")
-  outParam<-toJSON(param_ABC,auto_unbox = TRUE,pretty = TRUE)
-  if(file.exists(paste(param_ABC$folderL,fileName,sep = ''))){
-    currFile<-fromJSON(paste(param_ABC$folderL,fileName,sep = ''))
-    if(sum(unlist(currFile)!=unlist(param_ABC))>0){
+  param_mcmc$folder<-param_mcmc$folderL
+  param_mcmc$init<-c(0.05,0.05,runif(1,max = 0.6),runif(1,max = 0.5),
+                     runif(1,max = 50,min = 5))
+                     ##runif(1,max = 50,min = 5))
+  param_mcmc$seed <- seed
+  fileName<-paste("parametersMCMC_",seed,".json",sep="")
+  outParam<-toJSON(param_mcmc,auto_unbox = TRUE,pretty = TRUE)
+  if(file.exists(paste(param_mcmc$folderL,fileName,sep = ''))){
+    currFile<-fromJSON(paste(param_mcmc$folderL,fileName,sep = ''))
+    if(sum(unlist(currFile)!=unlist(param_mcmc))>0){
       # warning("You are erasing old files!! n\ Check first!!!",immediate. = TRUE)
       # print("OLD value")
       # print(unlist(currFile)[unlist(currFile)!=unlist(param)])
@@ -183,7 +205,7 @@ for(seed in 1:3){
       # print(unlist(param)[unlist(currFile)!=unlist(param)])
       # ans<-readline("Want to continue?")
       # if(substr(ans, 1, 1) == "y"){
-      write(outParam,paste(param_ABC$folderL,fileName,sep = "/"))
+      write(outParam,paste(param_mcmc$folderL,fileName,sep = "/"))
       # jobfile(param$folderL,listfolders[i],jobid = j)
       # }
       # else{
@@ -191,7 +213,7 @@ for(seed in 1:3){
       # }
     }
   }else{
-    write(outParam,paste(param_ABC$folderL,fileName,sep = ""))
+    write(outParam,paste(param_mcmc$folderL,fileName,sep = ""))
     # jobfile(param$folderL,listfolders[i],jobid = j)
   }
 }

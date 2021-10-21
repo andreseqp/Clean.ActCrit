@@ -13,7 +13,7 @@ source(here("..","R_files",'ternaryAEQP.R'))
 source(here("../R_files/posPlots.R"))
 
 
-scenario<-"ABCclean_gam_Nrew_unif_sca20"
+scenario<-"ABCclean_gam_Nrew_sca"
 
 
 predfile<-grep("round",list.files(here("Simulations",paste0(scenario,"_"))),value = T)
@@ -24,11 +24,11 @@ predictData<-fread(here("Simulations",paste0(scenario,"_"),
 str(predictData)
 
 fieldatabyLoc<-predictData[,.(probVisi.data=mean(visitorChoices)/20,
-                              probvisitor.pred=max(),
+                              probvisitor.pred=max(visitorChoices_pred),
                               re.abund.clean=max(rel.abund.cleaners),
                             prob.Vis.leave=max(prob.Vis.Leav)),by=site_year]
 
-
+fieldData
 
 ## Obv vs predicted two panels with point size ---------------------------------
 
@@ -92,7 +92,7 @@ ggplot(data = predictData, aes(x=market_binomial_pred,y=market_binomial_data))+
 
 
 ggplot(data = fieldatabyLoc, aes(x=probvisitor.pred,y=probVisi.data))+
-  geom_point()+theme_classic()+geom_abline(slope = 1)
+    geom_point()+theme_classic()+geom_abline(slope = 1)
 
 
 ## Obv vs predicted contour ----------------------------------------------------
@@ -100,13 +100,18 @@ ggplot(data = fieldatabyLoc, aes(x=probvisitor.pred,y=probVisi.data))+
 
 simsDir <- here("Simulations",paste0(scenario,"_"))
 
-simsDir <- paste0("e:/NeuchSims/AC/",paste0(scenario,"_"))
+# simsDir <- paste0("e:/NeuchSims/AC/",paste0(scenario,"_"))
 
 list.files(simsDir,recursive = TRUE,full.names = TRUE)
+
+(listPar<-c("gamma","neta"))
+
+(listVal<-c(0.2624,0))
 
 FIAlastQuarData<-do.call(rbind,lapply(
   getFilelist(simsDir,fullNam = TRUE)$p1,file2lastProp,0.70,outPar="Vlp",
   full.path=TRUE))
+
 
 range(fieldatabyLoc$prob.Vis.leave)
 range(FIAlastQuarData$Vlp)
@@ -165,10 +170,16 @@ names(FIAinterpData)<-c("rel.abund.cleaners","prob.Vis.Leav","market_binomial_da
 
 names(fieldatabyLoc)[c(4,5,2)]<-c("rel.abund.cleaners","prob.Vis.Leav","market_binomial_data")
 
-png(here("Simulations",paste0(scenario,"_"),"contour_ggplot.png"),width = 1300,height = 700)
+png(here("Simulations",paste0(scenario,"_"),
+         paste0(strsplit(predfile,"seed")[[1]][1],"contour_ggplot.png")),width = 1300,height = 700)
+
+
+rsqr<-1-(fieldatabyLoc[,sum(resids^2)])/
+  fieldatabyLoc[,sum((market_binomial_data-mean(market_binomial_data))^2)]
+
 
 cont.obs.pred<- ggplot(data = FIAinterpData,aes(x=rel.abund.cleaners,y=prob.Vis.Leav,
-                                fill=market_binomial_data))+
+                                                fill=market_binomial_data))+
  geom_raster(interpolate = TRUE) +  
   scale_fill_gradientn(limits=c(0.3,1),colours= myPalette(100))+theme_classic()+
   geom_point(data = fieldatabyLoc,aes(fill=market_binomial_data),size=5,
@@ -186,7 +197,9 @@ scatter.obs.pred<-ggplot(data = fieldatabyLoc,aes(y=market_binomial_data,x=probv
   theme(plot.title = element_text(hjust = 0.5),
       axis.title.x = element_text(size=16),axis.title.y = element_text(size=16),
       axis.text = element_text(size=14))+
-  geom_text(x = 0.5, y = 0.775, label = expression(y==x), parse = TRUE,size=6)
+  geom_text(x = 0.5, y = 0.775, label = expression(y==x), parse = TRUE,size=6)+
+  geom_text(x = 0.51, y = 0.75, label = deparse(bquote(R^2==.(round(rsqr,2)))), parse = TRUE,size=6)
+
 
 cont.obs.pred|scatter.obs.pred
 

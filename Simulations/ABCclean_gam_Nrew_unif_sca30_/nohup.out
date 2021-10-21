@@ -99284,3 +99284,464 @@ Elapsed time between calls to mark_time(): 4.5888 seconds.
 Elapsed time between calls to mark_time(): 4.40294 seconds.
 5	0.2624	1	0.05
 Elapsed time between calls to mark_time(): 4.48276 seconds.
+Fri Oct  8 10:28:46 2021 : random seed set to 1
+FAATyp1_	0.05	0.2624	0	0.05
+Elapsed time between calls to mark_time(): 0.353739 seconds.
+	0.2624	0	0.05
+Elapsed time between calls to mark_time(): 0.342967 seconds.
+	0.2624	0	0.05
+Elapsed time between calls to mark_time(): 0.376926 seconds.
+	0.2624	0	0.05
+Elapsed time between calls to mark_time(): 0.328036 seconds.
+	0.2624	0	0.05
+Elapsed time between calls to mark_time(): 0.340643 seconds.
+	0.2624	0	0.05
+Elapsed time between calls to mark_time(): 0.320964 seconds.
+	0.2624	0	0.05
+Elapsed time between calls to mark_time(): 0.358195 seconds.
+	0.2624	0	0.05
+Elapsed time between calls to mark_time(): 0.432154 seconds.
+	0.2624	0	0.05
+Elapsed time between calls to mark_time(): 0.400604 seconds.
+	0.2624	0	0.05
+Elapsed time between calls to mark_time(): 0.417234 seconds.
+	0.2624	0	0.05
+Elapsed time between calls to mark_time(): 0.376885 seconds.
+	0.2624	0	0.05
+Elapsed time between calls to mark_time(): 0.363822 seconds.
+	0.2624	0	0.05
+Elapsed time between calls to mark_time(): 0.344017 seconds.
+	0.2624	0	0.05
+Elapsed time between calls to mark_time(): 0.366428 seconds.
+	0.2624	0	0.05
+Elapsed time between calls to mark_time(): 0.406952 seconds.
+	0.2624	0	0.05
+Elapsed time between calls to mark_time(): 0.34843 seconds.
+5	0.2624	0	0.05
+Elapsed time between calls to mark_time(): 0.426748 seconds.
+	0.2624	0	0.05
+Elapsed time between calls to mark_time(): 0.386165 seconds.
+	0.2624	0	0.05
+Elapsed time between calls to mark_time(): 0.369602 seconds.
+	0.2624	0	0.05
+Elapsed time between calls to mark_time(): 0.380762 seconds.
+	0.2624	0	0.05
+Elapsed time between calls to mark_time(): 0.392572 seconds.
+	0.2624	0	0.05
+Elapsed time between calls to mark_time(): 0.398709 seconds.
+	0.2624	0	0.05
+Elapsed time between calls to mark_time(): 0.42574 seconds.
+5	0.2624	0	0.05
+Elapsed time between calls to mark_time(): 0.405131 seconds.
+	0.2624	0	0.05
+Elapsed time between calls to mark_time(): 0.385647 seconds.
+	0.2624	0	0.05
+Elapsed time between calls to mark_time(): 0.422728 seconds.
+	0.2624	0	0.05
+Elapsed time between calls to mark_time(): 0.449335 seconds.
+	0.2624	0	0.05
+Elapsed time between calls to mark_time(): 0.436 seconds.
+.05	0.2624	0	0.05
+Elapsed time between calls to mark_time(): 0.455577 seconds.
+	0.2624	0	0.05
+Elapsed time between calls to mark_time(): 0.431543 seconds.
+	0.2624	0	0.05
+Elapsed time between calls to mark_time(): 0.457254 seconds.
+	0.2624	0	0.05
+Elapsed time between calls to mark_time(): 0.421528 seconds.
+	0.2624	0	0.05
+Elapsed time between calls to mark_time(): 0.40051 seconds.
+5	0.2624	0	0.05
+Elapsed time between calls to mark_time(): 0.410432 seconds.
+	0.2624	0	0.05
+Elapsed time between calls to mark_time(): 0.421335 seconds.
+	0.2624	0	0.05
+Elapsed time between calls to mark_time(): 0.396893 seconds.
+	0.2624	0	0.05
+Elapsed time between calls to mark_time(): 0.414338 seconds.
+	0.2624	0	0.05
+Elapsed time between calls to mark_time(): 0.415149 seconds.
+	0.2624	0	0.05
+Elapsed time between calls to mark_time(): 0.450876 seconds.
+	0.2624	0	0.05
+Elapsed time between calls to mark_time(): 0.440549 seconds.
+	0.2624	0	0.05
+Elapsed time between calls to mark_time(): 0.42893 seconds.
+5	0.2624	0	0.05
+Elapsed time between calls to mark_time(): 0.416364 seconds.
+	0.2624	0	0.05
+Elapsed time between calls to mark_time(): 0.429003 seconds.
+	0.2624	0	0.05
+Elapsed time between calls to mark_time(): 0.405644 seconds.
+	0.2624	0	0.05
+Elapsed time between calls to mark_time(): 0.415265 seconds.
+	0.2624	0	0.05
+Elapsed time between calls to mark_time(): 0.445986 seconds.
+	0.2624	0	0.05
+Elapsed time between calls to mark_time(): 0.440505 seconds.
+	0.2624	0	0.05
+Elapsed time between calls to mark_time(): 0.409018 seconds.
+	0.2624	0	0.05
+Elapsed time between calls to mark_time(): 0.428077 seconds.
+	0.2624	0	0.05
+Elapsed time between calls to mark_time(): 0.437549 seconds.
+	0.2624	0	0.05
+Elapsed time between calls to mark_time(): 0.451035 seconds.
+	0.2624	0	0.05
+Elapsed time between calls to mark_time(): 0.452459 seconds.
+	0.2624	0	0.05
+Elapsed time between calls to mark_time(): 0.433418 seconds.
+	0.2624	0	0.05
+Elapsed time between calls to mark_time(): 0.424319 seconds.
+	0.2624	0	0.05
+Elapsed time between calls to mark_time(): 0.411022 seconds.
+	0.2624	0	0.05
+Elapsed time between calls to mark_time(): 0.390465 seconds.
+	0.2624	0	0.05
+Elapsed time between calls to mark_time(): 0.410022 seconds.
+	0.2624	0	0.05
+Elapsed time between calls to mark_time(): 0.415324 seconds.
+	0.2624	0	0.05
+Elapsed time between calls to mark_time(): 0.436068 seconds.
+	0.2624	0	0.05
+Elapsed time between calls to mark_time(): 0.437832 seconds.
+	0.2624	0	0.05
+Elapsed time between calls to mark_time(): 0.43643 seconds.
+5	0.2624	0	0.05
+Elapsed time between calls to mark_time(): 0.392806 seconds.
+	0.2624	0	0.05
+Elapsed time between calls to mark_time(): 0.403205 seconds.
+	0.2624	0	0.05
+Elapsed time between calls to mark_time(): 0.407476 seconds.
+	0.2624	0	0.05
+Elapsed time between calls to mark_time(): 0.403814 seconds.
+	0.2624	0	0.05
+Elapsed time between calls to mark_time(): 0.423216 seconds.
+	0.2624	0	0.05
+Elapsed time between calls to mark_time(): 0.442036 seconds.
+	0.2624	0	0.05
+Elapsed time between calls to mark_time(): 0.422817 seconds.
+	0.2624	0	0.05
+Elapsed time between calls to mark_time(): 0.425303 seconds.
+	0.2624	0	0.05
+Elapsed time between calls to mark_time(): 0.43846 seconds.
+5	0.2624	0	0.05
+Elapsed time between calls to mark_time(): 0.391304 seconds.
+	0.2624	0	0.05
+Elapsed time between calls to mark_time(): 0.439054 seconds.
+	0.2624	0	0.05
+Elapsed time between calls to mark_time(): 0.422547 seconds.
+	0.2624	0	0.05
+Elapsed time between calls to mark_time(): 0.421571 seconds.
+	0.2624	0	0.05
+Elapsed time between calls to mark_time(): 0.423459 seconds.
+	0.2624	0	0.05
+Elapsed time between calls to mark_time(): 0.384743 seconds.
+	0.2624	0	0.05
+Elapsed time between calls to mark_time(): 0.406512 seconds.
+	0.2624	0	0.05
+Elapsed time between calls to mark_time(): 0.407781 seconds.
+	0.2624	0	0.05
+Elapsed time between calls to mark_time(): 0.415614 seconds.
+	0.2624	0	0.05
+Elapsed time between calls to mark_time(): 0.412095 seconds.
+	0.2624	0	0.05
+Elapsed time between calls to mark_time(): 0.411045 seconds.
+	0.2624	0	0.05
+Elapsed time between calls to mark_time(): 0.381695 seconds.
+	0.2624	0	0.05
+Elapsed time between calls to mark_time(): 0.393266 seconds.
+	0.2624	0	0.05
+Elapsed time between calls to mark_time(): 0.352767 seconds.
+	0.2624	0	0.05
+Elapsed time between calls to mark_time(): 0.38585 seconds.
+5	0.2624	0	0.05
+Elapsed time between calls to mark_time(): 0.370743 seconds.
+	0.2624	0	0.05
+Elapsed time between calls to mark_time(): 0.417568 seconds.
+	0.2624	0	0.05
+Elapsed time between calls to mark_time(): 0.397987 seconds.
+	0.2624	0	0.05
+Elapsed time between calls to mark_time(): 0.423251 seconds.
+	0.2624	0	0.05
+Elapsed time between calls to mark_time(): 0.406934 seconds.
+	0.2624	0	0.05
+Elapsed time between calls to mark_time(): 0.365694 seconds.
+	0.2624	0	0.05
+Elapsed time between calls to mark_time(): 0.374659 seconds.
+	0.2624	0	0.05
+Elapsed time between calls to mark_time(): 0.40287 seconds.
+5	0.2624	0	0.05
+Elapsed time between calls to mark_time(): 0.384438 seconds.
+	0.2624	0	0.05
+Elapsed time between calls to mark_time(): 0.362068 seconds.
+	0.2624	0	0.05
+Elapsed time between calls to mark_time(): 0.357204 seconds.
+Fri Oct  8 10:53:24 2021 : random seed set to 1
+FAATyp1_	0.05	0	0	0.05
+FAATyp1_	0.05	0.2624	0	0.05
+FAATyp1_	0.05	0	1	0.05
+FAATyp1_	0.05	0.2624	1	0.05
+Elapsed time between calls to mark_time(): 16.67 seconds.
+.2624	1	0.05
+Elapsed time between calls to mark_time(): 16.1733 seconds.
+624	1	0.05
+Elapsed time between calls to mark_time(): 16.573 seconds.
+2624	1	0.05
+Elapsed time between calls to mark_time(): 16.0131 seconds.
+624	1	0.05
+Elapsed time between calls to mark_time(): 16.0785 seconds.
+5	0	0	0.05
+FAATyp1_	0.05	0.2624	0	0.05
+FAATyp1_	0.05	0	1	0.05
+FAATyp1_	0.05	0.2624	1	0.05
+Elapsed time between calls to mark_time(): 17.4749 seconds.
+624	1	0.05
+Elapsed time between calls to mark_time(): 18.8802 seconds.
+624	1	0.05
+Elapsed time between calls to mark_time(): 18.1812 seconds.
+624	1	0.05
+Elapsed time between calls to mark_time(): 17.5653 seconds.
+624	1	0.05
+Elapsed time between calls to mark_time(): 17.9939 seconds.
+5	0	0	0.05
+FAATyp1_	0.05	0.2624	0	0.05
+FAATyp1_	0.05	0	1	0.05
+FAATyp1_	0.05	0.2624	1	0.05
+Elapsed time between calls to mark_time(): 16.6362 seconds.
+624	1	0.05
+Elapsed time between calls to mark_time(): 16.5931 seconds.
+624	1	0.05
+Elapsed time between calls to mark_time(): 17.0511 seconds.
+624	1	0.05
+Elapsed time between calls to mark_time(): 16.9083 seconds.
+624	1	0.05
+Elapsed time between calls to mark_time(): 16.7646 seconds.
+5	0	0	0.05
+FAATyp1_	0.05	0.2624	0	0.05
+FAATyp1_	0.05	0	1	0.05
+FAATyp1_	0.05	0.2624	1	0.05
+Elapsed time between calls to mark_time(): 16.8744 seconds.
+624	1	0.05
+Elapsed time between calls to mark_time(): 17.227 seconds.
+2624	1	0.05
+Elapsed time between calls to mark_time(): 17.1505 seconds.
+624	1	0.05
+Elapsed time between calls to mark_time(): 17.046 seconds.
+2624	1	0.05
+Elapsed time between calls to mark_time(): 17.2319 seconds.
+5	0	0	0.05
+FAATyp1_	0.05	0.2624	0	0.05
+FAATyp1_	0.05	0	1	0.05
+FAATyp1_	0.05	0.2624	1	0.05
+Elapsed time between calls to mark_time(): 17.1086 seconds.
+624	1	0.05
+Elapsed time between calls to mark_time(): 17.1582 seconds.
+624	1	0.05
+Elapsed time between calls to mark_time(): 17.4334 seconds.
+624	1	0.05
+Elapsed time between calls to mark_time(): 17.1328 seconds.
+624	1	0.05
+Elapsed time between calls to mark_time(): 17.4275 seconds.
+5	0	0	0.05
+FAATyp1_	0.05	0.2624	0	0.05
+FAATyp1_	0.05	0	1	0.05
+FAATyp1_	0.05	0.2624	1	0.05
+Elapsed time between calls to mark_time(): 16.6439 seconds.
+624	1	0.05
+Elapsed time between calls to mark_time(): 16.3745 seconds.
+624	1	0.05
+Elapsed time between calls to mark_time(): 16.7507 seconds.
+624	1	0.05
+Elapsed time between calls to mark_time(): 16.8436 seconds.
+624	1	0.05
+Elapsed time between calls to mark_time(): 16.7215 seconds.
+5	0	0	0.05
+FAATyp1_	0.05	0.2624	0	0.05
+FAATyp1_	0.05	0	1	0.05
+FAATyp1_	0.05	0.2624	1	0.05
+Elapsed time between calls to mark_time(): 16.9623 seconds.
+624	1	0.05
+Elapsed time between calls to mark_time(): 16.9715 seconds.
+624	1	0.05
+Elapsed time between calls to mark_time(): 16.8703 seconds.
+624	1	0.05
+Elapsed time between calls to mark_time(): 16.7886 seconds.
+624	1	0.05
+Elapsed time between calls to mark_time(): 16.8716 seconds.
+5	0	0	0.05
+FAATyp1_	0.05	0.2624	0	0.05
+FAATyp1_	0.05	0	1	0.05
+FAATyp1_	0.05	0.2624	1	0.05
+Elapsed time between calls to mark_time(): 16.5903 seconds.
+624	1	0.05
+Elapsed time between calls to mark_time(): 16.7865 seconds.
+624	1	0.05
+Elapsed time between calls to mark_time(): 16.7629 seconds.
+624	1	0.05
+Elapsed time between calls to mark_time(): 16.7542 seconds.
+624	1	0.05
+Elapsed time between calls to mark_time(): 16.6799 seconds.
+5	0	0	0.05
+FAATyp1_	0.05	0.2624	0	0.05
+FAATyp1_	0.05	0	1	0.05
+FAATyp1_	0.05	0.2624	1	0.05
+Elapsed time between calls to mark_time(): 16.4376 seconds.
+624	1	0.05
+Elapsed time between calls to mark_time(): 16.3186 seconds.
+624	1	0.05
+Elapsed time between calls to mark_time(): 16.179 seconds.
+2624	1	0.05
+Elapsed time between calls to mark_time(): 16.3265 seconds.
+624	1	0.05
+Elapsed time between calls to mark_time(): 16.4668 seconds.
+5	0	0	0.05
+FAATyp1_	0.05	0.2624	0	0.05
+FAATyp1_	0.05	0	1	0.05
+FAATyp1_	0.05	0.2624	1	0.05
+Elapsed time between calls to mark_time(): 16.5228 seconds.
+624	1	0.05
+Elapsed time between calls to mark_time(): 16.8885 seconds.
+624	1	0.05
+Elapsed time between calls to mark_time(): 16.9704 seconds.
+624	1	0.05
+Elapsed time between calls to mark_time(): 16.8232 seconds.
+624	1	0.05
+Elapsed time between calls to mark_time(): 17.1 seconds.
+0.05	0	0	0.05
+FAATyp1_	0.05	0.2624	0	0.05
+FAATyp1_	0.05	0	1	0.05
+FAATyp1_	0.05	0.2624	1	0.05
+Elapsed time between calls to mark_time(): 17.7361 seconds.
+624	1	0.05
+Elapsed time between calls to mark_time(): 17.5153 seconds.
+624	1	0.05
+Elapsed time between calls to mark_time(): 17.5118 seconds.
+624	1	0.05
+Elapsed time between calls to mark_time(): 17.5083 seconds.
+624	1	0.05
+Elapsed time between calls to mark_time(): 17.3182 seconds.
+5	0	0	0.05
+FAATyp1_	0.05	0.2624	0	0.05
+FAATyp1_	0.05	0	1	0.05
+FAATyp1_	0.05	0.2624	1	0.05
+Elapsed time between calls to mark_time(): 16.8515 seconds.
+624	1	0.05
+Elapsed time between calls to mark_time(): 16.7968 seconds.
+624	1	0.05
+Elapsed time between calls to mark_time(): 16.8835 seconds.
+624	1	0.05
+Elapsed time between calls to mark_time(): 16.8261 seconds.
+624	1	0.05
+Elapsed time between calls to mark_time(): 16.7609 seconds.
+5	0	0	0.05
+FAATyp1_	0.05	0.2624	0	0.05
+FAATyp1_	0.05	0	1	0.05
+FAATyp1_	0.05	0.2624	1	0.05
+Elapsed time between calls to mark_time(): 16.8872 seconds.
+624	1	0.05
+Elapsed time between calls to mark_time(): 16.9474 seconds.
+624	1	0.05
+Elapsed time between calls to mark_time(): 16.8497 seconds.
+624	1	0.05
+Elapsed time between calls to mark_time(): 17 seconds.
+5	0.2624	1	0.05
+Elapsed time between calls to mark_time(): 17.2123 seconds.
+5	0	0	0.05
+FAATyp1_	0.05	0.2624	0	0.05
+FAATyp1_	0.05	0	1	0.05
+FAATyp1_	0.05	0.2624	1	0.05
+Elapsed time between calls to mark_time(): 16.714 seconds.
+2624	1	0.05
+Elapsed time between calls to mark_time(): 16.7919 seconds.
+624	1	0.05
+Elapsed time between calls to mark_time(): 17.2093 seconds.
+624	1	0.05
+Elapsed time between calls to mark_time(): 17.1318 seconds.
+624	1	0.05
+Elapsed time between calls to mark_time(): 16.9009 seconds.
+5	0	0	0.05
+FAATyp1_	0.05	0.2624	0	0.05
+FAATyp1_	0.05	0	1	0.05
+FAATyp1_	0.05	0.2624	1	0.05
+Elapsed time between calls to mark_time(): 17.8695 seconds.
+624	1	0.05
+Elapsed time between calls to mark_time(): 17.6263 seconds.
+624	1	0.05
+Elapsed time between calls to mark_time(): 17.6915 seconds.
+624	1	0.05
+Elapsed time between calls to mark_time(): 17.4994 seconds.
+624	1	0.05
+Elapsed time between calls to mark_time(): 17.7133 seconds.
+5	0	0	0.05
+FAATyp1_	0.05	0.2624	0	0.05
+FAATyp1_	0.05	0	1	0.05
+FAATyp1_	0.05	0.2624	1	0.05
+Elapsed time between calls to mark_time(): 17.5872 seconds.
+624	1	0.05
+Elapsed time between calls to mark_time(): 17.5392 seconds.
+624	1	0.05
+Elapsed time between calls to mark_time(): 17.4732 seconds.
+624	1	0.05
+Elapsed time between calls to mark_time(): 17.4786 seconds.
+624	1	0.05
+Elapsed time between calls to mark_time(): 17.4742 seconds.
+5	0	0	0.05
+FAATyp1_	0.05	0.2624	0	0.05
+FAATyp1_	0.05	0	1	0.05
+FAATyp1_	0.05	0.2624	1	0.05
+Elapsed time between calls to mark_time(): 16.8581 seconds.
+624	1	0.05
+Elapsed time between calls to mark_time(): 16.5673 seconds.
+624	1	0.05
+Elapsed time between calls to mark_time(): 16.5635 seconds.
+624	1	0.05
+Elapsed time between calls to mark_time(): 16.6111 seconds.
+624	1	0.05
+Elapsed time between calls to mark_time(): 16.6022 seconds.
+5	0	0	0.05
+FAATyp1_	0.05	0.2624	0	0.05
+FAATyp1_	0.05	0	1	0.05
+FAATyp1_	0.05	0.2624	1	0.05
+Elapsed time between calls to mark_time(): 17.153 seconds.
+2624	1	0.05
+Elapsed time between calls to mark_time(): 17.2885 seconds.
+624	1	0.05
+Elapsed time between calls to mark_time(): 17.3123 seconds.
+624	1	0.05
+Elapsed time between calls to mark_time(): 17.1841 seconds.
+624	1	0.05
+Elapsed time between calls to mark_time(): 17.2666 seconds.
+5	0	0	0.05
+FAATyp1_	0.05	0.2624	0	0.05
+FAATyp1_	0.05	0	1	0.05
+FAATyp1_	0.05	0.2624	1	0.05
+Elapsed time between calls to mark_time(): 17.8507 seconds.
+624	1	0.05
+Elapsed time between calls to mark_time(): 17.677 seconds.
+2624	1	0.05
+Elapsed time between calls to mark_time(): 17.7115 seconds.
+624	1	0.05
+Elapsed time between calls to mark_time(): 17.7451 seconds.
+624	1	0.05
+Elapsed time between calls to mark_time(): 17.5484 seconds.
+5	0	0	0.05
+FAATyp1_	0.05	0.2624	0	0.05
+FAATyp1_	0.05	0	1	0.05
+FAATyp1_	0.05	0.2624	1	0.05
+Elapsed time between calls to mark_time(): 16.3231 seconds.
+624	1	0.05
+Elapsed time between calls to mark_time(): 16.0071 seconds.
+624	1	0.05
+Elapsed time between calls to mark_time(): 15.7181 seconds.
+624	1	0.05
+Elapsed time between calls to mark_time(): 16.0599 seconds.
+624	1	0.05
+Elapsed time between calls to mark_time(): 15.6226 seconds.
+Fri Oct  8 11:08:05 2021 : random seed set to 1
+Fri Oct  8 11:08:20 2021 : random seed set to 1
+Wed Oct 13 15:00:36 2021 : random seed set to 3
+Wed Oct 13 15:35:01 2021 : random seed set to 2
+Wed Oct 13 16:17:13 2021 : random seed set to 1
+Wed Oct 13 16:17:13 2021 : random seed set to 2
+Wed Oct 13 16:17:13 2021 : random seed set to 3

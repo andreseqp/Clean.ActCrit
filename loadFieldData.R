@@ -7,21 +7,118 @@ library("readxl")
 
 fieldData<-fread(here("Data","market_model.csv"))
 
-str(fieldData)
 
+str(fieldData)
+## Summarize ecological data by site
+
+fieldData[,unique(site_year)]
+names(fieldData)
+
+fieldData.site<-fieldData[,lapply(.SD,max),by=site_year,
+                          .SDcols=c("abundance_large_100m2","abundance_small_100m2",
+                                   "abundance_cleaners_100m2","percentage_swim_off")]
+
+fieldData.cleaner<-read_xlsx(here("Data","market_raw_data.xlsx"),sheet = "round_data")
+
+fieldData.cleaner<-data.table(fieldData.cleaner)
+
+str(fieldData.cleaner)
+
+fieldData.cleaner[,use_sims:=ifelse(is.na(use_sims),0,1)]
+fieldData.cleaner[,use_sims:=as.logical(use_sims)]
+
+fieldData.filt<-fieldData.cleaner[use_sims==T,]
+fieldData.filt[,score_visitor:=as.numeric(score_visitor)]
+fieldData.filt[,stage:=as.factor(stage)]
+
+str(fieldData.filt)
+
+fieldData.sum<-fieldData.filt[,sum(score_visitor),
+                              by=.(site_year,cleaner_ID)]
+
+str(fieldData.sum)
+
+names(fieldData.sum)[3]<-"score_visitor"
+names(fieldData.sum)[1]<-"site.year"
+
+fieldData.sum[,unique(site.year)]
+fieldData.site$site_year
+
+fieldData.sum[site.year=="NHS2017",site.year:="NHS 2017"]
+
+fieldData.sum[,abund.cleaners:=
+                fieldData.site[match(site.year,site_year),abundance_cleaners_100m2]]
+
+fieldData.sum[order(abund.cleaners),max(abund.cleaners),by=site.year]$site.year==
+  
+  fieldData.site[order(abundance_cleaners_100m2),.(site_year,abundance_cleaners_100m2)]$site_year
+
+fieldData.sum[,abund.visitors:=
+                fieldData.site[match(site.year,site_year),abundance_large_100m2]]
+
+fieldData.sum[,abund.residents:=
+                fieldData.site[match(site.year,site_year),abundance_small_100m2]]
+
+fieldData.sum[,prob.Vis.Leav:=
+                fieldData.site[match(site.year,site_year),percentage_swim_off*0.01]]
+
+fieldData.sum[,site.year:=gsub(" ",replacement = "_",x = site.year)]
+
+fieldData.sum[,cleaner_ID:=gsub(" ",replacement = "",x = cleaner_ID)]
+
+str(fieldData.sum)
+
+setorder(fieldData.sum,site.year)
+
+fwrite(fieldData.sum,here("data",paste0("data_ABC_cleaner_absolute.txt")),
+       row.names = FALSE,sep = "\t")
+
+rep(runif(12,min = range(fieldData.sum$abund.cleaners)[1],
+          max=range(fieldData.sum$abund.cleaners)[2]),each=10)
+
+ranges.fielsum<-fieldData.sum[,as.list(unlist(lapply(.SD, function(x){list(min=min(x),
+                                                            max=max(x))}))),
+                              .SDcols=c("abund.cleaners",
+                                        "abund.visitors",
+                                        "abund.residents",
+                                        "prob.Vis.Leav")]
+
+fakeData<-fieldData.sum[,.(site.year,cleaner_ID,score_visitor,
+  abund.cleaners=rep(runif(12,min = ranges.fielsum$abund.cleaners.min,
+                                                       max=ranges.fielsum$abund.cleaners.max),each=10),
+                              abund.visitors=rep(runif(12,min = ranges.fielsum$abund.visitors.min,
+                                                       max=ranges.fielsum$abund.visitors.max),each=10),
+                              abund.residents=rep(runif(12,min = ranges.fielsum$abund.residents.min,
+                                                       max=ranges.fielsum$abund.residents.max),each=10),
+                              prob.Vis.Leav=rep(runif(12,min = ranges.fielsum$prob.Vis.Leav.min,
+                                                        max=ranges.fielsum$prob.Vis.Leav.max),each=10))]
+
+
+
+fwrite(fakeData,here("data",paste0("data_ABC_cleaner_fakePartial.txt")),
+       row.names = FALSE,sep = "\t")
 
 ### Adjust data to fit IBD
 
-clean.abund.scale<-30
+clean.abund.scale<-modeScal
 
-fieldData[,rel.abund.cleaners:=clean.abund.scale*abundance_cleaners_100m2/
-         (abundance_cleaners_100m2+abundance_clients_100m2)]
+fieldData.sum[,rel.abund.cleaners:=clean.abund.scale*abund.cleaners/
+                (clean.abund.scale*abund.cleaners+abund.visitors+abund.residents)]
+fieldData.sum[,`:=`(rel.abund.visitors=(1-rel.abund.cleaners)*abund.visitors/(abund.visitors+abund.residents),
+                rel.abund.residents=(1-rel.abund.cleaners)*abund.residents/(abund.visitors+abund.residents))]
+
+print(fieldData.sum[,.(max(rel.abund.cleaners),max(abund.cleaners)),by=site.year],nrows = 120)
+
+fieldData[,rel.abund.cleaners1:=clean.abund.scale*abundance_cleaners_100m2/
+         (clean.abund.scale*abundance_cleaners_100m2+abundance_clients_100m2)]
 
 
 fieldData[,`:=`(rel.abund.visitors=(1-rel.abund.cleaners)*abundance_large_100m2/abundance_clients_100m2,
              rel.abund.residents=(1-rel.abund.cleaners)*abundance_small_100m2/abundance_clients_100m2)]
 
 fieldData[,prob.Vis.Leav:=percentage_swim_off/100]
+
+fieldData[,abundance_clients_100m2-abundance_large_100m2-abundance_small_100m2]
 
 fieldData[,.(min(rel.abund.cleaners),max(rel.abund.cleaners))]
 fieldData[,.(min(rel.abund.visitors),max(rel.abund.visitors))]

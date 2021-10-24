@@ -25,16 +25,16 @@ param_pred<-list(totRounds=10000,ResReward=1,VisReward=1,
             init=c(0.05,0.05,0,0,35),# alphaA,AlphaC, Gamma, NegRew, scalConst
             pertScen = c(FALSE,FALSE,FALSE,FALSE,TRUE), 	
             MCMC =0, data="clean",nRep=30,
-            dataFile = here("Data","data_ABC_cleaner_fakePartial.txt"),
+            dataFile = here("Data","data_ABC_cleaner_absolute.txt"),
             folderL=paste0(here(simsDir),"/",scenario,"_/"))
 
 
-check_create.dir(here(simsDir),param = rep(scenario,1),values = c(""))
+# check_create.dir(here(simsDir),param = rep(scenario,1),values = c(""))
 
 param_pred$folder<-param_pred$folderL
-param_pred$init[c(3,4,5)]<-c(runif(1,max = 0.6),runif(1,max = 1),
+param_pred$init[c(3,4,5)]<- #c(modeGam,modenegReward,modeScal)
+  c(runif(1,max = 1),runif(1,max = 1),
                              runif(1,max = 500,min = 1))
-  #c(modeGam,modenegReward,modeScal)
   #sumMCMC$statistics[,1]
 fileName<-paste("parameters_pred_",param_pred$seed,".json",sep="")
 outParam.pred<-toJSON(param_pred,auto_unbox = TRUE,pretty = TRUE)
@@ -149,7 +149,7 @@ for (k in 1:90) print(y)
 
 # MCMC fit - Generate json parameter files for -------------------------------------
 
-scenario<-"MCMCfakedata"
+scenario<-scen<-"ABCclean_gam_Nrew_sca_2"
 
 fake.data.pred<-fread(here("Simulations","MCMCfakedata_",
                            "round_gamma_0.2regRew_0.05scaC_359.96alphA_0.05alphC_0.05_seed1.txt "))

@@ -13,7 +13,7 @@ source(here("..","R_files",'ternaryAEQP.R'))
 source(here("../R_files/posPlots.R"))
 
 
-scenario<-"ABCclean_gam_Nrew_sca"
+scenario<-"MCMCfakedata"
 
 
 predfile<-grep("round",list.files(here("Simulations",paste0(scenario,"_"))),value = T)
@@ -174,8 +174,10 @@ png(here("Simulations",paste0(scenario,"_"),
          paste0(strsplit(predfile,"seed")[[1]][1],"contour_ggplot.png")),width = 1300,height = 700)
 
 
+fieldatabyLoc[,resids:=probVisi.data-probvisitor.pred]
+
 rsqr<-1-(fieldatabyLoc[,sum(resids^2)])/
-  fieldatabyLoc[,sum((market_binomial_data-mean(market_binomial_data))^2)]
+  fieldatabyLoc[,sum((probVisi.data-mean(probVisi.data))^2)]
 
 
 cont.obs.pred<- ggplot(data = FIAinterpData,aes(x=rel.abund.cleaners,y=prob.Vis.Leav,

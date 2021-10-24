@@ -14,13 +14,13 @@ source(here("../R_files/posPlots.R"))
 
 simdir<-"D:/Neuch_simulations/ABCfit/Simulations/"
 
-scen<-"ABCclean_gam_Nrew_sca_"
+scen<-"MCMCfakedata_"
 
 ## Load files --------------------------------------------------------------
 
 # (listFiles<-list.files(paste0(simdir,scen),full.names = TRUE))
 (listFiles<-list.files(here("Simulations",scen)))
-(ABCruns<-grep("MCMCchain_CL75",listFiles,value = TRUE))
+(ABCruns<-grep("MCMCchain",listFiles,value = TRUE))
 
 
 # all in a single object
@@ -67,7 +67,7 @@ matplot(y=ABC.gamma.time.short[,c(2,3,4)],
         x=ABC.gamma.time.short[,iteration],
         type="l",lty=1,col=2:5,ylab = "",
         xlab="",xaxt="n",lwd=0.1)
-quantile()
+
 mtext(text =  expression(gamma),cex=3,side = 2,line = 3)
 
 par(plt=posPlot(numploty = 4,idploty = 4,numplotx = 2,idplotx = 2)-c(0.05,0.05,0,0),
@@ -132,7 +132,7 @@ legend("right",legend = c("mode","mean","median"),col = c("black","red","green")
        lty=1,lwd=2,cex=0.8)
 
 
-par(plt=posPlot(numploty = 4,idploty = 1)-c(0.05,0.05,0.05,0.05),mfrow=c(1,1),las=1,new=TRUE)
+par(plt=posPlot(numploty = 4,idploty = 1,)-c(0.05,0.05,0.05,0.05),mfrow=c(1,1),las=1,new=TRUE)
 matplot(y=ABC.logLike.time.short[,c(2,3,4)],
         x=ABC.logLike.time.short[,iteration],
         type="l",lty=1,col=2:5,ylab = "",
@@ -141,30 +141,78 @@ axis(1)
 mtext(text = "loglikelihood" ,line = 3,cex = 1,side = 2,las=0)
 mtext(text = "iteration" ,line = 2,cex = 1,side = 1,las=0)
 
+# Base R for a single chain ----------------------------------------------------
 
-par(plt=posPlot(numploty = 4,idploty = 4),mfrow=c(1,1),las=1)
-matplot(y=ABCburned[,gamma],
-        x=ABCburned[,iteration],
+par(plt=posPlot(numploty = 4,idploty = 4,numplotx = 2,idplotx = 1)-c(0.05,0.05,0,0),
+    mfrow=c(1,1),las=1)
+matplot(y=ABCfiltered[,gamma],
+        x=ABCfiltered[,iteration],
         type="l",lty=1,col=2:5,ylab = "",
         xlab="",xaxt="n",lwd=0.1)
 title(main = expression(gamma),line = -2,cex=3)
 
-par(plt=posPlot(numploty = 4,idploty = 3),new=TRUE)
-matplot(y=ABCburned[,negReward],
-        x=ABCburned[,iteration],
+par(plt=posPlot(numploty = 4,idploty = 4,numplotx = 2,idplotx = 2)-c(0.05,0.05,0,0),
+    mfrow=c(1,1),
+    las=1,new=TRUE)
+densGamma<-density(ABCfiltered$gamma)
+plot(densGamma,yaxt="n",ylab="",xlab="",cex.axis=0.7)
+axis(4)
+modeGam<-densGamma$x[densGamma$y==max(densGamma$y)]
+lines(x = rep(modeGam,2),y = range(densGamma$y))
+meanGam<-mean(ABCfiltered$gamma)
+lines(x = rep(meanGam,2),y = range(densGamma$y),col="red")
+medianGam<-median(ABCfiltered$gamma)
+lines(x = rep(medianGam,2),y = range(densGamma$y),col="green")
+
+par(plt=posPlot(numploty = 4,idploty = 3,numplotx = 2,idplotx = 1)-c(0.05,0.05,0,0),new=TRUE)
+matplot(y=ABCfiltered[,negReward],
+        x=ABCfiltered[,iteration],
         type="l",lty=1,col=2:5,ylab = "",
         xlab="",xaxt="n",lwd=0.1)
 
+par(plt=posPlot(numploty = 4,idploty = 3,numplotx = 2,idplotx = 2)-c(0.05,0.05,0,0),
+    mfrow=c(1,1), las=1,new=TRUE)
+densnegReward<-density(ABCfiltered$negReward)
+plot(densnegReward,yaxt="n",ylab="",xlab="",cex.axis=0.7,xlim=c(0,5),
+     main="")
+axis(4)
 
-par(plt=posPlot(numploty = 4,idploty = 2),new=TRUE)
-matplot(y=ABCburned[,scaleConst],
-        x=ABCburned[,iteration],
+modenegReward<-densnegReward$x[densnegReward$y==max(densnegReward$y)]
+lines(x = rep(modenegReward,2),y = range(densnegReward$y))
+meannegReward<-mean(ABCfiltered$negReward)
+lines(x = rep(meannegReward,2),y = range(densnegReward$y),col="red")
+mediannegReward<-median(ABCfiltered$negReward)
+lines(x = rep(mediannegReward,2),y = range(densnegReward$y),col="green")
+
+par(plt=posPlot(numploty = 4,idploty = 2,numplotx = 2,idplotx = 1)-c(0.05,0.05,0,0)
+    ,new=TRUE)
+matplot(y=ABCfiltered[,scaleConst],
+        x=ABCfiltered[,iteration],
         type="l",lty=1,col=2:5,ylab = "",
         xlab="",xaxt="n",lwd=0.1)
 
-par(plt=posPlot(numploty = 4,idploty = 1),new=TRUE)
-matplot(y=ABCburned[,fit],
-        x=ABCburned[,iteration],
+mtext(text = "Scale const." ,line = 3,cex = 1,side = 2,las=0)
+par(plt=posPlot(numploty = 4,idploty = 2,numplotx = 2,idplotx = 2)-c(0.05,0.05,0,0),
+    mfrow=c(1,1),
+    las=1,new=TRUE)
+densScal<-density(ABCfiltered$scaleConst)
+plot(densScal,yaxt="n",ylab="",xlab="",cex.axis=0.7,
+     main="")
+axis(4)
+
+modeScal<-densScal$x[densScal$y==max(densScal$y)]
+lines(x = rep(modeScal,2),y = range(densScal$y))
+meanScal<-mean(ABCfiltered$scaleConst)
+lines(x = rep(meanScal,2),y = range(densScal$y),col="red")
+medianScal<-median(ABCfiltered$scaleConst)
+lines(x = rep(medianScal,2),y = range(densScal$y),col="green")
+
+legend("right",legend = c("mode","mean","median"),col = c("black","red","green"),
+       lty=1,lwd=2,cex=0.8)
+
+par(plt=posPlot(numploty = 4,idploty = 1)-c(0.05,0.05,0,0),new=TRUE)
+matplot(y=ABCfiltered[,fit],
+        x=ABCfiltered[,iteration],
         type="l",lty=1,col=2:5,ylab = "",
         xlab="",xaxt="n",lwd=0.1)
 
@@ -274,7 +322,7 @@ geweke.plot(mcmcList)
 gelman.plot(mcmcList)
 autocorr(mcmcList)
 mcmc_acf(mcmcList, pars = c("gamma", "negReward","scaleConst"), 
-         lags = 100)
+         lags = 1000)
 rejectionRate(mcmcList)
 
 denplot(mcmcList,collapse = FALSE)

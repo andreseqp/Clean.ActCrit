@@ -8,6 +8,7 @@
 *.ilk
 *.pdb
 *.pdf
+*.log
 *.docx
 messages.txt
 BaseLine.png

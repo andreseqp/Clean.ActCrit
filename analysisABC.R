@@ -8,13 +8,15 @@ library(plot3D)
 require(data.table)
 library(coda)
 library(mcmcplots)
+library(ggplot2)
 library(bayesplot) 
 library(lattice)
 source(here("../R_files/posPlots.R"))
+library("jsonlite")
 
 simdir<-"D:/Neuch_simulations/ABCfit/Simulations/"
 
-scen<-"MCMCfakedata_"
+scen<-"ABCclean_gam_Nrew_sca_2_"
 
 ## Load files --------------------------------------------------------------
 
@@ -49,13 +51,20 @@ head(ABCraw)
 burn.in<-1000
 thinning<-100
 
+## get original parameter values from the simulations
+
+parsOrigin<-fromJSON(here("Simulations",scen,
+              grep("parameters_pred",listFiles,value = TRUE)))
+
+
+
 # filter
 
 ABCburned<-ABCraw[iteration>burn.in]
 
 ABCfiltered<-ABCraw[iteration>burn.in & iteration %% thinning==0]
 
-ABCburned[seed==1,]
+
 ABC.gamma.time.short<-dcast(ABCfiltered,iteration~seed,value.var = c("gamma"))
 ABC.nRew.time.short<-dcast(ABCfiltered,iteration~seed,value.var = "negReward")
 ABC.sca.time.short<-dcast(ABCfiltered,iteration~seed,value.var = "scaleConst")
@@ -83,6 +92,8 @@ lines(x = rep(meanGam,2),y = range(densGamma$y),col="red")
 medianGam<-median(ABCfiltered$gamma)
 lines(x = rep(medianGam,2),y = range(densGamma$y),col="green")
 
+lines(x = rep(parsOrigin$init[3],2),y = range(densGamma$y),col="blue")
+
 par(plt=posPlot(numploty = 4,idploty = 3,numplotx = 2,idplotx = 1)-c(0.05,0.05,0,0),
     mfrow=c(1,1),las=1,new=TRUE)
 matplot(y=ABC.nRew.time.short[,c(2,3,4)],
@@ -105,6 +116,7 @@ lines(x = rep(meannegReward,2),y = range(densnegReward$y),col="red")
 mediannegReward<-median(ABCfiltered$negReward)
 lines(x = rep(mediannegReward,2),y = range(densnegReward$y),col="green")
 
+lines(x = rep(parsOrigin$init[4],2),y = range(densGamma$y),col="blue")
 
 par(plt=posPlot(numploty = 4,idploty = 2,numplotx = 2,idplotx = 1)-c(0.05,0.05,0,0),
     mfrow=c(1,1),las=1,new=TRUE)
@@ -128,6 +140,8 @@ lines(x = rep(meanScal,2),y = range(densScal$y),col="red")
 medianScal<-median(ABCfiltered$scaleConst)
 lines(x = rep(medianScal,2),y = range(densScal$y),col="green")
 
+lines(x = rep(parsOrigin$init[5],2),y = range(densGamma$y),col="blue")
+
 legend("right",legend = c("mode","mean","median"),col = c("black","red","green"),
        lty=1,lwd=2,cex=0.8)
 
@@ -140,6 +154,35 @@ matplot(y=ABC.logLike.time.short[,c(2,3,4)],
 axis(1)
 mtext(text = "loglikelihood" ,line = 3,cex = 1,side = 2,las=0)
 mtext(text = "iteration" ,line = 2,cex = 1,side = 1,las=0)
+
+modeGam;modenegReward;modeScal
+
+plot(data=ABCfiltered,gamma~negReward,type="p",cex=0.2)
+plot(data=ABCfiltered,negReward~scaleConst,type="p",cex=0.2)
+plot(data=ABCfiltered,gamma~scaleConst,type="p",cex=0.2)
+
+## Density plots with gg -------------------------------------------------------
+
+ABCfiltered
+
+typeof(mcmcList)
+
+areas<-
+  mcmc_areas(x = mcmcList)+
+  facet_wrap(~parameter,scales = "free_x")
+
+
+areas.data<-mcmc_areas_data(x=mcmcList)
+
+str(areas.data)
+
+mcmc_dens(mcmcList,pars = "gamma")
+mcmc_dens(mcmcList,pars = "negReward")
+mcmc_dens(mcmcList,pars = "scaleConst")
+
+ggplot(data=ABCfiltered,aes(x=gamma))+
+  geom_density()+geom_vline(xintercept = modeGam)+
+  theme_classic()
 
 # Base R for a single chain ----------------------------------------------------
 

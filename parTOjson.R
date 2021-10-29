@@ -10,13 +10,13 @@ exedir<-'/./ActCrit.exe'
 
 fileName<-"parameters.json"
 
-scenario<-"ABCclean_gam_Nrew_sca"
+scenario<-"ABCclean_gam_sca"
 
 
 
 # For predictions on the observed values ---------------------------------------
 
-scenario<-"MCMCfakedata"
+scenario<-"MCMCfakedata2"
 
 param_pred<-list(totRounds=10000,ResReward=1,VisReward=1,
             ResProbLeav=0,scenario=0, inbr=0,outbr=0,forRat=0.0,
@@ -29,7 +29,7 @@ param_pred<-list(totRounds=10000,ResReward=1,VisReward=1,
             folderL=paste0(here(simsDir),"/",scenario,"_/"))
 
 
-# check_create.dir(here(simsDir),param = rep(scenario,1),values = c(""))
+check_create.dir(here(simsDir),param = rep(scenario,1),values = c(""))
 
 param_pred$folder<-param_pred$folderL
 param_pred$init[c(3,4,5)]<- #c(modeGam,modenegReward,modeScal)
@@ -149,10 +149,11 @@ for (k in 1:90) print(y)
 
 # MCMC fit - Generate json parameter files for -------------------------------------
 
-scenario<-scen<-"ABCclean_gam_Nrew_sca_2"
+scenario<-"MCMCfakedata2_"
 
-fake.data.pred<-fread(here("Simulations","MCMCfakedata_",
-                           "round_gamma_0.2regRew_0.05scaC_359.96alphA_0.05alphC_0.05_seed1.txt "))
+filesList<-list.files(here("Simulations",scenario),full.names = TRUE)
+
+fake.data.pred<-fread(grep("round",filesList,value = TRUE))
 
 fake.data.pred<-fake.data.pred[,.(site_year,CleanerID,
                                   score_visitor=sapply(visitorChoices_pred,
@@ -165,21 +166,23 @@ fake.data.pred<-fake.data.pred[fakeData,on=.(site_year=site.year,CleanerID=clean
 fake.data.pred<-fake.data.pred[,.(site_year,CleanerID,score_visitor,abund.cleaners,
                   abund.visitors,abund.residents,prob.Vis.Leav),]
 
-fwrite(fake.data.pred,file = here("Simulations","MCMCfakedata_","data_MCMC_fake.txt"),
+fwrite(fake.data.pred,file = here("Simulations",scenario,"data_MCMC_fake.txt"),
        row.names = FALSE,sep = "\t")
 
+scenario<-"MCMCfakedata2"
 # for MCMC
 param_mcmc<-list(totRounds=10000,ResReward=1,VisReward=1,
                 ResProbLeav=0,scenario=0, 
                 #nature, experiment, marketExperiment, ExtendedMarket
                 inbr=0,outbr=0,forRat=0.0,
-                seed=1, propfullPrint = 0.7,sdPert=c(0.05,0.05,0.2,3,250),
+                seed=1, propfullPrint = 0.7,sdPert=c(0.05,0.05,0.3,4,300),
                 chain_length=100000,
                 init=c(0.05,0.05,0,0,30),# alphaA,AlphaC, Gamma, NegRew
-                pertScen = c(FALSE,FALSE,TRUE,TRUE,TRUE), 
+                pertScen = c(FALSE,FALSE,TRUE,FALSE,TRUE), 
                 MCMC =1, data="clean",nRep=1,
-                dataFile = here("Simulations","MCMCfakedata_","data_MCMC_fake.txt"),
-                  #here("Data","data_ABC_cleaner_absolute.txt"),
+                  dataFile = here("Data","data_ABC_cleaner_absolute.txt"),
+                  # here("Simulations",
+                  #                 paste0(scenario,"_"),"data_MCMC_fake.txt"))
                 ##here("Data","data_ABC_site_20.txt")
                 folderL=paste0(here(simsDir),"/",scenario,"_/"))
 
@@ -189,7 +192,7 @@ check_create.dir(here(simsDir),param = rep(scenario,1),
 
 for(seed in 1:3){
   param_mcmc$folder<-param_mcmc$folderL
-  param_mcmc$init<-c(0.05,0.05,runif(1,max = 0.6),runif(1,max = 0.5),
+  param_mcmc$init<-c(0.05,0.05,runif(1,max = 0.6),0,
                      runif(1,max = 50,min = 5))
                      ##runif(1,max = 50,min = 5))
   param_mcmc$seed <- seed

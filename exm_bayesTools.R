@@ -3,18 +3,25 @@
 library(BayesianTools) # install.packages("BayesianTools")
 
 # Create input data for the model
-PAR <- fread(here("Data","data_ABC_cleaner_absolute.txt"))
-plot(PAR, main = "PAR (driving the model)", xlab = "Day")
-
+fieldData <- fread(here("Data","data_ABC_cleaner_absolute.txt"))
+par(plt=posPlot())
+plot(data=fieldData,prob.Vis.Leav~abund.cleaners,type="p",cex=5*score_visitor/20,
+     xlab = "Cleaner abundance",ylab="Visitor leaving prob.",pch=20)
 # PAR <- VSEMcreatePAR(1:1000)
 # plot(PAR, main = "PAR (driving the model)", xlab = "Day")
 
 # load reference parameter definition (upper, lower prior)
 refPars <- VSEMgetDefaults()
+str(refPars)
+refPars <- data.frame(best=c(0,0,30),
+                lower=c(0,0,0),
+                upper=c(1,10,1000))
+row.names(refPars)<-c("gamma","eta","sca")
+
 # this adds one additional parameter for the likelihood standard deviation (see below)
-refPars[12,] <- c(2, 0.1, 4) 
-rownames(refPars)[12] <- "error-sd"
-head(refPars)
+# refPars[12,] <- c(2, 0.1, 4) 
+# rownames(refPars)[12] <- "error-sd"
+# head(refPars)
 
 # create some simulated test data 
 # generally recommended to start with simulated data before moving to real data

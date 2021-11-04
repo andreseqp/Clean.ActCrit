@@ -9,36 +9,58 @@ require(data.table)
 library(coda)
 library(mcmcplots)
 library(ggplot2)
+library(cowplot)
+library(ggdist)
 library(bayesplot) 
 library(lattice)
+library(ggridges)
 source(here("../R_files/posPlots.R"))
 library("jsonlite")
 
 simdir<-"D:/Neuch_simulations/ABCfit/Simulations/"
 
-scen<-"ABCclean_gam_Nrew_sca_2_"
+scen1<-"ABCclean_gam_nRew_sca_"
+scen2<-"ABCclean_gam_sca_"
 
 ## Load files --------------------------------------------------------------
 
 # (listFiles<-list.files(paste0(simdir,scen),full.names = TRUE))
-(listFiles<-list.files(here("Simulations",scen)))
-(ABCruns<-grep("MCMCchain",listFiles,value = TRUE))
+(listFiles1<-list.files(here("Simulations",scen1)))
+(ABCruns1<-grep("MCMCchain",listFiles1,value = TRUE))
+
+(listFiles2<-list.files(here("Simulations",scen2)))
+(ABCruns2<-grep("MCMCchain",listFiles2,value = TRUE))
 
 
 # all in a single object
-ABCraw<-do.call(rbind,lapply(ABCruns, function(file){
-  rundata<-fread(here("Simulations",scen,file))
+ABCraw.1<-do.call(rbind,lapply(ABCruns1, function(file){
+  rundata<-fread(here("Simulations",scen1,file))
   seedNum<-strsplit(file,"_")[[1]][3]
   seedNum<-as.numeric(gsub("[[:alpha:]]",seedNum,replacement = ''))
   rundata[,seed:=rep(seedNum,dim(rundata)[1])]
 }))
 
+ABCraw.2<-do.call(rbind,lapply(ABCruns2, function(file){
+  rundata<-fread(here("Simulations",scen2,file))
+  seedNum<-strsplit(file,"_")[[1]][3]
+  seedNum<-as.numeric(gsub("[[:alpha:]]",seedNum,replacement = ''))
+  rundata[,seed:=rep(seedNum,dim(rundata)[1])]
+}))
+
+
 # One per onject
 ABCraw<-fread(here("Simulations",scen,ABCruns[3]))
 
 # All in a list
-mcmcList<-mcmc.list(do.call(list,lapply(ABCruns, function(file){
-  rundata<-fread(here("Simulations",scen,file))
+mcmcList.1<-mcmc.list(do.call(list,lapply(ABCruns1, function(file){
+  rundata<-fread(here("Simulations",scen1,file))
+  mcmcRun<-mcmc(rundata[,.(gamma,negReward,scaleConst)],thin = 100)#
+  return(mcmcRun)
+})))
+
+
+mcmcList.2<-mcmc.list(do.call(list,lapply(ABCruns2, function(file){
+  rundata<-fread(here("Simulations",scen2,file))
   mcmcRun<-mcmc(rundata[,.(gamma,negReward,scaleConst)],thin = 100)#
   return(mcmcRun)
 })))
@@ -53,22 +75,25 @@ thinning<-100
 
 ## get original parameter values from the simulations
 
-parsOrigin<-fromJSON(here("Simulations",scen,
-              grep("parameters_pred",listFiles,value = TRUE)))
-
+# parsOrigin<-fromJSON(here("Simulations",scen,
+#               grep("parameters_pred",listFiles,value = TRUE)))
+# 
 
 
 # filter
 
-ABCburned<-ABCraw[iteration>burn.in]
+ABCburned.1<-ABCraw.1[iteration>burn.in]
+ABCfiltered.1<-ABCraw.1[iteration>burn.in & iteration %% thinning==0]
 
-ABCfiltered<-ABCraw[iteration>burn.in & iteration %% thinning==0]
+
+ABCburned.2<-ABCraw.2[iteration>burn.in]
+ABCfiltered.2<-ABCraw.2[iteration>burn.in & iteration %% thinning==0]
 
 
-ABC.gamma.time.short<-dcast(ABCfiltered,iteration~seed,value.var = c("gamma"))
-ABC.nRew.time.short<-dcast(ABCfiltered,iteration~seed,value.var = "negReward")
-ABC.sca.time.short<-dcast(ABCfiltered,iteration~seed,value.var = "scaleConst")
-ABC.logLike.time.short<-dcast(ABCfiltered,iteration~seed,value.var = "fit")
+ABC.gamma.time.short<-dcast(ABCfiltered.1,iteration~seed,value.var = c("gamma"))
+ABC.nRew.time.short<-dcast(ABCfiltered.1,iteration~seed,value.var = "negReward")
+ABC.sca.time.short<-dcast(ABCfiltered.1,iteration~seed,value.var = "scaleConst")
+ABC.logLike.time.short<-dcast(ABCfiltered.1,iteration~seed,value.var = "fit")
 
 par(plt=posPlot(numploty = 4,idploty = 4,numplotx = 2,idplotx = 1)-c(0.05,0.05,0,0),
     mfrow=c(1,1),las=1)
@@ -82,14 +107,14 @@ mtext(text =  expression(gamma),cex=3,side = 2,line = 3)
 par(plt=posPlot(numploty = 4,idploty = 4,numplotx = 2,idplotx = 2)-c(0.05,0.05,0,0),
     mfrow=c(1,1),
     las=1,new=TRUE)
-densGamma<-density(ABCfiltered$gamma)
+densGamma<-density(ABCfiltered.1$gamma)
 plot(densGamma,yaxt="n",ylab="",xlab="",cex.axis=0.7)
 axis(4)
 modeGam<-densGamma$x[densGamma$y==max(densGamma$y)]
 lines(x = rep(modeGam,2),y = range(densGamma$y))
-meanGam<-mean(ABCfiltered$gamma)
+meanGam<-mean(ABCfiltered.1$gamma)
 lines(x = rep(meanGam,2),y = range(densGamma$y),col="red")
-medianGam<-median(ABCfiltered$gamma)
+medianGam<-median(ABCfiltered.1$gamma)
 lines(x = rep(medianGam,2),y = range(densGamma$y),col="green")
 
 lines(x = rep(parsOrigin$init[3],2),y = range(densGamma$y),col="blue")
@@ -104,16 +129,16 @@ mtext(text = expression(eta),line = 3,cex = 3,side = 2)
 
 par(plt=posPlot(numploty = 4,idploty = 3,numplotx = 2,idplotx = 2)-c(0.05,0.05,0,0),
     mfrow=c(1,1), las=1,new=TRUE)
-densnegReward<-density(ABCfiltered$negReward)
+densnegReward<-density(ABCfiltered.1$negReward)
 plot(densnegReward,yaxt="n",ylab="",xlab="",cex.axis=0.7,xlim=c(0,5),
      main="")
 axis(4)
 
 modenegReward<-densnegReward$x[densnegReward$y==max(densnegReward$y)]
 lines(x = rep(modenegReward,2),y = range(densnegReward$y))
-meannegReward<-mean(ABCfiltered$negReward)
+meannegReward<-mean(ABCfiltered.1$negReward)
 lines(x = rep(meannegReward,2),y = range(densnegReward$y),col="red")
-mediannegReward<-median(ABCfiltered$negReward)
+mediannegReward<-median(ABCfiltered.1$negReward)
 lines(x = rep(mediannegReward,2),y = range(densnegReward$y),col="green")
 
 lines(x = rep(parsOrigin$init[4],2),y = range(densGamma$y),col="blue")
@@ -128,16 +153,16 @@ mtext(text = "Scale const." ,line = 3,cex = 1,side = 2,las=0)
 par(plt=posPlot(numploty = 4,idploty = 2,numplotx = 2,idplotx = 2)-c(0.05,0.05,0,0),
     mfrow=c(1,1),
     las=1,new=TRUE)
-densScal<-density(ABCfiltered$scaleConst)
+densScal<-density(ABCfiltered.1$scaleConst)
 plot(densScal,yaxt="n",ylab="",xlab="",cex.axis=0.7,
      main="")
 axis(4)
 
 modeScal<-densScal$x[densScal$y==max(densScal$y)]
 lines(x = rep(modeScal,2),y = range(densScal$y))
-meanScal<-mean(ABCfiltered$scaleConst)
+meanScal<-mean(ABCfiltered.1$scaleConst)
 lines(x = rep(meanScal,2),y = range(densScal$y),col="red")
-medianScal<-median(ABCfiltered$scaleConst)
+medianScal<-median(ABCfiltered.1$scaleConst)
 lines(x = rep(medianScal,2),y = range(densScal$y),col="green")
 
 lines(x = rep(parsOrigin$init[5],2),y = range(densGamma$y),col="blue")
@@ -157,13 +182,20 @@ mtext(text = "iteration" ,line = 2,cex = 1,side = 1,las=0)
 
 modeGam;modenegReward;modeScal
 
-plot(data=ABCfiltered,gamma~negReward,type="p",cex=0.2)
-plot(data=ABCfiltered,negReward~scaleConst,type="p",cex=0.2)
-plot(data=ABCfiltered,gamma~scaleConst,type="p",cex=0.2)
+plot(data=ABCfiltered.1,gamma~negReward,type="p",cex=0.2)
+plot(data=ABCfiltered.1,negReward~scaleConst,type="p",cex=0.2)
+plot(data=ABCfiltered.1,gamma~scaleConst,type="p",cex=0.2)
 
 ## Density plots with gg -------------------------------------------------------
 
-ABCfiltered
+ABCfiltered[round(runif(10,min = 1,max=dim(ABCfiltered)[1]),digits = 0),]
+
+ABCfilt.long.1<-melt(ABCfiltered.1,measure.vars = c("gamma","negReward","scaleConst"),
+                   variable.name = "variable",id.vars = "seed")
+
+ABCfilt.long.2<-melt(ABCfiltered.2,measure.vars = c("gamma","negReward","scaleConst"),
+                     variable.name = "variable",id.vars = "seed")
+
 
 typeof(mcmcList)
 
@@ -173,6 +205,51 @@ areas<-
 
 
 areas.data<-mcmc_areas_data(x=mcmcList)
+
+densplots<-ggplot(data = ABCfilt.long,aes(x=value,y=variable))+
+  stat_halfeye()
+
+ggplot(data=ABCfilt.long.1,aes(x=value))+
+  geom_density()+facet_wrap(~variable,scales = "free",nrow = 3)+
+  theme_classic()
+
+png(here("post_both_gamma.png"),width = 700,height = 800)
+
+png(here("Simulations",paste0(scenario,"_"),
+         paste0(strsplit(predfile.both,"seed")[[1]][1],"poster.png")),width = 1300,height = 700)
+
+
+plot_grid(nrow=3,align = "v",byrow = FALSE,
+          ggplot(data=ABCfiltered.1,aes(x=gamma)) + 
+            stat_halfeye(point_interval = mode_hdi, .width = c(.66, .95),point_size=3) + 
+            labs(title="Full model",subtitle = expression(gamma),x="",y="")+theme_classic(),
+          ggplot(data=ABCfiltered.1,aes(x=scaleConst)) + 
+            stat_halfeye(point_interval= mode_hdi,
+                         .width = c(.66, .95))  
+            # scale_fill_manual(values=c("gray85","skyblue"))
+          + labs(subtitle = "Scalling const.",x="",y="")+xlim(0,1500)+theme_classic(),
+          ggplot(data=ABCfiltered.1,aes(x=negReward)) + 
+            stat_halfeye(point_interval=mode_hdi,point_size=3) + 
+            labs(subtitle = expression(eta),x="",y="")+
+            xlim(0,6)+theme_classic(),
+          ggplot(data=ABCfiltered.2,aes(x=gamma)) +
+            stat_halfeye(point_interval=mode_hdi,point_size=3) + 
+            labs(title="Only future reward",subtitle = expression(gamma),x="",y="")+theme_classic(),
+          ggplot(data=ABCfiltered.2,aes(x=scaleConst)) +
+            stat_halfeye(point_interval=mode_hdi,point_size=3) + 
+            labs(subtitle = "Scalling const.",x="",y="")+
+            theme_classic(),
+          labels=c('a','b','c','d','e')
+)
+
+ggplot(data=ABCfiltered.1,aes(x=scaleConst)) + 
+  stat_halfeye(aes(fill=after_stat(stat_dist_slabinterval(slab_type = "cdf",.width = c(.66,.95)))),
+               point_interval= mode_hdci,show.legend=FALSE,
+               .width = c(.66, .95))+
+  scale_fill_manual(values=c("gray85","skyblue"))+
+  labs(subtitle = "Scalling const.",x="",y="")+xlim(0,1500)+theme_classic()
+
+dev.off()
 
 str(areas.data)
 

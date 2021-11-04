@@ -10,13 +10,13 @@ exedir<-'/./ActCrit.exe'
 
 fileName<-"parameters.json"
 
-scenario<-"ABCclean_gam_sca"
+scenario<-"ABCclean_nRew_sca"
 
 
 
 # For predictions on the observed values ---------------------------------------
 
-scenario<-"MCMCfakedata2"
+scenario<-"ABCclean_nRew_sca"
 
 param_pred<-list(totRounds=10000,ResReward=1,VisReward=1,
             ResProbLeav=0,scenario=0, inbr=0,outbr=0,forRat=0.0,
@@ -32,9 +32,9 @@ param_pred<-list(totRounds=10000,ResReward=1,VisReward=1,
 check_create.dir(here(simsDir),param = rep(scenario,1),values = c(""))
 
 param_pred$folder<-param_pred$folderL
-param_pred$init[c(3,4,5)]<- #c(modeGam,modenegReward,modeScal)
-  c(runif(1,max = 1),runif(1,max = 1),
-                             runif(1,max = 500,min = 1))
+param_pred$init[c(3,4,5)]<- c(modeGam,modenegReward,modeScal)
+  # c(runif(1,max = 1),runif(1,max = 1),
+  #                            runif(1,max = 500,min = 1))
   #sumMCMC$statistics[,1]
 fileName<-paste("parameters_pred_",param_pred$seed,".json",sep="")
 outParam.pred<-toJSON(param_pred,auto_unbox = TRUE,pretty = TRUE)
@@ -69,7 +69,7 @@ param<-list(totRounds=10000,ResReward=1,VisReward=1,
             ResProbLeav=0,VisProbLeav=1,negativeRew=-modenegReward,#sumMCMClist$statistics[,1][2],
             scenario=0,
             inbr=0,outbr=0,trainingRep=10,forRat=0.0,
-            alphaT=0.05,printGen=1,seed=1, gammaRange=I(c(modeGam)),#c(0,sumMCMClist$statistics[,1][1])),#,
+            alphaT=0.05,printGen=1,seed=1, gammaRange=I(c(0)),#c(0,sumMCMClist$statistics[,1][1])),#,
             netaRange=I(c(1)),alphaThRange=I(c(0.05)),numlearn=1,
             propfullPrint = 0.7,
             alphaThNch=0.05,
@@ -178,7 +178,7 @@ param_mcmc<-list(totRounds=10000,ResReward=1,VisReward=1,
                 seed=1, propfullPrint = 0.7,sdPert=c(0.05,0.05,0.3,4,300),
                 chain_length=100000,
                 init=c(0.05,0.05,0,0,30),# alphaA,AlphaC, Gamma, NegRew
-                pertScen = c(FALSE,FALSE,TRUE,FALSE,TRUE), 
+                pertScen = c(FALSE,FALSE,FALSE,TRUE,TRUE), 
                 MCMC =1, data="clean",nRep=1,
                   dataFile = here("Data","data_ABC_cleaner_absolute.txt"),
                   # here("Simulations",
@@ -192,7 +192,7 @@ check_create.dir(here(simsDir),param = rep(scenario,1),
 
 for(seed in 1:3){
   param_mcmc$folder<-param_mcmc$folderL
-  param_mcmc$init<-c(0.05,0.05,runif(1,max = 0.6),0,
+  param_mcmc$init<-c(0.05,0.05,0,runif(1,max = 2,min = 0),#runif(1,max = 0.6),0,
                      runif(1,max = 50,min = 5))
                      ##runif(1,max = 50,min = 5))
   param_mcmc$seed <- seed

@@ -6,7 +6,6 @@ author:
 - Redouan Bshary^[Institute of Biology, University of Neuchâtel, Neuchâtel, Switzerland]
 date: "`r format(Sys.time(), '%B %d, %Y')`"
 output: 
-  word_document: default
   pdf_document: default
 fig_caption: yes
 fontsize: 12pt
@@ -20,14 +19,17 @@ header-includes:
     \setcounter{table}{0}  
     \renewcommand{\thetable}{S\arabic{table}} 
     \setcounter{figure}{0} 
-    \renewcommand{\thefigure}{S\arabic{figure}}
+    \renewcommand{\thefigure}{S\arabic{figure}}}
 keep_tex: yes
 keywords: My keywords
 linespread: 2
 bibliography: Cleaner_learning.bib
-style: C:\Users\andre\Zotero\styles\behavioral-ecology-and-sociobiology.csl
+style: M:\Zotero\styles\behavioral-ecology-and-sociobiology.csl
 spacing: double
 abstract: Insert a nice abstract here.
+editor_options: 
+  markdown: 
+    wrap: 72
 ---
 
 ```{r setup, include=FALSE}
@@ -37,73 +39,262 @@ library(here)
 
 ## Introduction
 
-Cooperation among individuals of the same or different species is ubiquitous in nature. 
-Among individuals of the same species it is the basis for the evolution of  higher 
-forms of biological organization [@maynardsmith_Major_1998]. 
-Among individuals of different species it underlays the biological mechanism for 
-fundamental ecological interactions such as pollination, nitrogen fixation or 
-parasite removal [@begon_Ecology_2006]. However, when cooperation is costly, 
-it is not straightforward to understand why individuals would be willing to pay that cost [@lehmann_Evolution_2006]. Furthermore, cooperative interactions might open the way for 
-one partner to exploit the other, what prevents this type of exploitation? [@herre_Evolution_1999]
-One reason for cooperating is if the benefits obtained from a partner´s 
-cooperative action are dependent on one's own cooperative act. 
-This dependency can arise, for instance, when cooperative partners
-choose who they interact with depending on the level of cooperation they offer. 
-In line with this, cooperative interactions can be viewed as a market-like situation 
-where partner choice mediates the level of exchange between traders [@hammerstein_Biological_2016; @leimar_Cooperation_2010; @noe_Biological_1994a]. Empirical evidence shows
-that several iconic examples of cooperation between individuals of different species 
-are indeed mediated by partner choice [@hammerstein_Biological_2016]. Biological market theory highlights 
-that changes in the supply and demand of goods and services determines the value of 
-those commodities, and therefore, can influence partner's actions in the cooperative 
-exchange. For instance, in the marine cleaning mutualism, where cleaner fish 
-_Labroides dimidiatus_ (cleaners) removes ectoparasites from other coral reef fishes (clients) [@cote_Evolution_2000],
-some client species are able to choose among different cleaners, and because of this
-obtain better service [@grutter_Cleaner_2003]. Better services means for clients to have priority when 
-more than one client is available [@bshary_Choosy_2002], and less cheating (when cleaners eat live tissue
-instead of parasites) [@grutter_Cleaner_2003]. However, recent evidence shows that when clients experience
-ecological conditions with low cleaner abundance, they are less likely to use partner
-choice to leverage better service [@triki_Biological_2019]. On the other side, 
-cleaners in those markets with favourable conditions, stop giving priority to choosy clients [@triki_Biological_2019; @triki_Decrease_2018]. Thus, it seems that cleaners, as well as clients,
-adjust their strategy to the prevalent market conditions they find in their environment. 
-This adjustment cannot be due to local genetic adaptation, given that cleaners are open water spawners 
-and the environmental changes in different sites have occurred in the last decade [@triki_Biological_2019; @triki_Decrease_2018]. Alternatively, a recent cognitive model proposes that differences in 
-cleaners preferences can arise trough the interaction of cleaner's cognitive processes 
-with the environmental conditions [@quinones_Reinforcement_2019]. Under this view,
-cleaners ontogenetically develop their preferences for different clients through learning,
-and some environmental conditions facilitate learning. Thus, the adaptive adjustment 
-seen in cleaners might be due to their learning mechanisms. Despite the general fit of the 
-model explanation to the available data, no systematic parameter fit has been performed to 
-evaluate which combination of model parameters better fit the data. 
+Biological market theory emphasizes the importance of partner choice in
+explaining how supply-to-demand ratios translate into payoff asymmetries
+between partners [@noe_Biological_1994a; @noe_Biological_1995a]. One
+example is the marine cleaning mutualism involving the cleaner
+fish *Labroides dimidiatus* and 'client' fish. Clients offer themselves as
+food patches for cleaners to remove ectoparasites, which gives the
+cleaners calories and the clients improved health
+[@waldie_LongTerm_2011; @ros_Does_2011,@triki_Effects_2016]. As
+cleaners have about 2000 interactions per day
+[@grutter_Relationship_1995], they regularly face the situation that
+two clients seek cleaning simultaneously. In such conditions, it is
+important to distinguish between 'resident' and 'visitor' client species
+[@bshary_Cleaner_2001a]. The residents have small home ranges and hence
+access to only the local cleaner, while the visitors have large home
+ranges and hence access to two or more cleaners. Thus, visitors have the
+option to switch to another cleaner if being made to wait, while
+residents must wait for inspection. Indeed, visitors have been observed
+to use their partner choice options in that way [@bshary_Choosy_2002],
+which may explain why cleaners give visitors service priority in a field
+study in the Red Sea [@bshary_Cleaner_2001a]. Furthermore, early
+laboratory experiments showed that leaving causes service priority
+[@bshary_Asymmetric_2002]. The experiments consisted of a simultaneous
+two-choice task, where cleaners had to decide which of two Plexiglas
+plates to approach first and eat mashed prawn of it. One plate was made
+to behave like a resident, i.e. it would remain until the cleaner had
+eaten off it. The other plate was made to behave like a visitor, i.e. it
+would be removed if not inspected first. Cleaners learned to prefer the
+visitor plate and hence obtained the double amount of food
+[@bshary_Asymmetric_2002]. Adult cleaner fish outperform various
+primates as well as rats and pigeons in this original version of the
+biological market task [@salwiczek_Adult_2012; @zentall_Early_2017];
+only African grey parrots solve this task as well [@pepperberg_Can_2014].
+
+Recent research has refined our view on partner choice and priority of
+access in the *L. dimidiatus* cleaning mutualism, and as a consequence
+performance in the biological market task. First, details of the task
+presentation may matter; i.e. what relevant information is encoded in
+the design of the two plates (colour versus size; @wismer_Cuebased_2019), or
+whether the information is in the colour of the food
+[@pretot_Comparative_2021; @pretot_Comparing_2016], and whether the
+food is visible or hidden/released only when the subjects made choices
+on a touch screen [@pretot_Factors_2016]. Second, it appears that cleaner and
+client densities in nature affect how cleaners perform in the original
+market task: when densities are low, cleaners are more likely to fail to
+complete the task [@triki_Biological_2019; @triki_Decrease_2018;
+@wismer_Variation_2014]. The apparent explanation for this failure is that visitor
+clients are less likely to exert their choice options (and hence wait
+for inspection if made to wait) when cleaner fish densities are low
+[@triki_Brain_2020]. This change in behavior may be due to the fact that
+when cleaner densities are low, the cost of switching in terms of
+distance to swim and time invested increases. If visitors are not
+choosy, cleaners should not give them priority anymore. Interestingly,
+while cleaners from high-density areas have larger forebrains harbouring
+more cells than cleaners from low-density areas [@triki_Brain_2020], on a
+local scale those individuals that perform in the market task in a way
+that corresponds to the locally optimal strategy (solving/failing the
+task when living in high/low density) have relatively larger forebrains
+[@triki_Brain_2020]. Taken together, recent empirical results clearly show
+that we need a mechanistic approach to understand variation in intra-
+and interspecific performance in the market task. One approach to
+identify candidate mechanisms underlying performance in a cognitive task
+is to develop proximate learning models. By varying the cognitive tool
+kit, one can assess which minimal kit is necessary to solve the task at
+hand. This approach has been used to analyse the market task
+[@prat_Role_2021; @quinones_Reinforcement_2019] and spatial learning in bees [@dubois_Model_2021]. Learning models showed that basic reinforcement 
+learning does not suffice to solve the task, this is particularly so when model assume the more complex natural situation in which cleaners
+not only face resident-visitor pairs but also visitor-visitor and
+resident-resident pairs, as well only a resident or only a visitor. To
+be able to give visitors priority over residents, cleaners first need to
+be able to assess a client's value separately for the three possible
+forms of encounter (alone, paired with a fish with the same strategic
+option, paired with a fish with the alternative strategic option)
+[@quinones_Reinforcement_2019]. In addition, cleaners need to account for the future
+consequences of current decisions. In the model, this could be achieved
+in two non-mutually exclusive ways [@quinones_Reinforcement_2019]:
+through low temporal discounting of future effects
+and/or through perceiving a visitor client leaving as psychological
+punishment (i.e. as a negative reinforcer). Given that a negative
+reinforcer is part of the ubiquitous learning mechanism termed operant
+conditioning (Thorndike xxxx), this explanation can be considered the
+simpler one. Furthermore, accounting for the future effects of an action is 
+considered an advanced cognitive ability [@Suddenford_Evolution_2007]. 
+Here, we fitted our model to the empirical data on fish
+densities and cleaner fish performance in the market task with the aim
+to determine the likely mechanism used by cleaners to incorporate future
+consequences of current decisions. 
+
+Cooperation among individuals of the same or different species is
+ubiquitous in nature. Among individuals of the same species it is the
+basis for the evolution of higher forms of biological organization
+[@maynardsmith_Major_1998]. Among individuals of different species it
+underlays the biological mechanism for fundamental ecological
+interactions such as pollination, nitrogen fixation or parasite removal
+[@begon_Ecology_2006]. However, when cooperation is costly, it is not
+straightforward to understand why individuals would be willing to pay
+that cost [@lehmann_Evolution_2006]. Furthermore, cooperative
+interactions might open the way for one partner to exploit the other,
+what prevents this type of exploitation? [@herre_Evolution_1999] One
+reason for cooperating is if the benefits obtained from a partner´s
+cooperative action are dependent on one's own cooperative act. This
+dependency can arise, for instance, when cooperative partners choose who
+they interact with depending on the level of cooperation they offer. In
+line with this, cooperative interactions can be viewed as a market-like
+situation where partner choice mediates the level of exchange between
+traders [@hammerstein_Biological_2016; @leimar_Cooperation_2010;
+@noe_Biological_1994a]. Empirical evidence shows that several iconic
+examples of cooperation between individuals of different species are
+indeed mediated by partner choice [@hammerstein_Biological_2016].
+Biological market theory highlights that changes in the supply and
+demand of goods and services determines the value of those commodities,
+and therefore, can influence partner's actions in the cooperative
+exchange. For instance, in the marine cleaning mutualism, where cleaner
+fish *Labroides dimidiatus* (cleaners) removes ectoparasites from other
+coral reef fishes (clients) [@cote_Evolution_2000], some client
+species are able to choose among different cleaners, and because of this
+obtain better service [@grutter_Cleaner_2003]. Better services means
+for clients to have priority when more than one client is available
+[@bshary_Choosy_2002], and less cheating (when cleaners eat live
+tissue instead of parasites) [@grutter_Cleaner_2003]. However, recent
+evidence shows that when clients experience ecological conditions with
+low cleaner abundance, they are less likely to use partner choice to
+leverage better service [@triki_Biological_2019]. On the other side,
+cleaners in those markets with favourable conditions, stop giving
+priority to choosy clients [@triki_Biological_2019;
+@triki_Decrease_2018]. Thus, it seems that cleaners, as well as
+clients, adjust their strategy to the prevalent market conditions they
+find in their environment. This adjustment cannot be due to local
+genetic adaptation, given that cleaners are open water spawners and the
+environmental changes in different sites have occurred in the last
+decade [@triki_Biological_2019; @triki_Decrease_2018]. Alternatively, a
+recent cognitive model proposes that differences in cleaners preferences
+can arise trough the interaction of cleaner's cognitive processes with
+the environmental conditions [@quinones_Reinforcement_2019]. Under this
+view, cleaners ontogenetically develop their preferences for different
+clients through learning, and some environmental conditions facilitate
+learning. Thus, the adaptive adjustment seen in cleaners might be due to
+their learning mechanisms. Despite the general fit of the model
+explanation to the available data, no systematic parameter fit has been
+performed to evaluate which combination of model parameters better fit
+the data.
 
 ## Methods
 
-In order to fit the model parameters to the data we used Markov Chain Monte Carlo (MCMC) with 
-a Metropolis sampler to estimate the posterior distribution of the model parameters. We used the data from @triki_Biological_2019 to fit the parameters of the  model analysed in @quinones_Reinforcement_2019. The data consist a of the number of times that a set of cleaners chose to
-feed of a visitor client plate in the context of the market task. This set of cleaners were collected in different locations and in each one of those locations environmental variables were measured. These environmental variables recorded from each location are used as input for the computational model. Given these inputs, the computational model produces a time series of choices in the market task. In the model the preference for the two options changes as the algorithm learns based on the reward that the two options provide. Thus, we run the model for 10000 steps and use the last 3000 steps as the preference developed in the model for visitors given the environmental variables. We use this preference as the predicted probability of choosing a visitor in the data, and use it to calculate the likelihood that the number of visitor choices obtained from each cleaner is generated by the model. We sum over all the cleaners the log-likehoods and use the total for the acceptance of new parameters in the MCMC. 
+In order to fit the model parameters to the data we used Markov Chain
+Monte Carlo (MCMC) with a Metropolis sampler to estimate the posterior
+distribution of the model parameters. We used the data from
+@triki_Biological_2019 to fit the parameters of the model analysed in
+@quinones_Reinforcement_2019. The data consist a of the number of times
+that a set of cleaners chose to feed of a visitor client plate in the
+context of the market task. This set of cleaners were collected in
+different locations and in each one of those locations environmental
+variables were measured. These environmental variables recorded from
+each location are used as input for the computational model. Given these
+inputs, the computational model produces a time series of choices in the
+market task. In the model the preference for the two options changes as
+the algorithm learns based on the reward that the two options provide.
+Thus, we run the model for 10000 steps and use the last 3000 steps as
+the preference developed in the model for visitors given the
+environmental variables. We use this preference as the predicted
+probability of choosing a visitor in the data, and use it to calculate
+the likelihood that the number of visitor choices obtained from each
+cleaner is generated by the model. We sum over all the cleaners the
+log-likehoods and use the total for the acceptance of new parameters in
+the MCMC.
 
-The model consist of a set individual-based simulations where individuals face a series of choices between two options. Individuals in the model represent cleaners, and the options they face simulate the natural conditions of a cleaning market. Thus, individuals in the model choose to prioritize  different clients. These clients are classified as resident and visitors. Residents are those clients that stay in the cleaning queue when they are not given priority; while visitors leave the queue (with a certain probability) after they are not given priority. Individuals obtain reward from cleaning a client regardless of the type.  Every time individuals face and make a choice they update the probability of making that same choice. The update is based on the difference between the expectation of reward and the actual reward the individual obtains (prediction error); and it is carried in the direction that would lead to more reward being obtained, given the new information. Further details of the model implementation can be found in the paper [@quinones_Reinforcement_2019]. The model analysis points to the relevance of two parameters. First, $\gamma$ measures how much individuals include future rewards in their decision updates. If $\gamma=0$, individuals only use the immediate reward obtained from a cleaning interaction. As $\gamma$ increases individuals include more the reward obtained from the subsequent choices. That amounts to calculating and using for decision making the future expected rewards. Second, $\eta$ measures how much individuals include in their reward the fleeing behaviour of visitor clients as a negative component. Both of these parameters allow individuals to use in their estimates the future effects of their choices. The model analysis shows that without either of them, learning individuals cannot develop a preference for the visitor client. The analysis contrast the effect of these two parameters against variation in the relative abundance of the two client types. The analysis shows that under very high client abundance the presence of  future rewards ($\gamma>0$) no longer favours the preference for the ephemeral clients, this effect does not occur with negative reward mediated by client behaviour ($\eta$). Thus, the analysis suggests that future reward as an explanation for cleaner ability to prefer visitors is supported by @triki_Biological_2019 data. However, a combination of future and negative rewards, could still be a better explanation for the data. In the current analysis, we will use the data from @triki_Biological_2019 to fit some of the model parameters, particularly relevant we will fit $\gamma$ and $\eta$ to find out whether each or a combination of these effects is a better explanation for the pattern seen in the data. 
+The model consist of a set individual-based simulations where
+individuals face a series of choices between two options. Individuals in
+the model represent cleaners, and the options they face simulate the
+natural conditions of a cleaning market. Thus, individuals in the model
+choose to prioritize different clients. These clients are classified as
+resident and visitors. Residents are those clients that stay in the
+cleaning queue when they are not given priority; while visitors leave
+the queue (with a certain probability) after they are not given
+priority. Individuals obtain reward from cleaning a client regardless of
+the type. Every time individuals face and make a choice they update the
+probability of making that same choice. The update is based on the
+difference between the expectation of reward and the actual reward the
+individual obtains (prediction error); and it is carried in the
+direction that would lead to more reward being obtained, given the new
+information. Further details of the model implementation can be found in
+the paper [@quinones_Reinforcement_2019]. The model analysis points to
+the relevance of two parameters. First, $\gamma$ measures how much
+individuals include future rewards in their decision updates. If
+$\gamma=0$, individuals only use the immediate reward obtained from a
+cleaning interaction. As $\gamma$ increases individuals include more the
+reward obtained from the subsequent choices. That amounts to calculating
+and using for decision making the future expected rewards. Second,
+$\eta$ measures how much individuals include in their reward the fleeing
+behaviour of visitor clients as a negative component. Both of these
+parameters allow individuals to use in their estimates the future
+effects of their choices. The model analysis shows that without either
+of them, learning individuals cannot develop a preference for the
+visitor client. The analysis contrast the effect of these two parameters
+against variation in the relative abundance of the two client types. The
+analysis shows that under very high client abundance the presence of
+future rewards ($\gamma>0$) no longer favours the preference for the
+ephemeral clients, this effect does not occur with negative reward
+mediated by client behaviour ($\eta$). Thus, the analysis suggests that
+future reward as an explanation for cleaner ability to prefer visitors
+is supported by @triki_Biological_2019 data. However, a combination of
+future and negative rewards, could still be a better explanation for the
+data. In the current analysis, we will use the data from
+@triki_Biological_2019 to fit some of the model parameters, particularly
+relevant we will fit $\gamma$ and $\eta$ to find out whether each or a
+combination of these effects is a better explanation for the pattern
+seen in the data.
 
 ### Data explanation
 
 *Insert here brief description of the data and data collection*
 
-In order to capture with the model the relationship between the characteristics of the market (environment) and the cleaner's performance we need to translate the absolute abundances of the data to relative abundances. This is because in the model, relative abundances of clients define not only the probability of residents and visitors, but also how often the cleaning station is empty (e.g. there are no clients to be cleaned). The more cleaners, the more options available for the clients and hence higher probability of empty cleaning stations. How often the cleaning stations are empty in turns influences the value that cleaners can expect from their choices. The more empty the empty cleaning stations are, the more it is to choose a client that will not stay.  However, the frequency of empty spots in the cleaning station does not only depend on cleaner relative abundances but also on the frequency with which clients visit the station. The client visitation frequency will likely vary among different clients depending on parasite abundances and loads. These are variables for which we do not have field estimates. Thus, we
-computed a measure of relative cleaner abundance for each site relative to absolute abundances and multiplied by a scaling constant that changes the range of the variable. We fit the value of the scaling constant as part of the statistical inference. As for the client abundances for residents and visitors we computed a relative measure with respect to the total client abundance, and weighted that by the rescaled relative absence of cleaners (1-relative cleaner abundance). Thus, all three measures of relative abundance sum up to 1, and can be used in the model as a proxy for the probability of having different options in the cleaning station.
-
+In order to capture with the model the relationship between the
+characteristics of the market (environment) and the cleaner's
+performance we need to translate the absolute abundances of the data to
+relative abundances. This is because in the model, relative abundances
+of clients define not only the probability of residents and visitors,
+but also how often the cleaning station is empty (e.g. there are no
+clients to be cleaned). The more cleaners, the more options available
+for the clients and hence higher probability of empty cleaning stations.
+How often the cleaning stations are empty in turns influences the value
+that cleaners can expect from their choices. The more empty the empty
+cleaning stations are, the more it is to choose a client that will not
+stay. However, the frequency of empty spots in the cleaning station does
+not only depend on cleaner relative abundances but also on the frequency
+with which clients visit the station. The client visitation frequency
+will likely vary among different clients depending on parasite
+abundances and loads. These are variables for which we do not have field
+estimates. Thus, we computed a measure of relative cleaner abundance for
+each site relative to absolute abundances and multiplied by a scaling
+constant that changes the range of the variable. We fit the value of the
+scaling constant as part of the statistical inference. As for the client
+abundances for residents and visitors we computed a relative measure
+with respect to the total client abundance, and weighted that by the
+rescaled relative absence of cleaners (1-relative cleaner abundance).
+Thus, all three measures of relative abundance sum up to 1, and can be
+used in the model as a proxy for the probability of having different
+options in the cleaning station.
 
 ## Results
 
-
-```{r post, fig.cap="Posterior distributions for parameter values $\\gamma$, $\\eta$ and the scalling constant. We show the kerne density estimates, and bellow the mean (black point) and the 65\\% and 95\\%  highest posterior density interval for the three paramteres. On the left (panels a, c and c) posterior distributions for a model with all three parameters; while on the right (b and d) a model without negative reward, ",out.width='85%'}
+```{r post, fig.cap="Posterior distributions for parameter values $\\gamma$, $\\eta$ and the scalling constant. We show the kerne density estimates, and bellow the mode (black point) and the 65\\% (light blue) and 95\\% (grey)  highest posterior density interval for the three paramteres. On the left (panels a, c and c) posterior distributions for a model with all three parameters; while on the right (b and d) a model without negative reward, ",out.width='85%'}
 knitr::include_graphics(here("post_both_gamma.png"))
 
 ```
 
-Figure \ref{fig:post} panels a,c and e show the posterior distributions of the parameter values 
-of the full model, which includes both future and negative reward. Notably, the bulk of the posterior distribution 
-for the parameter tuning negative reward ($\eta$) is close to zero. Given the structure of the model, we prevented $\eta$ from taking negative values. Nevertheless, the shape of the posterior and its credible intervals suggest the absence of negative reward to be well supported by the data. Thus, we run the analysis setting $\eta$ to zero. 
-Figure \ref{fig:post} panels b and d, show the posterior distributions of the two parameters estimated. Not surprisingly, under a model without negative reward, the distribution of $\gamma$ shifts to higher values.
-
+Figure \ref{fig:post} panels a,c and e show the posterior distributions
+of the parameter values of the full model, which includes both future
+and negative reward. Notably, the bulk of the posterior distribution for
+the parameter tuning negative reward ($\eta$) is close to zero. Given
+the structure of the model, we prevented $\eta$ from taking negative
+values. Nevertheless, the shape of the posterior and its credible
+intervals suggest the absence of negative reward to be well supported by
+the data. Thus, we run the analysis setting $\eta$ to zero. Figure
+\ref{fig:post} panels b and d, show the posterior distributions of the
+two parameters estimated. Not surprisingly, under a model without
+negative reward, the distribution of $\gamma$ shifts to higher values.
 
 ```{r pred, fig.cap="Observed and predicted probability of choosing a visitor. Left-hand side panel: color contour shows the prediction of the learning model using the mode of the posterior distributions of parameters recovered by the statistical analysis. Dots show the frequency of visitor choices for the 12 locations, as well as the corresponding relative cleaner abundance (x axis) and frequency of visitors leaving the station (y axis). Right-hand side panels: scatter plot of the observed and predicted probabilities of choosing a visitor for 12 locations. Line correspond to a perfect match between observed and predicted probabilities. Upper panels show prediction from a model including future and negative reward, lower panels froma  model with only future reward.",out.width='90%'}
 
@@ -111,22 +302,40 @@ knitr::include_graphics(here("contour_both_gamma.png"))
 
 ```
 
-Figure \ref{fig:pred} shows predictions from the two models and their fit to the data. On the left,
-the colour coded contour shows the prediction of the model for combinations of cleaner abundance (x axis) and
-visitor leaving probability (y axis). Predictions were generated by running the model using the mode of the posterior
-distributions as the parameter values, and varying systematically cleaner abundance and visitor leaving probability.
-Colour of the points on top of the contour show the average frequency with 
-which cleaner fish chose the visitor plate in their last 20 experimental trials. Each point corresponds to a 
-location with a combination of cleaner abundance and visitor leaving probability. Panels on the right show how close
-the observed values (y axis) are from the predictions of the models (x axis). The line represents the perfect fit between observed and predicted values. Predicted values were taken using the mode just as in the left panels. 
-On the lower right corner of the panel we show the coefficient of determination.
-Despite having one more parameter varying, the full model gives a lower fit to the data than the model without negative reward, measured by the coefficient of determination. In the supplementary material, we also show that a model with only negative reward, excluding future rewards ($\gamma=0$, Fig. \ref{fig:nogamma}), provides a lower fit than either of the ones presented in the main text. 
+Figure \ref{fig:pred} shows predictions from the two models and their
+fit to the data. On the left, the colour coded contour shows the
+prediction of the model for combinations of cleaner abundance (x axis)
+and visitor leaving probability (y axis). Predictions were generated by
+running the model using the mode of the posterior distributions as the
+parameter values, and varying systematically cleaner abundance and
+visitor leaving probability. Colour of the points on top of the contour
+show the average frequency with which cleaner fish chose the visitor
+plate in their last 20 experimental trials. Each point corresponds to a
+location with a combination of cleaner abundance and visitor leaving
+probability. Panels on the right show how close the observed values (y
+axis) are from the predictions of the models (x axis). The line
+represents the perfect fit between observed and predicted values.
+Predicted values were taken using the mode just as in the left panels.
+On the lower right corner of the panel we show the coefficient of
+determination. Despite having one more parameter varying, the full model
+gives a lower fit to the data than the model without negative reward,
+measured by the coefficient of determination. In the supplementary
+material, we also show that a model with only negative reward, excluding
+future rewards ($\gamma=0$, Fig. \ref{fig:nogamma}), provides a lower
+fit than either of the ones presented in the main text.
 
-The main reason for negative and future reward to give different predictions is the way that cleaner's relative abundance influences the preference for the visitor clients. Visitor leaving probability has a similar positive effect on the probability of choosing the visitor clients on all three models 
-(Fig. \ref{fig:pred}, \ref{fig:nogamma}). In contrast, cleaner's relative abundance has a different effect in the model with only future reward, compared to the other two. In the model with only future reward 
-only intermediate cleaner abundance triggers a preference for the visitor clients 
-(Fig. \ref{fig:pred} c). In models with negative reward, both intermediate and low cleaner abundance
-trigger a preference for the visitor. (Fig. \ref{fig:pred} a, \ref{fig:nogamma})
+The main reason for negative and future reward to give different
+predictions is the way that cleaner's relative abundance influences the
+preference for the visitor clients. Visitor leaving probability has a
+similar positive effect on the probability of choosing the visitor
+clients on all three models (Fig. \ref{fig:pred}, \ref{fig:nogamma}). In
+contrast, cleaner's relative abundance has a different effect in the
+model with only future reward, compared to the other two. In the model
+with only future reward only intermediate cleaner abundance triggers a
+preference for the visitor clients (Fig. \ref{fig:pred} c). In models
+with negative reward, both intermediate and low cleaner abundance
+trigger a preference for the visitor. (Fig. \ref{fig:pred} a,
+\ref{fig:nogamma}).
 
 ## Discussion
 
@@ -134,15 +343,16 @@ trigger a preference for the visitor. (Fig. \ref{fig:pred} a, \ref{fig:nogamma})
 
 ## Cited literature
 
-<div id="refs"></div>
+::: {#refs}
+:::
 
-\newpage 
-
+\newpage
 
 # Supplementary material
 
+```{=tex}
 \beginsupplement
-
+```
 ```{r nogamma, fig.cap="Observed and predicted probability of choosing a visitor for a model without future rewards. Left-hand side panel: color contour shows the prediction of the learning model using the mode of the posterior distributions of parameters recovered by the statistical analysis. Dots show the frequency of visitor choices for the 12 locations, as well as the corresponding relative cleaner abundance (x axis) and frequency of visitors leaving the station (y axis). Right-hand side panel: scatter plot of the observed and predicted probabilities of choosing a visitor for 12 locations. Line correspond to a perfect match between observed and predicted probabilities.",out.width='90%'}
 fileNogamma<-grep("contour_gamma_",list.files(here("Simulations","ABCclean_nRew_sca_"),
                                               full.names = TRUE),value = TRUE)

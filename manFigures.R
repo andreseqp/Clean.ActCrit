@@ -6,6 +6,7 @@ library("RColorBrewer")
 library("patchwork") 
 library(ggpubr)
 library(here)
+library(cowplot)
 source(here("loadData.R"))
 source(here("data2interp.R"))
 require('akima')
@@ -14,30 +15,64 @@ source(here("..","R_files",'ternaryAEQP.R'))
 source(here("../R_files/posPlots.R"))
 
 
-scenario<-"ABCclean_gam_Nrew_sca"
+scenario<-"ABCclean_gam_nRew_sca_2"
 scenario2<-"ABCclean_gam_sca"
 
-predfile.both<-grep(".txt",grep("round",list.files(here("Simulations",paste0(scenario,"_"))),value = T),
+predfileMode.both<-grep(".txt",grep("round",list.files(here("Simulations",paste0(scenario,"_"))),value = T),
                     value = T)
-predfile.gam<-grep(".txt",grep("round",list.files(here("Simulations",paste0(scenario2,"_"))),value = T),
+predfileMode.gam<-grep(".txt",grep("round",list.files(here("Simulations",paste0(scenario2,"_"))),value = T),
                    value = T)
 
-predictData.both<-fread(here("Simulations",paste0(scenario,"_"),
-                      predfile.both))
-predictData.gam<-fread(here("Simulations",paste0(scenario2,"_"),
-                             predfile.gam))
+predfileSamples.both<-grep(".txt",grep("round",list.files(here("Simulations",
+                                                               paste0(scenario,"_"),"samplesPost_"),
+                                                          full.names = TRUE)
+                                       ,value = T),
+                         value = T)
 
-str(predictData)
+predfileSamples.gam<-grep(".txt",grep("round",list.files(here("Simulations",
+                                                               paste0(scenario2,"_"),"samplesPost_"),
+                                                          full.names = TRUE)
+                                       ,value = T),
+                           value = T)
 
-fieldatabyLoc.both<-predictData.both[,.(probVisi.data=mean(visitorChoices)/20,
+
+predictDataMode.both<-fread(here("Simulations",paste0(scenario,"_"),
+                      predfileMode.both))
+predictDataMode.gam<-fread(here("Simulations",paste0(scenario2,"_"),
+                             predfileMode.gam))
+
+predictDataSamps.both<-do.call(rbind,lapply(predfileSamples.both,fread))
+predictDataSamps.both[,id_samp:=rep(1:100,each=120)]
+
+predictDataSamps.gam<-do.call(rbind,lapply(predfileSamples.gam,fread))
+predictDataSamps.gam[,id_samp:=rep(1:100,each=120)]
+
+
+
+
+fieldatabyLoc.both<-predictDataMode.both[,.(probVisi.data=mean(visitorChoices)/20,
                               probvisitor.pred=max(visitorChoices_pred),
                               re.abund.clean=max(rel.abund.cleaners),
                             prob.Vis.leave=max(prob.Vis.Leav)),by=site_year]
 
-fieldatabyLoc.gam<-predictData.gam[,.(probVisi.data=mean(visitorChoices)/20,
+fieldatabyLoc.gam<-predictDataMode.gam[,.(probVisi.data=mean(visitorChoices)/20,
                                    probvisitor.pred=max(visitorChoices_pred),
                                    re.abund.clean=max(rel.abund.cleaners),
                                    prob.Vis.leave=max(prob.Vis.Leav)),by=site_year]
+
+fieldatabyLocSamps.both<-predictDataSamps.both[,.(probVisi.data=mean(visitorChoices)/20,
+                                        probvisitor.pred=max(visitorChoices_pred),
+                                        re.abund.clean=max(rel.abund.cleaners),
+                                        prob.Vis.leave=max(prob.Vis.Leav)),
+                                        by=.(site_year,id_samp)]
+
+fieldatabyLocSamps.gam<-predictDataSamps.gam[,.(probVisi.data=mean(visitorChoices)/20,
+                                      probvisitor.pred=max(visitorChoices_pred),
+                                      re.abund.clean=max(rel.abund.cleaners),
+                                      prob.Vis.leave=max(prob.Vis.Leav)),
+                                      by=.(site_year,id_samp)]
+
+
 
 fieldatabyLoc.both
 fieldatabyLoc.gam
@@ -65,14 +100,18 @@ pred.gam<-ggplot(data = fieldatabyLoc.gam,
   geom_point(size=3)+theme_classic()+ sc
 
 
-plot_grid(obs.both,pred.both)#,obs.gam,pred.gam)
+plot_grid(obs.both,pred.both)
+          #,obs.gam,pred.gam
 
 
 
-## Obv vs predicted two scatter ------------------------------------------------
+ ## Obv vs predicted two scatter ------------------------------------------------
 
 obs.pred.both<-ggplot(data = fieldatabyLoc.both, aes(x=probvisitor.pred,y=probVisi.data))+
-    geom_point()+theme_classic()+geom_abline(slope = 1)+lims(x=c(0.45,0.8),y=c(0.45,0.8))+
+    geom_point(data = fieldatabyLocSamps.both,aes(x=probvisitor.pred,y=probVisi.data),
+               color='grey')+
+  geom_point()+theme_classic()+geom_abline(slope = 1)+
+  lims(x=c(0.45,0.8),y=c(0.45,0.8))+
   labs(title = "Full model")
 
 obs.pred.gam<-ggplot(data = fieldatabyLoc.gam, aes(x=probvisitor.pred,y=probVisi.data))+
@@ -80,26 +119,24 @@ obs.pred.gam<-ggplot(data = fieldatabyLoc.gam, aes(x=probvisitor.pred,y=probVisi
   labs(title = expression(gamma))
 
 obs.pred.both | obs.pred.gam
+
 ## Obv vs predicted contour ----------------------------------------------------
 
-
-simsDir <- here("Simulations",paste0(scenario,"_"))
+simsDir.both<-here("Simulations",paste0(scenario,"_"))
 
 # simsDir <- paste0("e:/NeuchSims/AC/",paste0(scenario,"_"))
 
-list.files(simsDir,recursive = TRUE,full.names = TRUE)
+# list.files(here("Simulations",paste0(scenario,"_")),
+#            recursive = TRUE,full.names = TRUE)
 
 (listPar<-c("gamma","neta"))
 
 (listVal<-c(0.2624,0))
 
 FIAlastQuarData<-do.call(rbind,lapply(
-  getFilelist(simsDir,fullNam = TRUE)$p1,file2lastProp,0.70,outPar="Vlp",
+  getFilelist(simsDir.both,fullNam = TRUE)$p1,file2lastProp,0.70,outPar="Vlp",
   full.path=TRUE))
 
-
-range(fieldatabyLoc$prob.Vis.leave)
-range(FIAlastQuarData$Vlp)
 
 FIAlastQuarData[,pA:=1-pR-pV]
 
@@ -117,23 +154,19 @@ FIAinterpData.both<-AbundLeavData2interp(FIAlastQuarData,
 
 colorbreaksMeans<-seq(0.3,0.8,length=100)
 
-simsDir <- here("Simulations",paste0(scenario2,"_"))
 
 # simsDir <- paste0("e:/NeuchSims/AC/",paste0(scenario,"_"))
 
-list.files(simsDir,recursive = TRUE,full.names = TRUE)
+simsDir.gam<-here("Simulations",paste0(scenario2,"_"))
 
 (listPar<-c("gamma","neta"))
 
 (listVal<-c(0.2624,0))
 
 FIAlastQuarData<-do.call(rbind,lapply(
-  getFilelist(simsDir,fullNam = TRUE)$p1,file2lastProp,0.70,outPar="Vlp",
+  getFilelist(simsDir.gam,fullNam = TRUE)$p1,file2lastProp,0.70,outPar="Vlp",
   full.path=TRUE))
 
-
-range(fieldatabyLoc$prob.Vis.leave)
-range(FIAlastQuarData$Vlp)
 
 FIAlastQuarData[,pA:=1-pR-pV]
 
@@ -217,11 +250,26 @@ names(fieldatabyLoc.gam)[c(4,5,2)]<-c("rel.abund.cleaners","prob.Vis.Leav","mark
 fieldatabyLoc.both[,resids:=market_binomial_data-probvisitor.pred]
 fieldatabyLoc.gam[,resids:=market_binomial_data-probvisitor.pred]
 
-rsqr.both<-1-(fieldatabyLoc.both[,sum(resids^2)])/
-  fieldatabyLoc.both[,sum((market_binomial_data-mean(market_binomial_data))^2)]
+fieldatabyLocSamps.both[,resids:=probVisi.data-probvisitor.pred]
+fieldatabyLocSamps.gam[,resids:=probVisi.data-probvisitor.pred]
 
-rsqr.gam<-1-(fieldatabyLoc.gam[,sum(resids^2)])/
-  fieldatabyLoc.gam[,sum((market_binomial_data-mean(market_binomial_data))^2)]
+
+
+predictDataMode.both[,
+                                         log.like:=dbinom(visitorChoices,
+                                size = 20,prob = visitorChoices_pred,log = TRUE)]
+
+predictDataMode.gam[,
+                     log.like:=dbinom(visitorChoices,
+                                      size = 20,prob = visitorChoices_pred,log = TRUE)]
+
+
+rsqr.both.McFadden<-1-predictDataMode.both[,sum(log.like)]/
+  sum(dbinom(x=predictDataMode.both[,visitorChoices],size = 20,prob = 0.5,log = TRUE))
+
+rsqr.gam.McFadden<-1-predictDataMode.gam[,sum(log.like)]/
+  sum(dbinom(x=predictDataMode.gam[,visitorChoices],size = 20,prob = 0.5,log = TRUE))
+
 
 
 cont.obs.pred.both<- ggplot(data = FIAinterpData.both,aes(x=rel.abund.cleaners,y=prob.Vis.Leav,
@@ -236,7 +284,9 @@ cont.obs.pred.both<- ggplot(data = FIAinterpData.both,aes(x=rel.abund.cleaners,y
 axis.title.x = element_text(size=12),axis.title.y = element_text(size=12))
 
 scatter.obs.pred.both<-ggplot(data = fieldatabyLoc.both,aes(y=market_binomial_data,x=probvisitor.pred))+
-  geom_point(size=2)+ylim(0.45,0.8)+xlim(0.45,0.8)+
+  geom_point(data = fieldatabyLocSamps.both,aes(x=probvisitor.pred,y=probVisi.data),
+             color='grey')+
+  geom_point(size=4)+ylim(0.45,0.8)+xlim(0.45,0.8)+
   geom_abline(slope=1)+ylab("Observed")+xlab("Predicted")+
   ggtitle("")+
   theme_classic()+
@@ -244,7 +294,7 @@ scatter.obs.pred.both<-ggplot(data = fieldatabyLoc.both,aes(y=market_binomial_da
       axis.title.x = element_text(size=12),axis.title.y = element_text(size=12),
       axis.text = element_text(size=14))+
   geom_text(x = 0.7, y = 0.66, label = expression(y==x), parse = TRUE,size=4)+
-  geom_text(x = 0.71, y = 0.5, label = deparse(bquote(R^2==.(round(rsqr.both,2)))), 
+  geom_text(x = 0.71, y = 0.5, label = deparse(bquote(R^2==.(round(rsqr.both.McFadden,3)))), 
             parse = TRUE,size=4)
 
 cont.obs.pred.gam<- ggplot(data = FIAinterpData.gam,aes(x=rel.abund.cleaners,y=prob.Vis.Leav,
@@ -259,7 +309,9 @@ cont.obs.pred.gam<- ggplot(data = FIAinterpData.gam,aes(x=rel.abund.cleaners,y=p
         axis.title.x = element_text(size=12),axis.title.y = element_text(size=12))
 
 scatter.obs.pred.gam<-ggplot(data = fieldatabyLoc.gam,aes(y=market_binomial_data,x=probvisitor.pred))+
-  geom_point(size=2)+ylim(0.45,0.8)+xlim(0.45,0.8)+
+  geom_point(data = fieldatabyLocSamps.gam,aes(x=probvisitor.pred,y=probVisi.data),
+             color='grey')+
+  geom_point(size=4)+ylim(0.45,0.8)+xlim(0.45,0.8)+
   geom_abline(slope=1)+ylab("Observed")+xlab("Predicted")+
   ggtitle("")+
   theme_classic()+
@@ -267,11 +319,11 @@ scatter.obs.pred.gam<-ggplot(data = fieldatabyLoc.gam,aes(y=market_binomial_data
         axis.title.x = element_text(size=12),axis.title.y = element_text(size=12),
         axis.text = element_text(size=14))+
   geom_text(x = 0.7, y = 0.66, label = expression(y==x), parse = TRUE,size=4)+
-  geom_text(x = 0.71, y = 0.5, label = deparse(bquote(R^2==.(round(rsqr.gam,2)))), 
+  geom_text(x = 0.71, y = 0.5, label = deparse(bquote(R^2==.(round(rsqr.gam.McFadden,3)))), 
             parse = TRUE,size=4)
 
 png(here("Simulations",paste0(scenario,"_"),
-         paste0(strsplit(predfile.both,"seed")[[1]][1],"contour_gamma_ggplot.png")),
+         paste0(strsplit(predfileMode.both,"seed")[[1]][1],"contour_gamma_ggplot.png")),
     width = 1300,height = 700)
 
 png(here("contour_both_gamma.png"),width = 1300,height = 1000)

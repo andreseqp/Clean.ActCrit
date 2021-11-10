@@ -962,10 +962,10 @@ model_param perturb_parameters_uniform(model_param focal_param, json &sim_param)
 		float(sim_param["sdPert"][1]), 0, INFINITY)+
 		(!bool(sim_param["pertScen"][1]))*focal_param.alphaC;
 	new_param.gamma = bool(sim_param["pertScen"][2]) * boundedParUnifPert(focal_param.gamma,
-		sim_param["sdPert"][2], 0, 1) +
+		sim_param["sdPert"][2], -1, 1) +
 		(!bool(sim_param["pertScen"][2]))*focal_param.gamma;
 	new_param.negReward = bool(sim_param["pertScen"][3])* boundedParUnifPert(focal_param.negReward,
-		sim_param["sdPert"][3], 0, INFINITY)+
+		sim_param["sdPert"][3], -INFINITY, INFINITY)+
 		(!bool(sim_param["pertScen"][3]))*focal_param.negReward;
 	new_param.scaleConst = bool(sim_param["pertScen"][4])* boundedParUnifPert(focal_param.scaleConst,
 		sim_param["sdPert"][4], 0, INFINITY) +
@@ -1180,12 +1180,12 @@ int main(int argc, char* argv[]){
 		for (int r = 0; r < sim_param["chain_length"]; ++r) {  // 
 			//cout << "Iteration	" << r << endl;
 			model_param new_param = perturb_parameters_uniform(focal_param, sim_param);
-			if ((new_param.gamma < 1 && new_param.gamma >= 0) &&
-				((new_param.negReward <= INFINITY && new_param.negReward >= 0) &&
-				(new_param.scaleConst <= INFINITY && new_param.scaleConst >= 0))) {
+			if ((new_param.gamma < 1 && new_param.gamma > -1) &&
+				((new_param.negReward <= INFINITY && new_param.negReward >= -INFINITY) &&
+				(new_param.scaleConst <= INFINITY && new_param.scaleConst > 0))) {
 				if (sim_param["data"] == "loc") {
 					do_simulation(//focal_model, 
-						emp_data_loc, focal_param, sim_param);	
+						emp_data_loc, focal_param, sim_param);
 					curr_loglike = calculate_fit(emp_data_loc);
 					do_simulation(//focal_model, 
 						emp_data_loc, new_param, sim_param);

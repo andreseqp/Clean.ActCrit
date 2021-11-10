@@ -210,3 +210,20 @@ check_create.dir<-function(folder,param,values){
     return(listfolders)
   }
 }
+
+loadMCMCrun<-function(scen,burn.in=1000,thinning=100){
+  listFiles<-list.files(here("Simulations",scen))
+  runs<-grep("MCMCchain",listFiles,value = TRUE)
+  raw<-do.call(rbind,lapply(runs, function(file){
+    rundata<-fread(here("Simulations",scen,file))
+    seedNum<-strsplit(file,"_")[[1]][3]
+    seedNum<-as.numeric(gsub("[[:alpha:]]",seedNum,replacement = ''))
+    rundata[,seed:=rep(seedNum,dim(rundata)[1])]
+  }))
+  filtered<-raw[iteration>burn.in & iteration %% thinning==0]
+  return(filtered)
+}
+  
+  
+  
+  

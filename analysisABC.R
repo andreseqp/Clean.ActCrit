@@ -13,13 +13,12 @@ library(cowplot)
 library(ggdist)
 library(bayesplot) 
 library(lattice)
-library(ggridges)
 source(here("../R_files/posPlots.R"))
 library("jsonlite")
 
-simdir<-"D:/Neuch_simulations/ABCfit/Simulations/"
+# simdir<-"D:/Neuch_simulations/ABCfit/Simulations/"
 
-scen1<-"ABCclean_gam_nRew_sca_"
+scen1<-"MCMCclean_gam_Nrew_sca_"
 scen2<-"ABCclean_gam_sca_"
 
 ## Load files --------------------------------------------------------------
@@ -50,6 +49,7 @@ ABCraw.2<-do.call(rbind,lapply(ABCruns2, function(file){
 
 # One per onject
 ABCraw<-fread(here("Simulations",scen,ABCruns[3]))
+
 
 # All in a list
 mcmcList.1<-mcmc.list(do.call(list,lapply(ABCruns1, function(file){
@@ -182,72 +182,104 @@ mtext(text = "iteration" ,line = 2,cex = 1,side = 1,las=0)
 
 modeGam;modenegReward;modeScal
 
+ABCraw.1[negReward<0]
+
 plot(data=ABCfiltered.1,gamma~negReward,type="p",cex=0.2)
 plot(data=ABCfiltered.1,negReward~scaleConst,type="p",cex=0.2)
 plot(data=ABCfiltered.1,gamma~scaleConst,type="p",cex=0.2)
 
 ## Density plots with gg -------------------------------------------------------
 
-ABCfiltered[round(runif(10,min = 1,max=dim(ABCfiltered)[1]),digits = 0),]
-
-ABCfilt.long.1<-melt(ABCfiltered.1,measure.vars = c("gamma","negReward","scaleConst"),
-                   variable.name = "variable",id.vars = "seed")
-
-ABCfilt.long.2<-melt(ABCfiltered.2,measure.vars = c("gamma","negReward","scaleConst"),
-                     variable.name = "variable",id.vars = "seed")
-
-
-typeof(mcmcList)
-
-areas<-
-  mcmc_areas(x = mcmcList)+
-  facet_wrap(~parameter,scales = "free_x")
-
-
-areas.data<-mcmc_areas_data(x=mcmcList)
-
-densplots<-ggplot(data = ABCfilt.long,aes(x=value,y=variable))+
-  stat_halfeye()
-
-ggplot(data=ABCfilt.long.1,aes(x=value))+
-  geom_density()+facet_wrap(~variable,scales = "free",nrow = 3)+
-  theme_classic()
 
 png(here("post_both_gamma.png"),width = 700,height = 800)
 
 png(here("Simulations",paste0(scenario,"_"),
          paste0(strsplit(predfile.both,"seed")[[1]][1],"poster.png")),width = 1300,height = 700)
 
+cuts.1<-lapply(ABCfiltered.1[,.(gamma,negReward,scaleConst)],
+             function(x){
+               c(mode_hdci(x,.width = c(0.95,.66))$ymin,
+                 mode_hdci(x,.width = c(.66,.95))$ymax)  
+})
+
+
+cuts.2<-lapply(ABCfiltered.2[,.(gamma,negReward,scaleConst)],
+               function(x){
+                 c(mode_hdi(x,.width = c(0.95,.66))$ymin,
+                   mode_hdi(x,.width = c(.66,.95))$ymax)  
+               })
+
+
+loglikehoods.both<-data.table(lglikelihood=c(ABCfiltered.1$fit,ABCfiltered.2$fit),
+                              model=c(rep("both",length(ABCfiltered.1$fit)),
+                                      rep("gam",length(ABCfiltered.2$fit))))
+
+nullLikehood<-sum(dbinom(x=predictDataMode.gam[,visitorChoices],
+                         size = 20,prob = 0.5,log = TRUE))
+
+loglikehoods.both[,Rsqrd:=1-lglikelihood/nullLikehood]
+
+ggplot(data=loglikehoods.both[is.finite(lglikelihood)],
+       aes(fill=model,x=lglikelihood))+
+  geom_density(alpha=0.4)+theme_classic()+xlim(-750,-400) +
+  scale_fill_manual(values=c("#d73027", "#4575b4"))+
+  geom_vline(xintercept = nullLikehood,color="red")
+
+
+df.Rsqrd.mode<-data.table(model=c("both","gam"),
+                          Rsqr=c(rsqr.both.McFadden,rsqr.gam.McFadden))
+
+rsqr.both<-ggplot(data=loglikehoods.both[is.finite(lglikelihood)],aes(fill=model,x=Rsqrd))+
+  geom_density(alpha=0.6)+theme_classic()+xlim(-0.5,0.3)+
+  scale_fill_manual(values=c("#d7191c", "#4575b4"),
+                    name = "Model", labels = c("Full", "Only future reward"))+
+  geom_vline(data=df.Rsqrd.mode,aes(xintercept = Rsqr,color=model),size=1)+
+  scale_color_manual(values=c("#d73027", "#4575b4"),
+                     name = "Model", labels = c("Full", "Only future reward"))+
+  geom_vline(xintercept = 0,color="black",size=1)+
+  theme(legend.position = c(.25, .80))
+
+
 
 plot_grid(nrow=3,align = "v",byrow = FALSE,
           ggplot(data=ABCfiltered.1,aes(x=gamma)) + 
-            stat_halfeye(point_interval = mode_hdi, .width = c(.66, .95),point_size=3) + 
-            labs(title="Full model",subtitle = expression(gamma),x="",y="")+theme_classic(),
+            stat_halfeye(aes(fill=stat(cut(x,breaks = cuts.1$gamma))),
+                         point_interval = mode_hdi, .width = c(.66, .95),point_size=3,
+                         show.legend=FALSE) + 
+            labs(title="Full model",subtitle = expression(gamma),x="",y="")+
+            theme_classic()+scale_fill_manual(values=c("gray85","skyblue","gray85")),
           ggplot(data=ABCfiltered.1,aes(x=scaleConst)) + 
-            stat_halfeye(point_interval= mode_hdi,
-                         .width = c(.66, .95))  
-            # scale_fill_manual(values=c("gray85","skyblue"))
-          + labs(subtitle = "Scalling const.",x="",y="")+xlim(0,1500)+theme_classic(),
+            stat_halfeye(aes(fill=stat(cut(x,breaks = cuts.1$scaleConst))),
+                         point_interval = mode_hdi, .width = c(.66, .95),point_size=3,
+                         show.legend=FALSE)+
+            theme_classic()+scale_fill_manual(values=c("gray85","skyblue","gray85"))+
+          labs(subtitle = "Scalling const.",x="",y="")+xlim(0,1500)+theme_classic(),
           ggplot(data=ABCfiltered.1,aes(x=negReward)) + 
-            stat_halfeye(point_interval=mode_hdi,point_size=3) + 
+            stat_halfeye(aes(fill=stat(cut(x,breaks = cuts.1$negReward[2:4]))),
+                         point_interval = mode_hdi, .width = c(.66, .95),point_size=3,
+                         show.legend=FALSE)+
+            scale_fill_manual(values=c("skyblue","gray85"))+
             labs(subtitle = expression(eta),x="",y="")+
             xlim(0,6)+theme_classic(),
           ggplot(data=ABCfiltered.2,aes(x=gamma)) +
-            stat_halfeye(point_interval=mode_hdi,point_size=3) + 
+            stat_halfeye(aes(fill=stat(cut(x,breaks = cuts.2$gamma))),
+                         point_interval = mode_hdi, .width = c(.66, .95),point_size=3,
+                         show.legend=FALSE) + 
+            scale_fill_manual(values=c("gray85","skyblue","gray85"))+
             labs(title="Only future reward",subtitle = expression(gamma),x="",y="")+theme_classic(),
           ggplot(data=ABCfiltered.2,aes(x=scaleConst)) +
-            stat_halfeye(point_interval=mode_hdi,point_size=3) + 
+            stat_halfeye(aes(fill=stat(cut(x,breaks = cuts.2$scaleConst))),
+                         point_interval = mode_hdi, .width = c(.66, .95),point_size=3,
+                         show.legend=FALSE) + 
+            scale_fill_manual(values=c("gray85","skyblue","gray85"))+
             labs(subtitle = "Scalling const.",x="",y="")+
             theme_classic(),
-          labels=c('a','b','c','d','e')
+          rsqr.both+labs(subtitle = expression(pseudo~R^2),x="",y="")+
+          theme(legend.position = c(.25, .50)),
+          labels=c('a','b','c','d','e','f')
 )
 
-ggplot(data=ABCfiltered.1,aes(x=scaleConst)) + 
-  stat_halfeye(aes(fill=after_stat(stat_dist_slabinterval(slab_type = "cdf",.width = c(.66,.95)))),
-               point_interval= mode_hdci,show.legend=FALSE,
-               .width = c(.66, .95))+
-  scale_fill_manual(values=c("gray85","skyblue"))+
-  labs(subtitle = "Scalling const.",x="",y="")+xlim(0,1500)+theme_classic()
+
 
 dev.off()
 

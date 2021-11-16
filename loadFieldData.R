@@ -18,6 +18,14 @@ fieldData.site<-fieldData[,lapply(.SD,max),by=site_year,
                           .SDcols=c("abundance_large_100m2","abundance_small_100m2",
                                    "abundance_cleaners_100m2","percentage_swim_off")]
 
+fieldData.site %>%
+  ggplot(aes(y=percentage_swim_off,x=abundance_cleaners_100m2))+
+  geom_point()+geom_smooth(method=lm)+
+  theme_classic()
+model.ml<-lm(data = fieldData.site,percentage_swim_off~abundance_cleaners_100m2)
+anova(model.ml)
+summary(model.ml)
+
 fieldData.cleaner<-read_xlsx(here("Data","market_raw_data.xlsx"),sheet = "round_data")
 
 fieldData.cleaner<-data.table(fieldData.cleaner)

@@ -15,8 +15,8 @@ source(here("..","R_files",'ternaryAEQP.R'))
 source(here("../R_files/posPlots.R"))
 
 
-scenario<-"ABCclean_gam_nRew_sca_2"
-scenario2<-"ABCclean_gam_sca"
+scenario<-"MCMCclean_gam_Nrew_sca"
+scenario2<-"MCMCclean_gam_sca"
 
 predfileMode.both<-grep(".txt",grep("round",list.files(here("Simulations",paste0(scenario,"_"))),value = T),
                     value = T)
@@ -82,6 +82,7 @@ fieldatabyLoc.gam
 myPalette <- colorRampPalette(rev(brewer.pal(11, "Spectral")))
 sc <- scale_colour_gradientn(colours = myPalette(100), limits=c(0,0.8))
 
+typeof(sc)
 
 obs.both<-ggplot(data = fieldatabyLoc.both, 
             aes(x=re.abund.clean, y=prob.Vis.leave,color=probVisi.data))+
@@ -246,15 +247,6 @@ names(FIAinterpData.gam)<-c("rel.abund.cleaners","prob.Vis.Leav","market_binomia
 names(fieldatabyLoc.gam)[c(4,5,2)]<-c("rel.abund.cleaners","prob.Vis.Leav","market_binomial_data")
 
 
-
-fieldatabyLoc.both[,resids:=market_binomial_data-probvisitor.pred]
-fieldatabyLoc.gam[,resids:=market_binomial_data-probvisitor.pred]
-
-fieldatabyLocSamps.both[,resids:=probVisi.data-probvisitor.pred]
-fieldatabyLocSamps.gam[,resids:=probVisi.data-probvisitor.pred]
-
-
-
 predictDataMode.both[,
                                          log.like:=dbinom(visitorChoices,
                                 size = 20,prob = visitorChoices_pred,log = TRUE)]
@@ -286,15 +278,15 @@ axis.title.x = element_text(size=12),axis.title.y = element_text(size=12))
 scatter.obs.pred.both<-ggplot(data = fieldatabyLoc.both,aes(y=market_binomial_data,x=probvisitor.pred))+
   geom_point(data = fieldatabyLocSamps.both,aes(x=probvisitor.pred,y=probVisi.data),
              color='grey')+
-  geom_point(size=4)+ylim(0.45,0.8)+xlim(0.45,0.8)+
+  geom_point(size=4)+ylim(0.4,0.9)+xlim(0.4,0.9)+
   geom_abline(slope=1)+ylab("Observed")+xlab("Predicted")+
   ggtitle("")+
   theme_classic()+
   theme(plot.title = element_text(hjust = 0.5),
       axis.title.x = element_text(size=12),axis.title.y = element_text(size=12),
       axis.text = element_text(size=14))+
-  geom_text(x = 0.7, y = 0.66, label = expression(y==x), parse = TRUE,size=4)+
-  geom_text(x = 0.71, y = 0.5, label = deparse(bquote(R^2==.(round(rsqr.both.McFadden,3)))), 
+  geom_text(x = 0.8, y = 0.85, label = expression(y==x), parse = TRUE,size=4)+
+  geom_text(x = 0.8, y = 0.5, label = deparse(bquote(R^2==.(round(rsqr.both.McFadden,3)))), 
             parse = TRUE,size=4)
 
 cont.obs.pred.gam<- ggplot(data = FIAinterpData.gam,aes(x=rel.abund.cleaners,y=prob.Vis.Leav,
@@ -311,20 +303,20 @@ cont.obs.pred.gam<- ggplot(data = FIAinterpData.gam,aes(x=rel.abund.cleaners,y=p
 scatter.obs.pred.gam<-ggplot(data = fieldatabyLoc.gam,aes(y=market_binomial_data,x=probvisitor.pred))+
   geom_point(data = fieldatabyLocSamps.gam,aes(x=probvisitor.pred,y=probVisi.data),
              color='grey')+
-  geom_point(size=4)+ylim(0.45,0.8)+xlim(0.45,0.8)+
+  geom_point(size=4)+ylim(0.45,0.9)+xlim(0.45,0.9)+
   geom_abline(slope=1)+ylab("Observed")+xlab("Predicted")+
   ggtitle("")+
   theme_classic()+
   theme(plot.title = element_text(hjust = 0.5),
         axis.title.x = element_text(size=12),axis.title.y = element_text(size=12),
         axis.text = element_text(size=14))+
-  geom_text(x = 0.7, y = 0.66, label = expression(y==x), parse = TRUE,size=4)+
-  geom_text(x = 0.71, y = 0.5, label = deparse(bquote(R^2==.(round(rsqr.gam.McFadden,3)))), 
+  geom_text(x = 0.8, y = 0.85, label = expression(y==x), parse = TRUE,size=4)+
+  geom_text(x = 0.8, y = 0.5, label = deparse(bquote(R^2==.(round(rsqr.gam.McFadden,3)))), 
             parse = TRUE,size=4)
 
-png(here("Simulations",paste0(scenario,"_"),
-         paste0(strsplit(predfileMode.both,"seed")[[1]][1],"contour_gamma_ggplot.png")),
-    width = 1300,height = 700)
+# png(here("Simulations",paste0(scenario,"_"),
+    #      paste0(strsplit(predfileMode.both,"seed")[[1]][1],"contour_gamma_ggplot.png")),
+    # width = 1300,height = 700)
 
 png(here("contour_both_gamma.png"),width = 1300,height = 1000)
 

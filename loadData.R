@@ -220,7 +220,7 @@ loadMCMCrun<-function(scen,burn.in=1000,thinning=100){
     seedNum<-as.numeric(gsub("[[:alpha:]]",seedNum,replacement = ''))
     rundata[,seed:=rep(seedNum,dim(rundata)[1])]
   }))
-  filtered<-raw[iteration>burn.in & iteration %% thinning==0]
+  filtered<-raw[iteration>burn.in & iteration %% thinning==0,]
   return(filtered)
 }
   

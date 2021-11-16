@@ -16,9 +16,16 @@ scenario<-"ABCclean_nRew_sca"
 
 # For predictions on the observed values ---------------------------------------
 
-scenario<-"ABCclean_nRew_sca"
+scenario<-"MCMCclean_gam_sca"
 
 MCMCdata<-loadMCMCrun(paste0(scenario,"_"))
+densGamma<-density(MCMCdata$gamma)
+modeGamma<-densGamma$x[densGamma$y==max(densGamma$y)]
+densNR<-density(MCMCdata$negReward)
+modeNegrew<-densNR$x[densNR$y==max(densNR$y)]
+densScal<-density(MCMCdata$scaleConst)
+modescal<-densScal$x[densScal$y==max(densScal$y)]
+
 
 param_pred<-list(totRounds=10000,ResReward=1,VisReward=1,
             ResProbLeav=0,scenario=0, inbr=0,outbr=0,forRat=0.0,
@@ -28,15 +35,15 @@ param_pred<-list(totRounds=10000,ResReward=1,VisReward=1,
             pertScen = c(FALSE,FALSE,FALSE,FALSE,TRUE), 	
             MCMC =0, data="clean",nRep=30,
             dataFile = here("Data","data_ABC_cleaner_absolute.txt"),
-            folderL=paste0(here(simsDir),"/",scenario,"_/","samplesPost_/"))
-
+            # folderL=paste0(here(simsDir),"/",scenario,"_/","samplesPost_/"))
+            folderL=paste0(here(simsDir),"/",scenario,"_/"))
 
 
 check_create.dir(here(simsDir,paste0(scenario,"_")),param = rep("samplesPost",1),
                  values = c(""))
 
 param_pred$folder<-param_pred$folderL
-# param_pred$init[c(3,4,5)]<- c(modeGam,modenegReward,modeScal)
+# param_pred$init[c(3,4,5)]<- c(modeGamma,0,modeScal)
   # c(runif(1,max = 1),runif(1,max = 1),
   #                            runif(1,max = 500,min = 1))
   #sumMCMC$statistics[,1]
@@ -46,7 +53,7 @@ postSamp<-MCMCdata[round(runif(nsamples,min = 1,max=dim(MCMCdata)[1]),
                               digits = 0),]
 
 for(i in 1:nsamples){
-  param_pred$init[c(3,4,5)]<- postSamp[i,.(gamma,negReward,scaleConst)]
+  param_pred$init[c(3,4,5)]<- c(postSamp[i,.(gamma,negReward,scaleConst)])
   param_pred$seed<- i
   fileName<-paste("parameters_pred_",i,".json",sep="")
   outParam.pred<-toJSON(param_pred,auto_unbox = TRUE,pretty = TRUE)
@@ -78,10 +85,10 @@ for(i in 1:nsamples){
 param<-list(totRounds=10000,ResReward=1,VisReward=1,
             ResProb=c(0.2),
             VisProb=c(0.2),
-            ResProbLeav=0,VisProbLeav=1,negativeRew=-modenegReward,#sumMCMClist$statistics[,1][2],
+            ResProbLeav=0,VisProbLeav=1,negativeRew=-0,#sumMCMClist$statistics[,1][2],
             scenario=0,
             inbr=0,outbr=0,trainingRep=10,forRat=0.0,
-            alphaT=0.05,printGen=1,seed=1, gammaRange=I(c(0)),#c(0,sumMCMClist$statistics[,1][1])),#,
+            alphaT=0.05,printGen=1,seed=1, gammaRange=I(c(modeGamma)),#c(0,sumMCMClist$statistics[,1][1])),#,
             netaRange=I(c(1)),alphaThRange=I(c(0.05)),numlearn=1,
             propfullPrint = 0.7,
             alphaThNch=0.05,
@@ -102,7 +109,7 @@ range(fieldData.sum$prob.Vis.Leav)
 
 # Arrays with the values of external parameters
 rangLeav<-seq(0.02,0.4,length.out = 10)
-rangAbund<-seq(0.1,0.75,length=10)
+rangAbund<-seq(0.05,0.75,length=10)
 rangScen<-c(0)
 rangAlphNC<-c(0,0.5,1)
 
@@ -161,7 +168,7 @@ for (k in 1:90) print(y)
 
 # MCMC fit - Generate json parameter files for -------------------------------------
 
-scenario<-"MCMCclean_gam_Nrew_sca"
+scenario<-"MCMCclean_Nrew_sca"
 
 filesList<-list.files(here("Simulations",scenario),full.names = TRUE)
 
@@ -190,7 +197,7 @@ param_mcmc<-list(totRounds=10000,ResReward=1,VisReward=1,
                 seed=1, propfullPrint = 0.7,sdPert=c(0.05,0.05,0.3,4,300),
                 chain_length=100000,
                 init=c(0.05,0.05,0,0,30),# alphaA,AlphaC, Gamma, NegRew
-                pertScen = c(FALSE,FALSE,TRUE,TRUE,TRUE), 
+                pertScen = c(FALSE,FALSE,FALSE,TRUE,TRUE), 
                 MCMC =1, data="clean",nRep=1,
                   dataFile = here("Data","data_ABC_cleaner_absolute.txt"),
                   # here("Simulations",
@@ -204,7 +211,7 @@ check_create.dir(here(simsDir),param = rep(scenario,1),
 
 for(seed in 1:5){
   param_mcmc$folder<-param_mcmc$folderL
-  param_mcmc$init<-c(0.05,0.05,runif(1,max = 0.6),runif(1,max = 2,min = 0),#
+  param_mcmc$init<-c(0.05,0.05,0,runif(1,max = 2,min = 0),#runif(1,max = 0.6),0
                      runif(1,max = 300,min = 5))
                      ##runif(1,max = 50,min = 5))
   param_mcmc$seed <- seed

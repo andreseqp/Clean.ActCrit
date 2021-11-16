@@ -19,48 +19,42 @@ library("jsonlite")
 # simdir<-"D:/Neuch_simulations/ABCfit/Simulations/"
 
 scen1<-"MCMCclean_gam_Nrew_sca_"
-scen2<-"ABCclean_gam_sca_"
+scen2<-"MCMCclean_gam_sca_"
+scen3<-"MCMCclean_nRew_sca_"
 
 ## Load files --------------------------------------------------------------
 
-# (listFiles<-list.files(paste0(simdir,scen),full.names = TRUE))
-(listFiles1<-list.files(here("Simulations",scen1)))
-(ABCruns1<-grep("MCMCchain",listFiles1,value = TRUE))
+# all chains in a single object
 
-(listFiles2<-list.files(here("Simulations",scen2)))
-(ABCruns2<-grep("MCMCchain",listFiles2,value = TRUE))
-
-
-# all in a single object
-ABCraw.1<-do.call(rbind,lapply(ABCruns1, function(file){
-  rundata<-fread(here("Simulations",scen1,file))
-  seedNum<-strsplit(file,"_")[[1]][3]
-  seedNum<-as.numeric(gsub("[[:alpha:]]",seedNum,replacement = ''))
-  rundata[,seed:=rep(seedNum,dim(rundata)[1])]
-}))
-
-ABCraw.2<-do.call(rbind,lapply(ABCruns2, function(file){
-  rundata<-fread(here("Simulations",scen2,file))
-  seedNum<-strsplit(file,"_")[[1]][3]
-  seedNum<-as.numeric(gsub("[[:alpha:]]",seedNum,replacement = ''))
-  rundata[,seed:=rep(seedNum,dim(rundata)[1])]
-}))
-
+MCMCdata1<-loadMCMCrun(scen1)
+MCMCdata2<-loadMCMCrun(scen2)
+MCMCdata3<-loadMCMCrun(scen3)
 
 # One per onject
 ABCraw<-fread(here("Simulations",scen,ABCruns[3]))
 
+# Defaults
+burn.in<-1000
+thinning<-100
+
 
 # All in a list
-mcmcList.1<-mcmc.list(do.call(list,lapply(ABCruns1, function(file){
-  rundata<-fread(here("Simulations",scen1,file))
+mcmcList.1<-mcmc.list(do.call(list,lapply(unique(MCMCdata1$seed), function(repli){
+  rundata<-MCMCdata1[seed==repli]
   mcmcRun<-mcmc(rundata[,.(gamma,negReward,scaleConst)],thin = 100)#
   return(mcmcRun)
 })))
 
 
-mcmcList.2<-mcmc.list(do.call(list,lapply(ABCruns2, function(file){
-  rundata<-fread(here("Simulations",scen2,file))
+mcmcList.2<-mcmc.list(do.call(list,lapply(unique(MCMCdata2$seed), function(repli){
+  rundata<-MCMCdata2[seed==repli]
+  mcmcRun<-mcmc(rundata[,.(gamma,negReward,scaleConst)],thin = 100)#
+  return(mcmcRun)
+})))
+
+
+mcmcList.3<-mcmc.list(do.call(list,lapply(unique(MCMCdata3$seed), function(repli){
+  rundata<-MCMCdata3[seed==repli]
   mcmcRun<-mcmc(rundata[,.(gamma,negReward,scaleConst)],thin = 100)#
   return(mcmcRun)
 })))
@@ -68,10 +62,7 @@ mcmcList.2<-mcmc.list(do.call(list,lapply(ABCruns2, function(file){
 
 ## Base R plots -----------------------------------------------------------------
 
-head(ABCraw)
 
-burn.in<-1000
-thinning<-100
 
 ## get original parameter values from the simulations
 
@@ -82,18 +73,11 @@ thinning<-100
 
 # filter
 
-ABCburned.1<-ABCraw.1[iteration>burn.in]
-ABCfiltered.1<-ABCraw.1[iteration>burn.in & iteration %% thinning==0]
 
-
-ABCburned.2<-ABCraw.2[iteration>burn.in]
-ABCfiltered.2<-ABCraw.2[iteration>burn.in & iteration %% thinning==0]
-
-
-ABC.gamma.time.short<-dcast(ABCfiltered.1,iteration~seed,value.var = c("gamma"))
-ABC.nRew.time.short<-dcast(ABCfiltered.1,iteration~seed,value.var = "negReward")
-ABC.sca.time.short<-dcast(ABCfiltered.1,iteration~seed,value.var = "scaleConst")
-ABC.logLike.time.short<-dcast(ABCfiltered.1,iteration~seed,value.var = "fit")
+ABC.gamma.time.short<-dcast(MCMCdata3,iteration~seed,value.var = c("gamma"))
+ABC.nRew.time.short<-dcast(MCMCdata3,iteration~seed,value.var = "negReward")
+ABC.sca.time.short<-dcast(MCMCdata3,iteration~seed,value.var = "scaleConst")
+ABC.logLike.time.short<-dcast(MCMCdata3,iteration~seed,value.var = "fit")
 
 par(plt=posPlot(numploty = 4,idploty = 4,numplotx = 2,idplotx = 1)-c(0.05,0.05,0,0),
     mfrow=c(1,1),las=1)
@@ -107,14 +91,14 @@ mtext(text =  expression(gamma),cex=3,side = 2,line = 3)
 par(plt=posPlot(numploty = 4,idploty = 4,numplotx = 2,idplotx = 2)-c(0.05,0.05,0,0),
     mfrow=c(1,1),
     las=1,new=TRUE)
-densGamma<-density(ABCfiltered.1$gamma)
+densGamma<-density(MCMCdata3$gamma)
 plot(densGamma,yaxt="n",ylab="",xlab="",cex.axis=0.7)
 axis(4)
 modeGam<-densGamma$x[densGamma$y==max(densGamma$y)]
 lines(x = rep(modeGam,2),y = range(densGamma$y))
-meanGam<-mean(ABCfiltered.1$gamma)
+meanGam<-mean(MCMCdata3$gamma)
 lines(x = rep(meanGam,2),y = range(densGamma$y),col="red")
-medianGam<-median(ABCfiltered.1$gamma)
+medianGam<-median(MCMCdata3$gamma)
 lines(x = rep(medianGam,2),y = range(densGamma$y),col="green")
 
 lines(x = rep(parsOrigin$init[3],2),y = range(densGamma$y),col="blue")
@@ -129,16 +113,16 @@ mtext(text = expression(eta),line = 3,cex = 3,side = 2)
 
 par(plt=posPlot(numploty = 4,idploty = 3,numplotx = 2,idplotx = 2)-c(0.05,0.05,0,0),
     mfrow=c(1,1), las=1,new=TRUE)
-densnegReward<-density(ABCfiltered.1$negReward)
-plot(densnegReward,yaxt="n",ylab="",xlab="",cex.axis=0.7,xlim=c(0,5),
-     main="")
+densnegReward<-density(MCMCdata3$negReward)
+plot(densnegReward,yaxt="n",ylab="",xlab="",cex.axis=0.7,
+     main="",xlim=c(-5,5))
 axis(4)
 
 modenegReward<-densnegReward$x[densnegReward$y==max(densnegReward$y)]
 lines(x = rep(modenegReward,2),y = range(densnegReward$y))
-meannegReward<-mean(ABCfiltered.1$negReward)
+meannegReward<-mean(MCMCdata3$negReward)
 lines(x = rep(meannegReward,2),y = range(densnegReward$y),col="red")
-mediannegReward<-median(ABCfiltered.1$negReward)
+mediannegReward<-median(MCMCdata3$negReward)
 lines(x = rep(mediannegReward,2),y = range(densnegReward$y),col="green")
 
 lines(x = rep(parsOrigin$init[4],2),y = range(densGamma$y),col="blue")
@@ -153,16 +137,16 @@ mtext(text = "Scale const." ,line = 3,cex = 1,side = 2,las=0)
 par(plt=posPlot(numploty = 4,idploty = 2,numplotx = 2,idplotx = 2)-c(0.05,0.05,0,0),
     mfrow=c(1,1),
     las=1,new=TRUE)
-densScal<-density(ABCfiltered.1$scaleConst)
+densScal<-density(MCMCdata3$scaleConst)
 plot(densScal,yaxt="n",ylab="",xlab="",cex.axis=0.7,
      main="")
 axis(4)
 
 modeScal<-densScal$x[densScal$y==max(densScal$y)]
 lines(x = rep(modeScal,2),y = range(densScal$y))
-meanScal<-mean(ABCfiltered.1$scaleConst)
+meanScal<-mean(MCMCdata3$scaleConst)
 lines(x = rep(meanScal,2),y = range(densScal$y),col="red")
-medianScal<-median(ABCfiltered.1$scaleConst)
+medianScal<-median(MCMCdata3$scaleConst)
 lines(x = rep(medianScal,2),y = range(densScal$y),col="green")
 
 lines(x = rep(parsOrigin$init[5],2),y = range(densGamma$y),col="blue")
@@ -182,47 +166,55 @@ mtext(text = "iteration" ,line = 2,cex = 1,side = 1,las=0)
 
 modeGam;modenegReward;modeScal
 
-ABCraw.1[negReward<0]
 
-plot(data=ABCfiltered.1,gamma~negReward,type="p",cex=0.2)
-plot(data=ABCfiltered.1,negReward~scaleConst,type="p",cex=0.2)
-plot(data=ABCfiltered.1,gamma~scaleConst,type="p",cex=0.2)
+plot(data=MCMCdata3,gamma~negReward,type="p",cex=0.2)
+plot(data=MCMCdata3,negReward~scaleConst,type="p",cex=0.2)
+plot(data=MCMCdata3,gamma~scaleConst,type="p",cex=0.2)
 
 ## Density plots with gg -------------------------------------------------------
 
 
-png(here("post_both_gamma.png"),width = 700,height = 800)
 
-png(here("Simulations",paste0(scenario,"_"),
-         paste0(strsplit(predfile.both,"seed")[[1]][1],"poster.png")),width = 1300,height = 700)
-
-cuts.1<-lapply(ABCfiltered.1[,.(gamma,negReward,scaleConst)],
+cuts.1<-lapply(MCMCdata1[,.(gamma,negReward,scaleConst)],
              function(x){
                c(mode_hdci(x,.width = c(0.95,.66))$ymin,
                  mode_hdci(x,.width = c(.66,.95))$ymax)  
 })
 
 
-cuts.2<-lapply(ABCfiltered.2[,.(gamma,negReward,scaleConst)],
+cuts.2<-lapply(MCMCdata2[,.(gamma,negReward,scaleConst)],
+               function(x){
+                 c(mode_hdi(x,.width = c(0.95,.66))$ymin,
+                   mode_hdi(x,.width = c(.66,.95))$ymax)  
+               })
+
+cuts.3<-lapply(MCMCdata3[,.(gamma,negReward,scaleConst)],
                function(x){
                  c(mode_hdi(x,.width = c(0.95,.66))$ymin,
                    mode_hdi(x,.width = c(.66,.95))$ymax)  
                })
 
 
-loglikehoods.both<-data.table(lglikelihood=c(ABCfiltered.1$fit,ABCfiltered.2$fit),
-                              model=c(rep("both",length(ABCfiltered.1$fit)),
-                                      rep("gam",length(ABCfiltered.2$fit))))
+loglikehoods.both<-data.table(lglikelihood=c(MCMCdata1$fit,MCMCdata2$fit,
+                                             MCMCdata3$fit),
+                              model=c(rep("both",length(MCMCdata1$fit)),
+                                      rep("gam",length(MCMCdata2$fit)),
+                                          rep("Nrew",length(MCMCdata3$fit))))
 
-nullLikehood<-sum(dbinom(x=predictDataMode.gam[,visitorChoices],
+
+fieldData<-fread(here("Data","data_ABC_cleaner_absolute.txt"))
+
+nullLikehood<-sum(dbinom(x=fieldData[,score_visitor],
                          size = 20,prob = 0.5,log = TRUE))
+
+# MCMCdata1[,Rsqrd:=1-fit/nullLikehood]
 
 loglikehoods.both[,Rsqrd:=1-lglikelihood/nullLikehood]
 
 ggplot(data=loglikehoods.both[is.finite(lglikelihood)],
        aes(fill=model,x=lglikelihood))+
-  geom_density(alpha=0.4)+theme_classic()+xlim(-750,-400) +
-  scale_fill_manual(values=c("#d73027", "#4575b4"))+
+  stat_halfeye(alpha=0.4)+theme_classic()+xlim(-750,-400) +
+  # scale_fill_manual(values=c("#d73027", "#4575b4"))+
   geom_vline(xintercept = nullLikehood,color="red")
 
 
@@ -230,52 +222,62 @@ df.Rsqrd.mode<-data.table(model=c("both","gam"),
                           Rsqr=c(rsqr.both.McFadden,rsqr.gam.McFadden))
 
 rsqr.both<-ggplot(data=loglikehoods.both[is.finite(lglikelihood)],aes(fill=model,x=Rsqrd))+
-  geom_density(alpha=0.6)+theme_classic()+xlim(-0.5,0.3)+
-  scale_fill_manual(values=c("#d7191c", "#4575b4"),
-                    name = "Model", labels = c("Full", "Only future reward"))+
-  geom_vline(data=df.Rsqrd.mode,aes(xintercept = Rsqr,color=model),size=1)+
+  stat_halfeye(alpha=0.5,point_size=3)+theme_classic()+xlim(-0.5,0.3)+
+  scale_fill_manual(values=c("#1b9e77","#d95f02","#7570b3"),
+                    name = "Model", labels = c("Full", "Future reward","Negative reward"))+
+  
+  # geom_vline(data=df.Rsqrd.mode,aes(xintercept = Rsqr,color=model),size=1)+
   scale_color_manual(values=c("#d73027", "#4575b4"),
                      name = "Model", labels = c("Full", "Only future reward"))+
   geom_vline(xintercept = 0,color="black",size=1)+
-  theme(legend.position = c(.25, .80))
+  theme(legend.position = c(.25, .80),legend.key.size = unit(0.5,'cm'))
 
+png(here("post_both_gamma.png"),width = 700,height = 800)
+
+png(here("Simulations",paste0(scenario,"_"),
+         paste0(strsplit(predfileMode.both,"seed")[[1]][1],"poster.png")),width = 1300,height = 700)
 
 
 plot_grid(nrow=3,align = "v",byrow = FALSE,
-          ggplot(data=ABCfiltered.1,aes(x=gamma)) + 
+          ggplot(data=MCMCdata1,aes(x=gamma)) + 
             stat_halfeye(aes(fill=stat(cut(x,breaks = cuts.1$gamma))),
                          point_interval = mode_hdi, .width = c(.66, .95),point_size=3,
                          show.legend=FALSE) + 
             labs(title="Full model",subtitle = expression(gamma),x="",y="")+
             theme_classic()+scale_fill_manual(values=c("gray85","skyblue","gray85")),
-          ggplot(data=ABCfiltered.1,aes(x=scaleConst)) + 
+          ggplot(data=MCMCdata1,aes(x=scaleConst)) + 
             stat_halfeye(aes(fill=stat(cut(x,breaks = cuts.1$scaleConst))),
                          point_interval = mode_hdi, .width = c(.66, .95),point_size=3,
                          show.legend=FALSE)+
-            theme_classic()+scale_fill_manual(values=c("gray85","skyblue","gray85"))+
-          labs(subtitle = "Scalling const.",x="",y="")+xlim(0,1500)+theme_classic(),
-          ggplot(data=ABCfiltered.1,aes(x=negReward)) + 
-            stat_halfeye(aes(fill=stat(cut(x,breaks = cuts.1$negReward[2:4]))),
+            theme_classic()+scale_fill_manual(values=c("skyblue","gray85"))+
+          labs(subtitle = "Scalling const.",x="",y="")+xlim(-2,1500)+theme_classic(),
+          ggplot(data=MCMCdata1,aes(x=negReward)) + 
+            stat_halfeye(aes(fill=stat(cut(x,breaks = cuts.1$negReward))),
                          point_interval = mode_hdi, .width = c(.66, .95),point_size=3,
                          show.legend=FALSE)+
-            scale_fill_manual(values=c("skyblue","gray85"))+
+            scale_fill_manual(values=c("gray85","skyblue","gray85"))+
             labs(subtitle = expression(eta),x="",y="")+
-            xlim(0,6)+theme_classic(),
-          ggplot(data=ABCfiltered.2,aes(x=gamma)) +
+            xlim(-2.5,2.5)+theme_classic(),
+          ggplot(data=MCMCdata2,aes(x=gamma)) +
             stat_halfeye(aes(fill=stat(cut(x,breaks = cuts.2$gamma))),
                          point_interval = mode_hdi, .width = c(.66, .95),point_size=3,
-                         show.legend=FALSE) + 
+                         show.legend=FALSE) +
             scale_fill_manual(values=c("gray85","skyblue","gray85"))+
             labs(title="Only future reward",subtitle = expression(gamma),x="",y="")+theme_classic(),
-          ggplot(data=ABCfiltered.2,aes(x=scaleConst)) +
+          ggplot(data=MCMCdata2,aes(x=scaleConst)) +
             stat_halfeye(aes(fill=stat(cut(x,breaks = cuts.2$scaleConst))),
                          point_interval = mode_hdi, .width = c(.66, .95),point_size=3,
-                         show.legend=FALSE) + 
+                         show.legend=FALSE) +
             scale_fill_manual(values=c("gray85","skyblue","gray85"))+
             labs(subtitle = "Scalling const.",x="",y="")+
             theme_classic(),
-          rsqr.both+labs(subtitle = expression(pseudo~R^2),x="",y="")+
-          theme(legend.position = c(.25, .50)),
+          rsqr.both+labs(subtitle = expression(pseudo-R^2),x="",y="")+
+          theme(legend.position = c(.25, .55)),
+          # ggplot(data=MCMCdata1,aes(x=Rsqrd))+
+          #   geom_density(alpha=0.6)+theme_classic()+xlim(-0.5,0.3)+
+          #   scale_fill_manual(values=c("#d7191c", "#4575b4"))+
+          #   scale_color_manual(values=c("#d73027", "#4575b4"))+
+          #   geom_vline(xintercept = 0,color="black",size=1),
           labels=c('a','b','c','d','e','f')
 )
 
@@ -464,23 +466,23 @@ hist(ABC.mcmc[,2],breaks = 100)
 
 ## Coda lists --------------------------------------------------------------------
 
-(sumMCMClist<-summary(mcmcList))
+(sumMCMClist<-summary(mcmcList.1))
 sumMCMClist$statistics[,1]
-effectiveSize(mcmcList)
+effectiveSize(mcmcList.1)
 par(plt=posPlot())
-plot(mcmcList)
-raftery.diag(mcmcList)
-geweke.plot(mcmcList)
-gelman.plot(mcmcList)
-autocorr(mcmcList)
-mcmc_acf(mcmcList, pars = c("gamma", "negReward","scaleConst"), 
+plot(mcmcList.1)
+raftery.diag(mcmcList.1)
+geweke.plot(mcmcList.1)
+gelman.plot(mcmcList.1)
+autocorr(mcmcList.1)
+mcmc_acf(mcmcList.1, pars = c("gamma", "negReward","scaleConst"), 
          lags = 1000)
-rejectionRate(mcmcList)
+rejectionRate(mcmcList.1)
 
-denplot(mcmcList,collapse = FALSE)
-densplot(mcmcList[[1]][,1])
-densplot(mcmcList[[1]][,2])
-densplot(mcmcList[[1]][,3])
+denplot(mcmcList.1,collapse = FALSE)
+densplot(mcmcList.1[[1]][,1])
+densplot(mcmcList.1[[1]][,2])
+densplot(mcmcList.1[[1]][,3])
 
 points(x=densGamma$x[sort(densGamma$y,decreasing = TRUE,index.return=T)$ix[1:20]],
        densGamma$y[sort(densGamma$y,decreasing = TRUE,index.return=T)$ix[1:20]],

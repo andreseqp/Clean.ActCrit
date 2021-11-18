@@ -1,7 +1,8 @@
 library("data.table")
 library("here")
 library("readxl")
-
+library('dplyr')
+library('ggplot2')
 
 ## Load field data based on the market experiment performance criteria
 
@@ -75,6 +76,16 @@ fieldData.sum[,site.year:=gsub(" ",replacement = "_",x = site.year)]
 fieldData.sum[,cleaner_ID:=gsub(" ",replacement = "",x = cleaner_ID)]
 
 str(fieldData.sum)
+
+fieldData.sum %>%
+  ggplot(aes(x=abund.cleaners,y=score_visitor))+
+  geom_point()+theme_classic()
+
+
+fieldData.site %>%
+  ggplot(aes(x=abundance_cleaners_100m2,fill=score_visitor,y=prob.Vis.Leav))+
+  geom_point()+theme_classic()
+
 
 setorder(fieldData.sum,site.year)
 

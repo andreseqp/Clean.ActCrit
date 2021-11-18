@@ -1,8 +1,9 @@
 ---
 title: "Cognitive and ecological aspects determine cleaner performance"
 author:
-- Andrés E. Quiñones^[Institute of Biology, University of Neuchâtel, Neuchâtel, Switzerland
-  - andresqp@gmail.com]
+- Andrés E. Quiñones^[Institute of Biology, University of Neuchâtel, Neuchâtel, Switzerland - andresqp@gmail.com]
+- Zegni Triki^[Department of Zoology, Stockholm University, Stockholm, Sweden]
+- Redouan Bshary^[Institute of Biology, University of Neuchâtel, Neuchâtel, Switzerland]
 date: "`r format(Sys.time(), '%B %d, %Y')`"
 output:
   word_document: default
@@ -251,11 +252,12 @@ knitr::include_graphics(here("post_both_gamma.png"))
 
 Figure \ref{fig:post} panels a,c and e show the posterior distributions
 of the parameter values of the full model, which includes both future
-and negative reward. Notably, the bulk of the posterior distribution for
-the parameter tuning negative reward ($\eta$ panerl e) is around zero. Thus, the shape of the posterior and its credible intervals suggest the absence of negative reward to be well supported by the data. As for $\gamma$, the confidence intervals also includes zero, but the mode of the posterior is around 0.5. Thus, we run the analysis setting $\eta$ to zero. Figure
+and negative reward. Posterior distributions show the probability density (y axis)
+of the estimated parameter values (x axis). Notably, the bulk of the posterior distribution for
+the parameter tuning negative reward ($\eta$ panel e) is around zero. Thus, the shape of the posterior and its credible intervals suggest the absence of negative reward to be well supported by the data. As for $\gamma$, the confidence intervals also includes zero, but the mode of the posterior is around 0.5. Thus, we run the analysis setting $\eta$ to zero. Figure
 \ref{fig:post} panels b and d, show the posterior distributions of the
 two parameters estimated. Not surprisingly, under a model without
-negative reward, the distribution of $\gamma$ shifts to higher values. Under the new model, the estimates of $\gamma$ do not include zero, the distribution is centered arounf $0.5$.
+negative reward, the distribution of $\gamma$ shifts to higher values. Under the new model, the estimates of $\gamma$ do not include zero, the distribution is centered around $0.5$.
 To asses the fit of the two models we calculated the  $pseudo-R^2$ [@mcfadden_Conditional_1974], which is a standard measure of fit for logistic regression. 
 In that context, $pseudo-R^2$ uses the log-likelihood of the data given the model, relative to the log-likelihood of the data given a model without covariates, as a measure of fit. 
 Given that our model is not a logistic regression, we measure the $pseudo-R^2$ 
@@ -263,7 +265,7 @@ in relation to the log-likelihood of a model with parameters $\gamma$ and $\eta$
 the two options. In panel f of figure \ref{fig:post} we show the distribution of $pseudo-R^2$ calculated using samples from the posterior distributions shown before, as well as from a 
 model with negative reward but without future reward. 
 Note, $pseudo-R^2$ can have negative values, that is when the log-likelihood of 
-the model is lower than that of a model that triggers neutral preferences. 
+the model is lower than that of a model that triggers neutral preferences.
 Even though, the peak of the three $pseudo-R^2$ distributions is not very different, 
 the model with only future reward produces a distribution of $pseudo-R^2$ where more values 
 are positive (to the right of black line in Fig. \ref{fig:post} f). This 
@@ -319,7 +321,7 @@ trigger a preference for the visitor. (Fig. \ref{fig:pred} a,
 
 We have shown that using future rewards in the learning process is the cognitive 
 strategy that best explains the intra-specific variation in cleaner performance 
-in the market task. We compared future reward with the use of client behaviour as 
+in the market task. We compared future reward with the use of visitors behaviour as 
 a primary source of negative reward, and a combination of both. All three models 
 capture well the positive relation between visitor leaving behaviour and cleaner
 performance in the market task [@triki_Biological_2019]. For both mechanisms it is 
@@ -328,36 +330,36 @@ to develop a preference for them. The key difference between future and negative
 reward emerges in the predicted relation between cleaner relative abundance and 
 cleaner performance. When cleaner relative abundance is low a model with only 
 future reward predicts low performance in the market task regardless of the visitor
-leaving probability. In contrast, A model with negative reward predicts the highest 
+leaving probability. In contrast, a model with negative reward predicts the highest 
 performance with low relative cleaner abundance, particularly together with high 
 probability of visitor leaving (Fig. \ref{fig:pred}). Low cleaner abundances 
 mean the market has an excess of demand for cleaning services. In the model,
 this translates to a cleaning station that is frequently full. Thus, when visitors 
-leave, it's likely that the cleaner will have access to another client, and there won't be much difference in future reward between choosing a visitor and a resident. Thus,
+leave, it's likely that the cleaner will have access to another client, and there will not be much difference in future reward between choosing a visitor and a resident. Thus,
 estimation of future reward will not develop a preference for the visitor in this 
-conditions, because it matches the state of the market. On the other hand, the effect of negative reward is unaffected by this market situation. In a full station, cleaners will get more often the heterotypic (resident-visitor) option and will develop a preference for the visitor faster. Estimation of future reward is then the cognitive mechanism 
-that allows cleaner to adaptively respond to the ecological conditions of the biological market.
-
-<!-- ### Correlation of visitor leaving and cleaner density  -->
+conditions, because it matches the state of the market. On the other hand, the effect of negative reward is unaffected by this market situation. In a full station, cleaners will get more often the heterotypic (resident-visitor) option and will develop a preference for the visitor faster. Note that when cleaner abundance is high situations with a resident and a visitor will be so rare that neither mechanism will be very efficient in generating a preference for visitors. When such choice arises it is still be best to choose the visitor; however, the learning machinery will not be able to develop this preference efficiently.  Overall, estimation of future reward is then the cognitive mechanism that allows cleaners to adaptively respond conditions to the ecological conditions of the biological market.
 
 
+The cognitive mechanism that our analysis highlights does not require a direct flow of information between the cleaner and its social environment. The adaptive responses to local conditions in cleaners is not only evidenced by their performance in  experiments, but also by changes in their brain anatomy. Indeed, individual cleaners that performed in the laboratory test according to what is best at the location in which they were caught had larger forebrains harbouring more cells than individuals whose performance mismatched locally optimal decision-rules [@triki_Brain_2020]. This suggests that despite the overall behavioural adjustment, evidenced here and elsewhere 
+[@triki_Biological_2019; @triki_Decrease_2018], there are some cleaners better than others at adjusting their behaviour. @triki_Brain_2020 refer to these as socially competent cleaners. Social competence refers to the ability to optimise social behaviour depending on the available social information [@taborsky_Social_2012a;@bshary_Cooperation_2015]. 
+However, we have shown here that cleaners are able to adjust their preference 
+according to the social environment without using any direct information about the social
+environment. Instead cleaners seem to adjust their preference using information from the visitation patterns of their clients. These patters are of course determined by the feedback with the cleaner's social environment (relative abundance). Our models, however, do not include the possibility of cleaners responding to their relative abundance directly. The mechanism we present is a general way to learn from the environment
+in both asocial and social situations. It would be interesting to contrast this learning mechanism with one tailored to a social situation, and see whether such mechanism 
+fits the data better. More generally, an important challenge ahead is to understand 
+which cognitive mechanisms evolved exclusively for social life. 
 
-<!-- ### Cognition as an explanation -->
+One potential difference between cleaners that adjusted adaptively, like the ones
+reported in @triki_Brain_2020, is configurational learning or chunking. The original analysis of the learning model showed that agents needed two mechanism to solve the 
+market task; to account for the future, and to assign value to the combination of clients
+present in the station [@quinones_Reinforcement_2019]. The latter is referred to as configurational learning or chunking [@sutherland_Configural_1989;@miller_Magical_1956]. 
+Theoretical models suggest that the lack of configurational learning is related to a low 
+frequency with which stimuli are encountered together [@kolodny_Evolution_2014;@prat_Role_2021]. Thus, cleaner relative abundance could be related to this mechanisms as well. Given that the lack of either of these two mechanisms yields 
+neutral preferences [@quinones_Reinforcement_2019], we can't, based on the current analysis, distinguish between the two possibilities. One potential way to distinguish between the two would be to use an experimental set up designed to test configuration learning on cleaners
+with high and low performance in the market task [@woodbury_Learning_1943;@sutherland_Configural_1989]. 
 
-<!-- bash on social competence -->
 
-<!-- Cognitive processes gain support as an explanation for inter and intra-specific  -->
-<!-- variation in the market task. Even though the model considered here does not  -->
-<!-- explicitly model perception, associative processes must include the perception  -->
-<!-- of different stimuli which allow cleaners to discriminate -->
-<!-- residents and visitors. Thus, the fact that recent experimental work shows -->
-<!-- an effect of the perceptual conditions in the experiments on the performance of  -->
-<!-- the subjects, supports the idea that learning is involved in the decision  -->
-<!-- making process of the market task. Furthermore, and notably, certain features  -->
-<!-- of brain anatomy correlate with performance in the market task and with the  -->
-<!-- abundance of cleaners in the location where the fish were collected [@triki_Brain_2020].  -->
-<!-- All this, supports the idea that learning processes are behind the behavioural  -->
-<!-- adjustment that cleaners show to environmental conditions.  -->
+Combining mechanistic modelling with empirical data provides a powerful tool to identify the cognitive processes underlying learning in animals. The combination overcomes the limitations of the general philosophy in animal cognition to apply the logic of Lloyd Morgen’s canon (Occam’s razor). Excluding basic reinforcement learning explanations (operant and/or classical conditioning) as a potential explanation in experiments often warrants animals solving the task on the first possible occasion. For example, any theory of mind task needs to be solved in the first trial in order to exclude fast conditioning [@heyes_Theory_1998]. Similarly, subjects need to solve a social learning task on the first trial to accept imitation as a mechanism over stimulus/local enhancement. Such strict conditions are virtually never met. For example, potato washing by Japanese macaques, an iconic example of social learning, took several years to spread within the group [@kawamura_Process_1959], meaning that any learner had been repeatedly exposed to demonstrations before acquisition. Importantly, @galef_Question_1992 refuted imitation as mechanism not simply because of the repeated exposure but because a (rather qualitative) analysis of the spread of potato washing across individuals did not follow the prediction based on imitation learning (see also @hirata_SweetPotato_2001). In our case, the number of trials it took cleaners to learn the solution to the market task would never allow to exclude an important role of negative reinforcement based on the data alone. However, fitting model predictions to our data set revealed that a more complex mechanism (estimation of future reward) fits the data better. 
 
 ## Cited literature
 

@@ -6,8 +6,8 @@ author:
 - Redouan Bshary^[Institute of Biology, University of Neuchâtel, Neuchâtel, Switzerland]
 date: "`r format(Sys.time(), '%B %d, %Y')`"
 output:
-  word_document: default
   pdf_document: default
+  word_document: default
 fig_caption: yes
 fontsize: 12pt
 header-includes:
@@ -210,7 +210,39 @@ data. In the current analysis, we will use the data from
 @triki_Biological_2019 to fit some of the model parameters, particularly
 relevant we will fit $\gamma$ and $\eta$ to find out whether each or a
 combination of these effects is a better explanation for the pattern
-seen in the data.
+seen in the data. For other parameter values used for the model simulations
+and the MCMC see Table \ref{tab:param}
+
+<!-- # ```{r parTable} -->
+<!-- # source(here("loadData.R")) -->
+<!-- # parFiles<-grep("parametersMCMC",list.files(here("Simulations","MCMCclean_gam_nRew_sca_"), -->
+<!-- #                                               full.names = TRUE),value = TRUE) -->
+<!-- # params<-fromJSON(parFiles[1]) -->
+<!-- # ``` -->
+
+
+```{r param , echo=FALSE,results='asis'}
+  cat(' Table: \\label{tab:param} Parameter values with which the model was run 
+  in the MCMC. $\\sigma$ refers to the amplitud of the perturbation kernel with the subscript indicating the associated parameter. New values were taken from a uniform distribution. $\\alpha$ refers to the learning rate. 
+
+  | Parameter | Value |
+|----------:|:-----:|
+| Learning rounds | 10000 |
+| Reward value | 1 |
+| $\\alpha$ | 0.05 |
+| $\\sigma_{\\gamma}$ | 0.3 |
+| $\\sigma_{\\eta}$ | 4 |
+| $\\sigma_{Sca.Const.}$ | 300 |
+| Number of chains | 5 |
+| Chain lenght | $1^5$ |
+')
+
+```
+
+
+
+ 
+
 
 ### Data explanation
 
@@ -374,7 +406,7 @@ Combining mechanistic modelling with empirical data provides a powerful tool to 
 \beginsupplement
 ```
 ```{r nogamma, fig.cap="Observed and predicted probability of choosing a visitor for a model without future rewards. Left-hand side panel: color contour shows the prediction of the learning model using the mode of the posterior distributions of parameters recovered by the statistical analysis. Dots show the frequency of visitor choices for the 12 locations, as well as the corresponding relative cleaner abundance (x axis) and frequency of visitors leaving the station (y axis). Right-hand side panel: scatter plot of the observed and predicted probabilities of choosing a visitor for 12 locations. Line correspond to a perfect match between observed and predicted probabilities.",out.width='90%'}
-fileNogamma<-grep("contour_gamma_",list.files(here("Simulations","ABCclean_nRew_sca_"),
+fileNogamma<-grep("contour_gamma_",list.files(here("Simulations","MCMCclean_nRew_sca_"),
                                               full.names = TRUE),value = TRUE)
 knitr::include_graphics(fileNogamma)
 

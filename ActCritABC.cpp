@@ -614,17 +614,23 @@ struct cleaner_point {
 	int countVisitor, totalMarket;
 	float market_exp_success;
 	double marketPred;
+	int group=0;
 };
+
+
 
 struct model_param {
 	//model_param(model_param const &obj);
-	double alphaC, alphaA, gamma, negReward, scaleConst;
+	double alphaC, alphaA, scaleConst;
+	double gamma[2], negReward[2];
 	model_param &operator= (model_param const &rhs) {
 		alphaA = rhs.alphaA;
 		alphaC = rhs.alphaC;
-		gamma = rhs.gamma;
-		negReward = rhs.negReward;
 		scaleConst = rhs.scaleConst;
+		gamma[0] = rhs.gamma[0];
+		negReward[0] = rhs.negReward[0];
+		gamma[1] = rhs.gamma[1];
+		negReward[1] = rhs.negReward[1];
 		return *this;
 	}
 };
@@ -682,6 +688,7 @@ vector <cleaner_point> read_CleanData(ifstream& marketData) {
 		marketData >> input.abund_visitors;
 		marketData >> input.abund_resid;
 		marketData >> input.prob_Vis_Leav;
+		marketData >> input.group;
 		if (marketData.eof()) 	break;
 		input.totalMarket = 20;
 		input.market_exp_success = double(input.countVisitor) /
@@ -737,7 +744,10 @@ void initializeChainFile(ofstream &chainOutput,nlohmann::json param){
 	string IndFile = create_filename(namedir, param);
 	chainOutput.open(IndFile.c_str());
 	chainOutput << "iteration	" << "alpha_actor	" << "alpha_critic	" <<
-		"gamma	" << "negReward	" << "scaleConst	" << "fit	" << "ratio" << endl;
+		 "gamma	" << "negReward	";
+	if (bool(param["Group"]))
+		chainOutput	<< "gamma.1	" << "negReward.1	";
+	chainOutput  << "scaleConst	" << "fit	" << "ratio" << endl;
 }
 
 void initializeRoundFile(ofstream& RoundOutput, nlohmann::json param,
@@ -746,9 +756,9 @@ void initializeRoundFile(ofstream& RoundOutput, nlohmann::json param,
 	std::string namedir = param["folder"];
 	namedir.append("round_");
 	namedir.append("gamma_");
-	namedir.append(douts(std::ceil(focals.gamma*100)/100));
+	namedir.append(douts(std::ceil(focals.gamma[0]*100)/100));
 	namedir.append("regRew_");
-	namedir.append(douts(std::ceil(focals.negReward * 100) / 100)); 
+	namedir.append(douts(std::ceil(focals.negReward[0] * 100) / 100)); 
 	namedir.append("scaC_");
 	namedir.append(douts(std::ceil(focals.scaleConst * 100) / 100));
 	namedir.append("alphA_");
@@ -766,7 +776,8 @@ void initializeRoundFile(ofstream& RoundOutput, nlohmann::json param,
 			<< "rel.abund.residents	"
 			<< "prob.Vis.Leav	"
 			<< "market_binomial_data	"
-			<< "market_binomial_pred" << endl;
+			<< "market_binomial_pred	"
+			<< "competence	" << endl;
 	}
 	else{
 		RoundOutput << "site_year	"
@@ -802,65 +813,45 @@ void printRoundFile(ofstream& roundOut, const std::vector<cleaner_point>& emp_da
 			emp_data[id_data_point].rel_abund_resid << '\t' <<
 			emp_data[id_data_point].prob_Vis_Leav << '\t' <<
 			emp_data[id_data_point].countVisitor << '\t' <<
-			emp_data[id_data_point].marketPred << endl;
+			emp_data[id_data_point].marketPred << '\t' << 
+			emp_data[id_data_point].group << '\t' << endl;
 	}
 }
 
-double	getkforGamma(double& mode, double var) {
-	double k1 = (2 + (pow(mode, 2)) / var + 
-		mode * sqrt((4 + pow(mode, 2) / var) / var)) / 2;
-	double k2 = (2 + pow(mode, 2) / var - 
-		mode * sqrt((4 + pow(mode, 2) / var) / var)) / 2;
-	if (k1 > 0 || k2 < 0) return(k1);
-	else
-		if (k1 < 0 || k2 >0) return(k2);
-		else error("result out of range", CURRENT_FUNCTION);
-}
+//double	getkforGamma(double& mode, double var) {
+//	double k1 = (2 + (pow(mode, 2)) / var + 
+//		mode * sqrt((4 + pow(mode, 2) / var) / var)) / 2;
+//	double k2 = (2 + pow(mode, 2) / var - 
+//		mode * sqrt((4 + pow(mode, 2) / var) / var)) / 2;
+//	if (k1 > 0 || k2 < 0) return(k1);
+//	else
+//		if (k1 < 0 || k2 >0) return(k2);
+//		else error("result out of range", CURRENT_FUNCTION);
+//}
 
-double getthetaforGamma(double& mode, double var) {
-	return	sqrt(var / getkforGamma(mode, var));
-}
 
-double getAlphaforBeta(double& mean, double var) {
-	double alpha = ((mean * (1 - mean) / var) - 1) * mean;
-	if(alpha>0)	return alpha;
-	else {
-		cout << "Alpha values smaller than 0 for beta distribution!!" << endl;
-		return 1;
-	}
-}
-
-double getbetaforBeta(double& mean, double var) {
-	double beta = ((mean * (1 - mean) / var) - 1) * (1 - mean);
-	if (beta > 0) return beta;
-	else {
-		cout << "Alpha values smaller than 0 for beta distribution!!" << endl;
-		return 1;
-	}
-}
-
-double calcTransProbRatio(model_param focalParam, model_param newParam,
-	json &sim_param) {
-	double Pold2new = 1, Pnew2old=1, alphaBeta, 
-		betaBeta, kgamma,thetaGamma, ratio;
-	//gamma parameter
-	alphaBeta = getAlphaforBeta(newParam.gamma, sim_param["sdPert"][2]);
-	betaBeta = getbetaforBeta(newParam.gamma, sim_param["sdPert"][2]);
-	Pnew2old *= rnd::beta_pdf(focalParam.gamma, alphaBeta, betaBeta);
-	alphaBeta = getAlphaforBeta(focalParam.gamma, sim_param["sdPert"][2]);
-	betaBeta = getbetaforBeta(focalParam.gamma, sim_param["sdPert"][2]);
-	Pold2new *= rnd::beta_pdf(newParam.gamma, alphaBeta, betaBeta);
-	//NegReward parameter
-	kgamma = getkforGamma(newParam.negReward, sim_param["sdPert"][3]);
-	thetaGamma = getthetaforGamma(newParam.negReward, sim_param["sdPert"][3]);
-	Pnew2old *= rnd::pdf_gamma(focalParam.negReward, kgamma, thetaGamma);
-	kgamma = getkforGamma(focalParam.negReward, sim_param["sdPert"][3]);
-	thetaGamma = getthetaforGamma(focalParam.negReward, sim_param["sdPert"][3]);
-	Pold2new *= rnd::pdf_gamma(newParam.negReward, kgamma, thetaGamma);
-
-	ratio = Pnew2old / Pold2new;
-	return ratio;
-}
+//double calcTransProbRatio(model_param focalParam, model_param newParam,
+//	json &sim_param) {
+//	double Pold2new = 1, Pnew2old=1, alphaBeta, 
+//		betaBeta, kgamma,thetaGamma, ratio;
+//	//gamma parameter
+//	alphaBeta = getAlphaforBeta(newParam.gamma, sim_param["sdPert"][2]);
+//	betaBeta = getbetaforBeta(newParam.gamma, sim_param["sdPert"][2]);
+//	Pnew2old *= rnd::beta_pdf(focalParam.gamma, alphaBeta, betaBeta);
+//	alphaBeta = getAlphaforBeta(focalParam.gamma, sim_param["sdPert"][2]);
+//	betaBeta = getbetaforBeta(focalParam.gamma, sim_param["sdPert"][2]);
+//	Pold2new *= rnd::beta_pdf(newParam.gamma, alphaBeta, betaBeta);
+//	//NegReward parameter
+//	kgamma = getkforGamma(newParam.negReward, sim_param["sdPert"][3]);
+//	thetaGamma = getthetaforGamma(newParam.negReward, sim_param["sdPert"][3]);
+//	Pnew2old *= rnd::pdf_gamma(focalParam.negReward, kgamma, thetaGamma);
+//	kgamma = getkforGamma(focalParam.negReward, sim_param["sdPert"][3]);
+//	thetaGamma = getthetaforGamma(focalParam.negReward, sim_param["sdPert"][3]);
+//	Pold2new *= rnd::pdf_gamma(newParam.negReward, kgamma, thetaGamma);
+//
+//	ratio = Pnew2old / Pold2new;
+//	return ratio;
+//}
 
 
 //double calculate_fit(const std::vector< data_point>& empData,
@@ -892,51 +883,51 @@ double calculate_fit(const std::vector<cleaner_point>& empData) {
 	return(sum_log_likelihood);
 }
 
-model_param perturb_parameters(model_param focal_param, json &sim_param) {
-	model_param new_param;
-	// also, you can throw in your own random number generator that you want,
-	// I just add a number N(0, sd);
-	if (sim_param["pertScen"] == 0) {
-		new_param.alphaA = focal_param.alphaA + rnd::normal(0,
-			float(sim_param["sdPert"][0]));
-		new_param.alphaC = focal_param.alphaC + rnd::normal(0,
-			float(sim_param["sdPert"][1]));
-		new_param.negReward = focal_param.negReward;
-		new_param.gamma = focal_param.gamma;
-	}
-	if (sim_param["pertScen"] < 2) {
-		double alphaBeta = getAlphaforBeta(focal_param.gamma, sim_param["sdPert"][2]);
-		double betaBeta = getbetaforBeta(focal_param.gamma, sim_param["sdPert"][2]);
-		new_param.gamma = rnd::beta(alphaBeta, betaBeta);
-		double kgamma = getkforGamma(focal_param.negReward, sim_param["sdPert"][3]);
-		double thetaGamma = getthetaforGamma(focal_param.negReward,
-			sim_param["sdPert"][3]);
-		new_param.negReward = rnd::gamma(kgamma, thetaGamma);
-		new_param.alphaA = focal_param.alphaA;
-		new_param.alphaC = focal_param.alphaC;
-
-	}
-	else if (sim_param["pertScen"] == 2)
-	{
-		new_param.alphaA = focal_param.alphaA;
-		new_param.alphaC = focal_param.alphaC;
-		double alphaBeta = getAlphaforBeta(focal_param.gamma, sim_param["sdPert"][2]);
-		double betaBeta = getbetaforBeta(focal_param.gamma, sim_param["sdPert"][2]);
-		new_param.gamma = rnd::beta(alphaBeta, betaBeta);
-		new_param.negReward = focal_param.negReward;
-	}
-	else
-	{
-		new_param.alphaA = focal_param.alphaA;
-		new_param.alphaC = focal_param.alphaC;
-		double kgamma = getkforGamma(focal_param.negReward, sim_param["sdPert"][3]);
-		double thetaGamma = getthetaforGamma(focal_param.negReward,
-			sim_param["sdPert"][3]);
-		new_param.negReward = rnd::gamma(kgamma, thetaGamma);
-		new_param.gamma = focal_param.gamma;
-	}
-	return(new_param);
-}
+//model_param perturb_parameters(model_param focal_param, json &sim_param) {
+//	model_param new_param;
+//	// also, you can throw in your own random number generator that you want,
+//	// I just add a number N(0, sd);
+//	if (sim_param["pertScen"] == 0) {
+//		new_param.alphaA = focal_param.alphaA + rnd::normal(0,
+//			float(sim_param["sdPert"][0]));
+//		new_param.alphaC = focal_param.alphaC + rnd::normal(0,
+//			float(sim_param["sdPert"][1]));
+//		new_param.negReward = focal_param.negReward;
+//		new_param.gamma = focal_param.gamma;
+//	}
+//	if (sim_param["pertScen"] < 2) {
+//		double alphaBeta = getAlphaforBeta(focal_param.gamma, sim_param["sdPert"][2]);
+//		double betaBeta = getbetaforBeta(focal_param.gamma, sim_param["sdPert"][2]);
+//		new_param.gamma = rnd::beta(alphaBeta, betaBeta);
+//		double kgamma = getkforGamma(focal_param.negReward, sim_param["sdPert"][3]);
+//		double thetaGamma = getthetaforGamma(focal_param.negReward,
+//			sim_param["sdPert"][3]);
+//		new_param.negReward = rnd::gamma(kgamma, thetaGamma);
+//		new_param.alphaA = focal_param.alphaA;
+//		new_param.alphaC = focal_param.alphaC;
+//
+//	}
+//	else if (sim_param["pertScen"] == 2)
+//	{
+//		new_param.alphaA = focal_param.alphaA;
+//		new_param.alphaC = focal_param.alphaC;
+//		double alphaBeta = getAlphaforBeta(focal_param.gamma, sim_param["sdPert"][2]);
+//		double betaBeta = getbetaforBeta(focal_param.gamma, sim_param["sdPert"][2]);
+//		new_param.gamma = rnd::beta(alphaBeta, betaBeta);
+//		new_param.negReward = focal_param.negReward;
+//	}
+//	else
+//	{
+//		new_param.alphaA = focal_param.alphaA;
+//		new_param.alphaC = focal_param.alphaC;
+//		double kgamma = getkforGamma(focal_param.negReward, sim_param["sdPert"][3]);
+//		double thetaGamma = getthetaforGamma(focal_param.negReward,
+//			sim_param["sdPert"][3]);
+//		new_param.negReward = rnd::gamma(kgamma, thetaGamma);
+//		new_param.gamma = focal_param.gamma;
+//	}
+//	return(new_param);
+//}
 
 double boundedParUnifPert(double & parVal, float pertRang ,double min, double max) {
 	if (parVal - pertRang * 0.5 < min) {
@@ -956,17 +947,29 @@ model_param perturb_parameters_uniform(model_param focal_param, json &sim_param)
 	// I just add a number N(0, sd);
 
 	new_param.alphaA = bool(sim_param["pertScen"][0])*boundedParUnifPert(focal_param.alphaA,
-		float(sim_param["sdPert"][0]), 0, INFINITY)+
+		float(sim_param["sdPert"][0]), 0, INFINITY) +
 		(!bool(sim_param["pertScen"][0]))*focal_param.alphaA;
 	new_param.alphaC = bool(sim_param["pertScen"][0]) * boundedParUnifPert(focal_param.alphaC,
-		float(sim_param["sdPert"][1]), 0, INFINITY)+
+		float(sim_param["sdPert"][1]), 0, INFINITY) +
 		(!bool(sim_param["pertScen"][1]))*focal_param.alphaC;
-	new_param.gamma = bool(sim_param["pertScen"][2]) * boundedParUnifPert(focal_param.gamma,
-		sim_param["sdPert"][2], -1, 1) +
-		(!bool(sim_param["pertScen"][2]))*focal_param.gamma;
-	new_param.negReward = bool(sim_param["pertScen"][3])* boundedParUnifPert(focal_param.negReward,
-		sim_param["sdPert"][3], -INFINITY, INFINITY)+
-		(!bool(sim_param["pertScen"][3]))*focal_param.negReward;
+	new_param.gamma[0] = bool(sim_param["pertScen"][2]) *
+		boundedParUnifPert(focal_param.gamma[0],
+			sim_param["sdPert"][2], -1, 1) +
+			(!bool(sim_param["pertScen"][2]))*focal_param.gamma[0];
+	new_param.negReward[0] = bool(sim_param["pertScen"][3])*
+		boundedParUnifPert(focal_param.negReward[0],
+			sim_param["sdPert"][3], -INFINITY, INFINITY) +
+			(!bool(sim_param["pertScen"][3]))*focal_param.negReward[0];
+	if (sim_param["Group"]) {
+		new_param.gamma[1] = bool(sim_param["pertScen"][2]) *
+			boundedParUnifPert(focal_param.gamma[1],
+				sim_param["sdPert"][2], -1, 1) +
+				(!bool(sim_param["pertScen"][2]))*focal_param.gamma[1];
+		new_param.negReward[1] = bool(sim_param["pertScen"][3])*
+			boundedParUnifPert(focal_param.negReward[1],
+				sim_param["sdPert"][3], -INFINITY, INFINITY) +
+				(!bool(sim_param["pertScen"][3]))*focal_param.negReward[1];
+	}
 	new_param.scaleConst = bool(sim_param["pertScen"][4])* boundedParUnifPert(focal_param.scaleConst,
 		sim_param["sdPert"][4], 0, INFINITY) +
 		(!bool(sim_param["pertScen"][4]))*focal_param.scaleConst;
@@ -975,25 +978,22 @@ model_param perturb_parameters_uniform(model_param focal_param, json &sim_param)
 	return(new_param);
 }
 
-
-
 void do_simulation(//del focal_model,
 	std::vector<locat_point> &emp_data, model_param focal_comb,
 	json sim_param) {
 	client *clientSet;
 	clientSet = new client[int(sim_param["totRounds"]) * 2];
 	int idClientSet;
-	FAATyp1 Cleaner (focal_comb.alphaC, focal_comb.gamma,
-		focal_comb.negReward,
-		focal_comb.alphaA);
+	FAATyp1 Cleaner (focal_comb.alphaC, focal_comb.gamma[0],
+		focal_comb.negReward[0],focal_comb.alphaA);
 	double VisPref, init;
 	int countRVopt;
 	// Loop through the data points
 	for (int id_data_point = 0; id_data_point < emp_data.size(); ++id_data_point) {
-		init = focal_comb.gamma*
+		init = focal_comb.gamma[0]*
 			(1 - pow(1 -
 				emp_data[id_data_point].rel_abund_resid -
-				emp_data[id_data_point].rel_abund_visitors, 2)) / (1 - focal_comb.gamma);
+				emp_data[id_data_point].rel_abund_visitors, 2)) / (1 - focal_comb.gamma[0]);
 		Cleaner.rebirth(init);
 		draw(clientSet, sim_param["totRounds"],
 			emp_data[id_data_point].rel_abund_resid,
@@ -1029,50 +1029,65 @@ void do_simulation(//del focal_model,
 	client *clientSet;
 	clientSet = new client[int(sim_param["totRounds"]) * 2];
 	int idClientSet;
-	FAATyp1 Cleaner(focal_comb.alphaC, focal_comb.gamma,
-		focal_comb.negReward,
-		focal_comb.alphaA);
+	FAATyp1 *cleaners[2];
+	cleaners[0] = new FAATyp1(focal_comb.alphaC, focal_comb.gamma[0],
+		focal_comb.negReward[0], focal_comb.alphaA);
+	if(sim_param["Group"]) cleaners[1] = new FAATyp1(focal_comb.alphaC, focal_comb.gamma[1],
+		focal_comb.negReward[1], focal_comb.alphaA);
 	double VisPref, init;
 	int countRVopt;
 	abs2rel_abund(emp_data, focal_comb);
 	// Loop through the data points
 	for (int id_data_point = 0; id_data_point < emp_data.size(); ++id_data_point) {
-		if (id_data_point > 0 &&
+		/*if (id_data_point > 0 &&
 			emp_data[id_data_point].site_year == emp_data[id_data_point - 1].site_year) {
 			emp_data[id_data_point].marketPred = emp_data[id_data_point - 1].marketPred;
 		}
 		else
-		{
-			init = focal_comb.gamma*
-				(1 - pow(1 -
-					emp_data[id_data_point].rel_abund_resid -
-					emp_data[id_data_point].rel_abund_visitors, 2)) / (1 - focal_comb.gamma);
-			Cleaner.rebirth(init);
-			draw(clientSet, sim_param["totRounds"],
-				emp_data[id_data_point].rel_abund_resid,
-				emp_data[id_data_point].rel_abund_visitors);
-			idClientSet = 0;
-			VisPref = 0, countRVopt = 0;
-			// Loop through the learning rounds
-			for (int trial = 0; trial < sim_param["totRounds"]; ++trial) {
-				Cleaner.act(clientSet, idClientSet, emp_data[id_data_point].prob_Vis_Leav,
-					sim_param["ResProbLeav"], sim_param["VisReward"],
-					sim_param["ResReward"], sim_param["inbr"], sim_param["outbr"],
-					learnScenario(sim_param["scenario"]));
-				Cleaner.update();
-				if (trial > int(sim_param["totRounds"]) * float(sim_param["propfullPrint"])) {
-					if (Cleaner.getstate(0) == 0) {
-						++countRVopt;
-						if (Cleaner.cleanOptionsT[Cleaner.getChoice(0)] == visitor) ++VisPref;
-					}
+		{*/
+		init = focal_comb.gamma[emp_data[id_data_point].group]*
+			(1 - pow(1 -
+				emp_data[id_data_point].rel_abund_resid -
+				emp_data[id_data_point].rel_abund_visitors, 2)) / 
+				(1 - focal_comb.gamma[emp_data[id_data_point].group]);
+		cleaners[emp_data[id_data_point].group]->rebirth(init);
+		draw(clientSet, sim_param["totRounds"],
+			emp_data[id_data_point].rel_abund_resid,
+			emp_data[id_data_point].rel_abund_visitors);
+		idClientSet = 0;
+		VisPref = 0, countRVopt = 0;
+		// Loop through the learning rounds
+		for (int trial = 0; trial < sim_param["totRounds"]; ++trial) {
+			cleaners[emp_data[id_data_point].group]->
+				act(clientSet, idClientSet, emp_data[id_data_point].prob_Vis_Leav,
+				sim_param["ResProbLeav"], sim_param["VisReward"],
+				sim_param["ResReward"], sim_param["inbr"], sim_param["outbr"],
+				learnScenario(sim_param["scenario"]));
+		cleaners[emp_data[id_data_point].group]->update();
+			if (trial > int(sim_param["totRounds"]) * float(sim_param["propfullPrint"])) {
+				if (cleaners[emp_data[id_data_point].group]->getstate(0) == 0) {
+					++countRVopt;
+					if (cleaners[emp_data[id_data_point].group]->
+						cleanOptionsT[cleaners[emp_data[id_data_point].group]->getChoice(0)] == visitor) 
+						++VisPref;
 				}
 			}
-			if (countRVopt == 0) emp_data[id_data_point].marketPred = 0.5;
-			else emp_data[id_data_point].marketPred = VisPref / countRVopt;
-			Cleaner.rebirth();
 		}
+		if (countRVopt == 0) emp_data[id_data_point].marketPred = 0.5;
+		else emp_data[id_data_point].marketPred = VisPref / countRVopt;
+		cleaners[emp_data[id_data_point].group]->rebirth();
+	//}
 	}
 	delete[] clientSet;
+	return;
+}
+
+void checkGroups(vector<cleaner_point> &data,bool groups) {
+	if (!groups) {
+		vector<cleaner_point>::iterator dataIt;
+		for (dataIt = data.begin(); dataIt < data.end(); ++dataIt)
+			dataIt->group = 0;
+	}
 	return;
 }
 
@@ -1097,7 +1112,7 @@ int main(int argc, char* argv[]){
 	//sim_param["propfullPrint"]       = 0.7;
 	//sim_param["sdPert"]       = {0.05, 0.05 ,0.15 ,0.1, 10}; 
 	//// alphaA, alphaC, Gamma, NegRew,scaleConst
-	//sim_param["chain_length"]       = 10000;
+	//sim_param["chain_length"]       = 1000;
 	//sim_param["init"]       = {0.05, 0.05 , 0.93,0.02, 58};
 	// //alphaA, alphaC, gamma, NegRew, scaleConst
 	//sim_param["pertScen"] = {false,false,true,true,true};
@@ -1106,7 +1121,8 @@ int main(int argc, char* argv[]){
 	//sim_param["data"] = "clean"; // "loc", "clean"
 	//sim_param["nRep"] = 30 ;
 	//sim_param["folder"]       = "M:/Projects/Clean.ActCrit/Simulations/ABCtest_/";
-	//sim_param["dataFile"] = "M:/Projects/Clean.ActCrit/Data/data_ABC_cleaner_absolute.txt";
+	//sim_param["dataFile"] = "M:/Projects/Clean.ActCrit/Data/data_ABC_cleaner_abs_threa1.5.txt";
+	//sim_param["Group"] = false;
 
 	////ifstream marketData ("E:/Projects/Clean.ActCrit/Data/data_ABC.txt");
 	
@@ -1116,15 +1132,8 @@ int main(int argc, char* argv[]){
 	if (parameters.fail()) { cout << "JSON file failed" << endl; }
 	json sim_param = nlohmann::json::parse(parameters);
 	
-
-	
+	// Set random seed
 	rnd::set_seed(sim_param["seed"]);
-
-		
-
-	//enum model {model1, model2, model3, model4}; // Some sort of model choice
-	//model focal_model = sim_param["model"]; // this would be nice
-
 	
 	//vector< data_point > emp_data = read_Data(marketData); 
 	ifstream marketData(sim_param["dataFile"].get<std::string>());//("I:/Projects/Clean.ActCrit/Data/data_ABC_site.txt");
@@ -1136,12 +1145,16 @@ int main(int argc, char* argv[]){
 	if (sim_param["data"] == "loc") emp_data_loc = read_locData(marketData);
 	else emp_data_clean = read_CleanData(marketData);
 
+	checkGroups(emp_data_clean, sim_param["Group"]);
+
 	// read the data structured by locations
 	model_param init_parameters; 
 	init_parameters.alphaA = sim_param["init"][0];
 	init_parameters.alphaC = sim_param["init"][1];
-	init_parameters.gamma = sim_param["init"][2];
-	init_parameters.negReward = sim_param["init"][3];
+	init_parameters.gamma[0] = sim_param["init"][2];
+	init_parameters.negReward[0] = sim_param["init"][3];
+	init_parameters.gamma[1] = sim_param["init"][2];
+	init_parameters.negReward[1] = sim_param["init"][3];
 	init_parameters.scaleConst = sim_param["init"][4];
 
 	model_param focal_param = init_parameters;
@@ -1180,32 +1193,32 @@ int main(int argc, char* argv[]){
 		for (int r = 0; r < sim_param["chain_length"]; ++r) {  // 
 			//cout << "Iteration	" << r << endl;
 			model_param new_param = perturb_parameters_uniform(focal_param, sim_param);
-			if ((new_param.gamma < 1 && new_param.gamma > -1) &&
-				((new_param.negReward <= INFINITY && new_param.negReward >= -INFINITY) &&
-				(new_param.scaleConst <= INFINITY && new_param.scaleConst > 0))) {
-				if (sim_param["data"] == "loc") {
-					do_simulation(//focal_model, 
-						emp_data_loc, focal_param, sim_param);
-					curr_loglike = calculate_fit(emp_data_loc);
-					do_simulation(//focal_model, 
-						emp_data_loc, new_param, sim_param);
-					new_loglike = calculate_fit(emp_data_loc);
-				}
-				else {
-					do_simulation(//focal_model, 
-						emp_data_clean, focal_param, sim_param);
-					curr_loglike = calculate_fit(emp_data_clean);
-					do_simulation(//focal_model, 
-						emp_data_clean, new_param, sim_param);
-					new_loglike = calculate_fit(emp_data_clean);
-				}
-				ratio = 1;// calcTransProbRatio(focal_param, new_param, sim_param);
+			//if ((new_param.gamma < 1 && new_param.gamma > -1) &&
+			//	((new_param.negReward <= INFINITY && new_param.negReward >= -INFINITY) &&
+			//	(new_param.scaleConst <= INFINITY && new_param.scaleConst > 0))) {
+			if (sim_param["data"] == "loc") {
+				do_simulation(//focal_model, 
+					emp_data_loc, focal_param, sim_param);
+				curr_loglike = calculate_fit(emp_data_loc);
+				do_simulation(//focal_model, 
+					emp_data_loc, new_param, sim_param);
+				new_loglike = calculate_fit(emp_data_loc);
 			}
+			else {
+				do_simulation(//focal_model, 
+					emp_data_clean, focal_param, sim_param);
+				curr_loglike = calculate_fit(emp_data_clean);
+				do_simulation(//focal_model, 
+					emp_data_clean, new_param, sim_param);
+				new_loglike = calculate_fit(emp_data_clean);
+			}
+				//ratio = 1;// calcTransProbRatio(focal_param, new_param, sim_param);
+			/*}
 			else
 			{
 				new_loglike = -INFINITY, ratio = 1;
-			} 
-			ratio *= exp(new_loglike - curr_loglike);
+			}*/ 
+			ratio = exp(new_loglike - curr_loglike);
 			if(ratio==INFINITY) 
 				wait_for_return();
 			// better fit is larger, so ratio is > 1, so accept all.
@@ -1216,9 +1229,12 @@ int main(int argc, char* argv[]){
 			outfile << r << "\t";
 			outfile << focal_param.alphaA << "\t"
 				<< focal_param.alphaC << "\t"
-				<< focal_param.gamma << "\t"
-				<< focal_param.negReward << "\t"
-				<< focal_param.scaleConst << "\t"
+				<< focal_param.gamma[0] << "\t"
+				<< focal_param.negReward[0] << "\t";
+			if(sim_param["Group"])
+				outfile << focal_param.gamma[1] << "\t"
+				<< focal_param.negReward[1] << "\t";
+			outfile	<< focal_param.scaleConst << "\t"
 				<< curr_loglike << "\t";
 			outfile << ratio << endl;
 		}

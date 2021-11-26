@@ -14,6 +14,7 @@ library(ggdist)
 library(bayesplot) 
 library(lattice)
 source(here("../R_files/posPlots.R"))
+source(here("loadData.R"))
 library("jsonlite")
 
 # simdir<-"D:/Neuch_simulations/ABCfit/Simulations/"
@@ -211,8 +212,10 @@ nullLikehood<-sum(dbinom(x=fieldData[,score_visitor],
 
 loglikehoods.both[,Rsqrd:=1-lglikelihood/nullLikehood]
 
+loglikehoods.both[,model:=factor(model,levels=c("gam","Nrew","both"))]
+
 ggplot(data=loglikehoods.both[is.finite(lglikelihood)],
-       aes(fill=model,x=lglikelihood))+
+       aes(fill=model,x=lglikelihood,y=model))+
   stat_halfeye(alpha=0.4)+theme_classic()+xlim(-750,-400) +
   # scale_fill_manual(values=c("#d73027", "#4575b4"))+
   geom_vline(xintercept = nullLikehood,color="red")
@@ -221,16 +224,16 @@ ggplot(data=loglikehoods.both[is.finite(lglikelihood)],
 df.Rsqrd.mode<-data.table(model=c("both","gam"),
                           Rsqr=c(rsqr.both.McFadden,rsqr.gam.McFadden))
 
-rsqr.both<-ggplot(data=loglikehoods.both[is.finite(lglikelihood)],aes(fill=model,x=Rsqrd))+
-  stat_halfeye(alpha=0.5,point_size=3)+theme_classic()+xlim(-0.5,0.3)+
+rsqr.both<-
+  ggplot(data=loglikehoods.both[is.finite(lglikelihood)],
+                  aes(y=model,x=Rsqrd,fill=model))+
+  stat_halfeye(alpha=0.5,point_size=3)+
+  theme_classic()+xlim(-0.5,0.3)+
   scale_fill_manual(values=c("#1b9e77","#d95f02","#7570b3"),
-                    name = "Model", labels = c("Full", "Future reward","Negative reward"))+
-  
-  # geom_vline(data=df.Rsqrd.mode,aes(xintercept = Rsqr,color=model),size=1)+
-  scale_color_manual(values=c("#d73027", "#4575b4"),
-                     name = "Model", labels = c("Full", "Only future reward"))+
+  name = "Model", labels = c("Future reward","Negative reward","Full"))+
   geom_vline(xintercept = 0,color="black",size=1)+
-  theme(legend.position = c(.25, .80),legend.key.size = unit(0.5,'cm'))
+  theme(legend.position = c(.25, .80),legend.key.size = unit(0.5,'cm'),
+        axis.text.y = element_blank())
 
 png(here("post_both_gamma.png"),width = 700,height = 800)
 
@@ -271,8 +274,8 @@ plot_grid(nrow=3,align = "v",byrow = FALSE,
             scale_fill_manual(values=c("gray85","skyblue","gray85"))+
             labs(subtitle = "Scalling const.",x="",y="")+
             theme_classic(),
-          rsqr.both+labs(subtitle = expression(pseudo-R^2),x="",y="")+
-          theme(legend.position = c(.25, .55)),
+          rsqr.both+labs(subtitle = expression(pseudo-R^2),x="",y=""),
+          # theme(legend.position = c(.25, .55)),
           # ggplot(data=MCMCdata1,aes(x=Rsqrd))+
           #   geom_density(alpha=0.6)+theme_classic()+xlim(-0.5,0.3)+
           #   scale_fill_manual(values=c("#d7191c", "#4575b4"))+

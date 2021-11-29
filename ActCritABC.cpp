@@ -1039,44 +1039,45 @@ void do_simulation(//del focal_model,
 	abs2rel_abund(emp_data, focal_comb);
 	// Loop through the data points
 	for (int id_data_point = 0; id_data_point < emp_data.size(); ++id_data_point) {
-		/*if (id_data_point > 0 &&
-			emp_data[id_data_point].site_year == emp_data[id_data_point - 1].site_year) {
+		if (id_data_point > 0 &&
+			(emp_data[id_data_point].site_year == emp_data[id_data_point - 1].site_year &&
+			emp_data[id_data_point].group == emp_data[id_data_point - 1].group)) {
 			emp_data[id_data_point].marketPred = emp_data[id_data_point - 1].marketPred;
 		}
 		else
-		{*/
-		init = focal_comb.gamma[emp_data[id_data_point].group]*
-			(1 - pow(1 -
-				emp_data[id_data_point].rel_abund_resid -
-				emp_data[id_data_point].rel_abund_visitors, 2)) / 
-				(1 - focal_comb.gamma[emp_data[id_data_point].group]);
-		cleaners[emp_data[id_data_point].group]->rebirth(init);
-		draw(clientSet, sim_param["totRounds"],
-			emp_data[id_data_point].rel_abund_resid,
-			emp_data[id_data_point].rel_abund_visitors);
-		idClientSet = 0;
-		VisPref = 0, countRVopt = 0;
-		// Loop through the learning rounds
-		for (int trial = 0; trial < sim_param["totRounds"]; ++trial) {
-			cleaners[emp_data[id_data_point].group]->
-				act(clientSet, idClientSet, emp_data[id_data_point].prob_Vis_Leav,
-				sim_param["ResProbLeav"], sim_param["VisReward"],
-				sim_param["ResReward"], sim_param["inbr"], sim_param["outbr"],
-				learnScenario(sim_param["scenario"]));
-		cleaners[emp_data[id_data_point].group]->update();
-			if (trial > int(sim_param["totRounds"]) * float(sim_param["propfullPrint"])) {
-				if (cleaners[emp_data[id_data_point].group]->getstate(0) == 0) {
-					++countRVopt;
-					if (cleaners[emp_data[id_data_point].group]->
-						cleanOptionsT[cleaners[emp_data[id_data_point].group]->getChoice(0)] == visitor) 
-						++VisPref;
+		{
+			init = focal_comb.gamma[emp_data[id_data_point].group]*
+				(1 - pow(1 -
+					emp_data[id_data_point].rel_abund_resid -
+					emp_data[id_data_point].rel_abund_visitors, 2)) / 
+					(1 - focal_comb.gamma[emp_data[id_data_point].group]);
+			cleaners[emp_data[id_data_point].group]->rebirth(init);
+			draw(clientSet, sim_param["totRounds"],
+				emp_data[id_data_point].rel_abund_resid,
+				emp_data[id_data_point].rel_abund_visitors);
+			idClientSet = 0;
+			VisPref = 0, countRVopt = 0;
+			// Loop through the learning rounds
+			for (int trial = 0; trial < sim_param["totRounds"]; ++trial) {
+				cleaners[emp_data[id_data_point].group]->
+					act(clientSet, idClientSet, emp_data[id_data_point].prob_Vis_Leav,
+					sim_param["ResProbLeav"], sim_param["VisReward"],
+					sim_param["ResReward"], sim_param["inbr"], sim_param["outbr"],
+					learnScenario(sim_param["scenario"]));
+			cleaners[emp_data[id_data_point].group]->update();
+				if (trial > int(sim_param["totRounds"]) * float(sim_param["propfullPrint"])) {
+					if (cleaners[emp_data[id_data_point].group]->getstate(0) == 0) {
+						++countRVopt;
+						if (cleaners[emp_data[id_data_point].group]->
+							cleanOptionsT[cleaners[emp_data[id_data_point].group]->getChoice(0)] == visitor) 
+							++VisPref;
+					}
 				}
 			}
+			if (countRVopt == 0) emp_data[id_data_point].marketPred = 0.5;
+			else emp_data[id_data_point].marketPred = VisPref / countRVopt;
+			cleaners[emp_data[id_data_point].group]->rebirth();
 		}
-		if (countRVopt == 0) emp_data[id_data_point].marketPred = 0.5;
-		else emp_data[id_data_point].marketPred = VisPref / countRVopt;
-		cleaners[emp_data[id_data_point].group]->rebirth();
-	//}
 	}
 	delete[] clientSet;
 	return;
@@ -1112,7 +1113,7 @@ int main(int argc, char* argv[]){
 	//sim_param["propfullPrint"]       = 0.7;
 	//sim_param["sdPert"]       = {0.05, 0.05 ,0.15 ,0.1, 10}; 
 	//// alphaA, alphaC, Gamma, NegRew,scaleConst
-	//sim_param["chain_length"]       = 1000;
+	//sim_param["chain_length"] = 100;
 	//sim_param["init"]       = {0.05, 0.05 , 0.93,0.02, 58};
 	// //alphaA, alphaC, gamma, NegRew, scaleConst
 	//sim_param["pertScen"] = {false,false,true,true,true};
@@ -1281,5 +1282,7 @@ int main(int argc, char* argv[]){
 		}
 		
 	}
-		return 0;
+	mark_time(0);
+	//wait_for_return();
+	return 0;
 }

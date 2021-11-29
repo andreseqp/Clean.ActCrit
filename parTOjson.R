@@ -194,7 +194,7 @@ param_mcmc<-list(totRounds=10000,ResReward=1,VisReward=1,
                 ResProbLeav=0,scenario=0, 
                 #nature, experiment, marketExperiment, ExtendedMarket
                 inbr=0,outbr=0,forRat=0.0,
-                seed=1, propfullPrint = 0.7,sdPert=c(0.05,0.05,0.3,4,300),
+                seed=1, propfullPrint = 0.7,sdPert=c(0.05,0.05,0.25,2,200),
                 chain_length=100000,
                 init=c(0.05,0.05,0,0,30),# alphaA,AlphaC, Gamma, NegRew
                 pertScen = c(FALSE,FALSE,TRUE,TRUE,TRUE), 

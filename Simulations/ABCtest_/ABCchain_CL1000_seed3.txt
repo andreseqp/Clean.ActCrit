@@ -1,1 +1,0 @@
-iteration	alpha_actor	alpha_critic	gamma	negReward	scaleConst	fit	ratio

@@ -19,7 +19,7 @@ library("jsonlite")
 
 # simdir<-"D:/Neuch_simulations/ABCfit/Simulations/"
 
-scen1<-"MCMCclean_gam_Nrew_sca_"
+scen1<-"MCMCclean_gam_nRew_sca_group_"
 scen2<-"MCMCclean_gam_sca_"
 scen3<-"MCMCclean_nRew_sca_"
 
@@ -32,7 +32,7 @@ MCMCdata2<-loadMCMCrun(scen2)
 MCMCdata3<-loadMCMCrun(scen3)
 
 # One per onject
-ABCraw<-fread(here("Simulations",scen,ABCruns[3]))
+ABCraw<-fread(here("Simulations",scen1,"MCMCchain_CL100000_seed1.txt"))
 
 # Defaults
 burn.in<-1000
@@ -449,7 +449,7 @@ lines(y=predict.lm(mod1.2,data.frame(negReward=seq(0,5,length=1000))),
 # ABCraw<-fread(ABCruns[3])
 ABCraw<-fread(here("Simulations",scen,ABCruns[2]))
 
-ABC.mcmc<-mcmc(ABCraw[,.(gamma,negReward,scaleConst)])
+ABC.mcmc<-mcmc(ABCraw[,.(gamma,gamma.1,negReward,negReward.1,scaleConst)])
 effectiveSize(ABC.mcmc)
 
 (sumMCMC<-summary(ABC.mcmc))
@@ -463,6 +463,7 @@ HPDinterval(ABC.mcmc)
 raftery.diag(ABC.mcmc)
 autocorr(ABC.mcmc)
 rejectionRate(ABC.mcmc)
+gelman.plot(ABC.mcmc)
 
 hist(ABC.mcmc[,1],breaks = 100)
 hist(ABC.mcmc[,2],breaks = 100)

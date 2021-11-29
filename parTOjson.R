@@ -10,7 +10,7 @@ exedir<-'/./ActCrit.exe'
 
 fileName<-"parameters.json"
 
-scenario<-"ABCclean_nRew_sca"
+scenario<-"MCMCclean_gam_nRew_sca_group_"
 
 
 
@@ -168,7 +168,7 @@ for (k in 1:90) print(y)
 
 # MCMC fit - Generate json parameter files for -------------------------------------
 
-scenario<-"MCMCclean_Nrew_sca"
+scenario<-"MCMCclean_gam_nRew_sca_group"
 
 filesList<-list.files(here("Simulations",scenario),full.names = TRUE)
 
@@ -194,12 +194,13 @@ param_mcmc<-list(totRounds=10000,ResReward=1,VisReward=1,
                 ResProbLeav=0,scenario=0, 
                 #nature, experiment, marketExperiment, ExtendedMarket
                 inbr=0,outbr=0,forRat=0.0,
-                seed=1, propfullPrint = 0.7,sdPert=c(0.05,0.05,0.3,4,300),
+                seed=1, propfullPrint = 0.7,sdPert=c(0.05,0.05,0.25,2,200),
                 chain_length=100000,
                 init=c(0.05,0.05,0,0,30),# alphaA,AlphaC, Gamma, NegRew
-                pertScen = c(FALSE,FALSE,FALSE,TRUE,TRUE), 
+                pertScen = c(FALSE,FALSE,TRUE,TRUE,TRUE), 
                 MCMC =1, data="clean",nRep=1,
-                  dataFile = here("Data","data_ABC_cleaner_absolute.txt"),
+                Group = TRUE,
+                dataFile = here("Data","data_ABC_cleaner_abs_threa1.5.txt"),
                   # here("Simulations",
                   #                 paste0(scenario,"_"),"data_MCMC_fake.txt"))
                 ##here("Data","data_ABC_site_20.txt")
@@ -211,7 +212,7 @@ check_create.dir(here(simsDir),param = rep(scenario,1),
 
 for(seed in 1:5){
   param_mcmc$folder<-param_mcmc$folderL
-  param_mcmc$init<-c(0.05,0.05,0,runif(1,max = 2,min = 0),#runif(1,max = 0.6),0
+  param_mcmc$init<-c(0.05,0.05,runif(1,max = 0.6),runif(1,max = 2,min = 0),#,0
                      runif(1,max = 300,min = 5))
                      ##runif(1,max = 50,min = 5))
   param_mcmc$seed <- seed

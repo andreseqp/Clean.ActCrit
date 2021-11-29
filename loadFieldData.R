@@ -19,13 +19,6 @@ fieldData.site<-fieldData[,lapply(.SD,max),by=site_year,
                           .SDcols=c("abundance_large_100m2","abundance_small_100m2",
                                    "abundance_cleaners_100m2","percentage_swim_off")]
 
-fieldData.site %>%
-  ggplot(aes(y=percentage_swim_off,x=abundance_cleaners_100m2))+
-  geom_point()+geom_smooth(method=lm)+
-  theme_classic()
-model.ml<-lm(data = fieldData.site,percentage_swim_off~abundance_cleaners_100m2)
-anova(model.ml)
-summary(model.ml)
 
 fieldData.cleaner<-read_xlsx(here("Data","market_raw_data.xlsx"),sheet = "round_data")
 
@@ -77,19 +70,33 @@ fieldData.sum[,cleaner_ID:=gsub(" ",replacement = "",x = cleaner_ID)]
 
 str(fieldData.sum)
 
-fieldData.sum %>%
-  ggplot(aes(x=abund.cleaners,y=score_visitor))+
-  geom_point()+theme_classic()
+threashold<-1.5
 
+fieldData.sum[,highDens:=abund.cleaners>threashold]
+fieldData.sum[,visPref:=sapply(score_visitor,function(x){
+  binom.test(x,n=20,p=0.5,alternative = "greater")$p.value<0.05
+})]
+fieldData.sum[,competence:=highDens+visPref!=1]
+
+
+
+fieldData.sum %>%
+  ggplot(aes(x=abund.cleaners,y=score_visitor,color=competence))+
+  geom_point()+geom_vline(xintercept = 1.5)+
+  scale_color_manual(values=c("#999999", "#E69F00"))+
+  theme_classic()
+
+fieldData.sum[,sum(competence)]
 
 fieldData.site %>%
   ggplot(aes(x=abundance_cleaners_100m2,fill=score_visitor,y=prob.Vis.Leav))+
   geom_point()+theme_classic()
 
-
 setorder(fieldData.sum,site.year)
 
-fwrite(fieldData.sum,here("data",paste0("data_ABC_cleaner_absolute.txt")),
+fieldData.sum[,`:=`(highDens=NULL,visPref=NULL,competence=as.integer(competence))]
+
+fwrite(fieldData.sum,here("data",paste0("data_ABC_cleaner_abs_threa",threashold,".txt")),
        row.names = FALSE,sep = "\t")
 
 rep(runif(12,min = range(fieldData.sum$abund.cleaners)[1],

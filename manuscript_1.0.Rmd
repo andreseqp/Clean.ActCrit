@@ -74,10 +74,11 @@ visitors have been observed to use their partner choice options in that
 way [@bshary_Choosy_2002], which may explain why cleaners give
 visitors service priority in a field study in the Red Sea
 [@bshary_Cleaner_2001a]. More generally, cleaners apparently prefer to
-interact with visitors [@triki_Zeni_inpress]. Such a preference may be
+interact with visitors [@triki_Marine_2021]. Such a preference may be
 linked to a client's value as a food patch; visitors are on average
 larger than residents [ @bshary_Cleaner_2001a], and size is positively
-correlated with parasite load(Grutter xxxx). However, early laboratory
+correlated with parasite load [@grutter_Relationship_1995a]. However, 
+early laboratory
 experiments showed that leaving causes service priority independent of
 client value [@bshary_Asymmetric_2002]. The experiments consisted of a
 simultaneous two-choice task, where cleaners had to decide which of two
@@ -144,7 +145,8 @@ model, this could be achieved in two non-mutually exclusive ways
 future effects and/or through perceiving a visitor client leaving as
 psychological punishment (i.e. as a negative reinforcer). Given that a
 negative reinforcer is part of the ubiquitous learning mechanism termed
-operant conditioning (Thorndike 1917), this explanation can be
+operant conditioning [@thorndike_Animal_1898; @skinner_Behavior_1938], 
+this explanation can be
 considered the simpler one. Furthermore, accounting for the future
 effects of an action is considered an advanced cognitive ability
 [@suddendorf_Evolution_2007]. Here, we fitted our model to the empirical
@@ -232,23 +234,26 @@ simulations and the MCMC see Table \ref{tab:param}
 In order to capture with the model the relationship between the
 characteristics of the market (environment) and the cleaner's
 performance we need to translate the absolute abundances of the data to
-relative abundances. This is because in the model, relative abundances
+to  a measure of relative abundances that captures client visitation patterns.
+This is because in the model, relative abundances
 of clients define not only the probability of residents and visitors,
 but also how often the cleaning station is empty (e.g. there are no
 clients to be cleaned). The more cleaners there are, the more options
 are available for the clients and hence the higher is the probability of
 empty cleaning stations. How often the cleaning stations are empty in
 turns influences the value that cleaners can expect from their choices.
-The emptier the cleaning stations are, the more benefitial it is to
+The emptier the cleaning stations are, the more beneficial it is to
 prioritize a client that will not stay. However, the frequency of empty
-spots in the cleaning station does not only depend on cleaner relative
-abundances but also on the frequency with which clients visit the
+spots in the cleaning station does not only depend on cleaner abundances 
+but also on the frequency with which clients visit the
 station. The client visitation frequency will likely vary among
 different clients depending on parasite abundances and loads. These are
 variables for which we do not have field estimates. Thus, we computed a
 measure of relative cleaner abundance for each site relative to absolute
 abundances and multiplied by a scaling constant that changes the range
-of the variable. We fit the value of the scaling constant as part of the
+of the variable. This scaling constant is meant to capture variation in the market 
+conditions driven partly by cleaner abundance. We fit the value of the 
+scaling constant as part of the
 statistical inference. As for the client abundances for residents and
 visitors we computed a relative measure with respect to the total client
 abundance, and weighted that by the rescaled relative absence of

@@ -777,7 +777,7 @@ void initializeRoundFile(ofstream& RoundOutput, nlohmann::json param,
 			<< "prob.Vis.Leav	"
 			<< "market_binomial_data	"
 			<< "market_binomial_pred	"
-			<< "competence	" << endl;
+			<< "competence" << endl;
 	}
 	else{
 		RoundOutput << "site_year	"
@@ -787,7 +787,8 @@ void initializeRoundFile(ofstream& RoundOutput, nlohmann::json param,
 			<< "rel.abund.residents	"
 			<< "prob.Vis.Leav	"
 			<< "visitorChoices	"
-			<< "visitorChoices_pred" << endl;
+			<< "visitorChoices_pred	"
+			<< "competence" << endl;
 	}
 	
 }
@@ -814,7 +815,7 @@ void printRoundFile(ofstream& roundOut, const std::vector<cleaner_point>& emp_da
 			emp_data[id_data_point].prob_Vis_Leav << '\t' <<
 			emp_data[id_data_point].countVisitor << '\t' <<
 			emp_data[id_data_point].marketPred << '\t' << 
-			emp_data[id_data_point].group << '\t' << endl;
+			emp_data[id_data_point].group << endl;
 	}
 }
 
@@ -1115,15 +1116,16 @@ int main(int argc, char* argv[]){
 	//// alphaA, alphaC, Gamma, NegRew,scaleConst
 	//sim_param["chain_length"] = 100;
 	//sim_param["init"]       = {0.05, 0.05 , 0.93,0.02, 58};
+	//sim_param["init2"] =	{ 0.05, 0.05 , 0.93,0.02, 58 };
 	// //alphaA, alphaC, gamma, NegRew, scaleConst
 	//sim_param["pertScen"] = {false,false,true,true,true};
 	////enum perturnScen {all,  bothFut, justGam, justNegRew};
-	//sim_param["MCMC"] = 1;
+	//sim_param["MCMC"] = 0;
 	//sim_param["data"] = "clean"; // "loc", "clean"
 	//sim_param["nRep"] = 30 ;
 	//sim_param["folder"]       = "M:/Projects/Clean.ActCrit/Simulations/ABCtest_/";
 	//sim_param["dataFile"] = "M:/Projects/Clean.ActCrit/Data/data_ABC_cleaner_abs_threa1.5.txt";
-	//sim_param["Group"] = false;
+	//sim_param["Group"] = true;
 
 	////ifstream marketData ("E:/Projects/Clean.ActCrit/Data/data_ABC.txt");
 	
@@ -1244,6 +1246,10 @@ int main(int argc, char* argv[]){
 		//wait_for_return();
 	}
 	else {
+		if (sim_param["Group"]) {
+			init_parameters.gamma[1] = sim_param["init2"][2];
+			init_parameters.negReward[1] = sim_param["init2"][3];
+		}
 		if (sim_param["data"] == "loc") {
 			ofstream roundOut;
 			initializeRoundFile(roundOut, sim_param, init_parameters);

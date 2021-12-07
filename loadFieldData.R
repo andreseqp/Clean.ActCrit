@@ -80,13 +80,27 @@ fieldData.sum[,competence:=highDens+visPref!=1]
 
 
 
-fieldData.sum %>%
-  ggplot(aes(x=abund.cleaners,y=score_visitor,color=competence))+
+absplot<-fieldData.sum %>%
+  ggplot(aes(x=abund.cleaners,y=score_visitor,
+             color=as.factor(competence)))+
   geom_point()+geom_vline(xintercept = 1.5)+
   scale_color_manual(values=c("#999999", "#E69F00"))+
+  labs(color="Competence")+geom_jitter()+
+  geom_text(x=1.7,y=2,label="Threshold",inherit.aes = FALSE)+
   theme_classic()
 
-fieldData.sum[,sum(competence)]
+ratioPlot<-fieldData.sum %>%
+  ggplot(aes(x=abund.cleaners/(abund.visitors+abund.visitors),y=score_visitor,
+             color=as.factor(competence)))+
+  geom_point()+#geom_vline(xintercept = 1.5)+
+  scale_color_manual(values=c("#999999", "#E69F00"))+
+  labs(color="Competence")+geom_jitter(width = 0.0005)+
+  theme_classic()
+
+png(here("threshold.png"))
+ggarrange(absplot,ratioPlot,labels = c("a","b"),common.legend = TRUE,ncol = 1)
+dev.off()
+
 
 fieldData.site %>%
   ggplot(aes(x=abundance_cleaners_100m2,fill=score_visitor,y=prob.Vis.Leav))+

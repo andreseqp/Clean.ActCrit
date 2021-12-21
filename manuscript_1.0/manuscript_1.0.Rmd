@@ -1,42 +1,90 @@
 ---
 title: Combination of field and experimental data together with computational models 
   reveal cognitive mechanisms behind cleaner fish behaviour
+#Cognitive and ecological aspects determine cleaner performance
 author:
-- Andrés E. Quiñones^[Institute of Biology, University of Neuchâtel, Neuchâtel, Switzerland - andresqp@gmail.com]
-- Zegni Triki^[Department of Zoology, Stockholm University, Stockholm, Sweden]
-- Redouan Bshary^[Institute of Biology, University of Neuchâtel, Neuchâtel, Switzerland]
-date: "`r format(Sys.time(), '%B %d, %Y')`"
-output:
-  word_document: default
-  pdf_document: default
-fig_caption: yes
-fontsize: 12pt
-header-includes:
-- \usepackage{float}
-- \usepackage{setspace}\doublespacing
-- \linespread{2}
-- \usepackage{lineno}
-- \linenumbers
-- \newcommand{\beginsupplement}{ \setcounter{table}{0} \renewcommand{\thetable}{S\arabic{table}}
-  \setcounter{figure}{0} \renewcommand{\thefigure}{S\arabic{figure}}}
-keep_tex: yes
-linespread: 2
-bibliography: Cleaner_learning.bib
-style: M:\Zotero\styles\behavioral-ecology-and-sociobiology.csl
-spacing: double
-abstract: The same behaviour can be achieved by different mechanistic underpinnings. But the environmental conditions under which the behaviour is triggered might differ between these potential mechanisms. Thus, by analyzing the varitation of expression of a certain behavior across environmental gradients, it is possible to infer which mechanism is behind the behaviour of interest. To do this it is necessary to have clearcut predictions for the different candidate mechanisms. In here, we use experimental data on the behaviour of the cleaner fish *Labroides* *dimidiatus*, as well as enviromental variables from the location of fish, together with a computational model of the learning mechanisms. Using bayesian statistics, we fit key parameters of the computational model that determine the specific learning mechanism. We find that a model where cleaners estimate the long-term consequences of their actions, and use the estimate in their desicion making, explains better under which conditions the fish develop a preference for an ephemeral food source in the context of a biological market. We argue that the combination of computational models with data is powerful tool to infer the mechanistic underpinning behind behaviours of interest. 
-keywords: "learning, behaviour, cleaners, bayesian statisitics"
-editor_options:
-  markdown:
-    wrap: 80
+  - name: Andrés E. Quiñones 
+    affiliation: "1"
+  - name: Zegni Triki
+    affiliation: "2"
+  - name: Redouan Bshary
+    affiliation: "1"
+address:
+  - code: "1"
+    address: Institute of Biology, University of Neuchâtel, Neuchâtel, Switzerland
+  - code: "2"
+    address: Department of Zoology, Stockholm University, Stockholm, Sweden
+
+corresp_author_name:  "AE. Quiñones"
+corresp_author_email: "andreseqp@gmail.com"
+
+subject:
+  - "Behavioural ecology"
+  - "Cognitive ecology"
+  - "Animal behaviour"
+
+keywords:
+  - learning   
+  - cleaners
+  - behaviour
+  - bayesian statisitics
+  - mutualism
+
+abstract: |
+  The same behaviour can be achieved by different mechanistic underpinnings. But the environmental conditions under which the behaviour is triggered might differ between these potential mechanisms. Thus, by analyzing the varitation of expression of a certain behavior across environmental gradients, it is possible to infer which mechanism is behind the behaviour of interest. To do this it is necessary to have clearcut predictions for the different candidate mechanisms. In here, we use experimental data on the behaviour of the cleaner fish *Labroides* *dimidiatus*, as well as enviromental variables from the location of fish, together with a computational model of the learning mechanisms. Using bayesian statistics, we fit key parameters of the computational model that determine the specific learning mechanism. We find that a model where cleaners estimate the long-term consequences of their actions, and use the estimate in their desicion making, explains better under which conditions the fish develop a preference for an ephemeral food source in the context of a biological market. We argue that the combination of computational models with data is powerful tool to infer the mechanistic underpinning behind behaviours of interest. 
+
+## Remove this if not required
+ethics: |
+  The Animal Ethics Committee of the Queensland government (DAFF)
+  approved the project (CA 2016/05/970 and CA 2017/05/1063).
+  
+data_accessibility: |
+  Please provide details on the data availability.
+
+author_contributions: |
+  AQ and RB designed the study. ZT collected the data. AQ developed the model and 
+  fitted the model parameters to the data. AQ, RB and ZT wrote the manuscript. 
+
+## Remove this if not required
+conflict_of_interest: |
+  The authors declate no conflict of interests.
+
+## Remove this if not required
+funding: |
+  This work was supported by the Swiss National Science Foundation (grants
+  number: 31003A_153067/1 and 310030B_173334/1 to R.B.).
+
+
+## Remove this if not required
+acknowledgements: |
+  ZT and RB kindly thank the staff of Lizard Island Research Station, Dominique
+  Roche, Sharon Wismer, Olivia Rey,Sandra Ann Binning, Elena Levorato and William McNeely for their
+  field support. AQ thanks Florian Hartig for statistical advice.
+
+bibliography: Cleanerlearning.bib
+
+## change to true to add optional line numbering
+lineno: true
+
+header-includes: |
+  ```{=latex}
+  \usepackage{float}
+  \usepackage{booktabs}
+  \newcommand{\beginsupplement}{ \setcounter{table}{0}     \renewcommand{\thetable}{S\arabic{table}}\setcounter{figure}{0} \renewcommand{\thefigure}{S\arabic{figure}}}
+  ```
+site: bookdown::bookdown_site
+output: 
+  bookdown::pdf_book:
+    base_format: rticles::rsos_article
 ---
+
+
+## Introduction
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
 library(here)
 ```
-
-## Introduction
 
 Cooperation among individuals of the same or different species is
 ubiquitous in nature. Among individuals of different species it
@@ -46,7 +94,7 @@ interactions such as pollination, nitrogen fixation or parasite removal
 are able to choose their interaction partner, their investment and the
 return they obtain can be understood as a biological market
 [@hammerstein_Biological_2016; @leimar_Cooperation_2010;
-@noe_Biological_1994a,@noe_Biological_1995a]. Thus, we expect supply
+@noe_Biological_1994a;@noe_Biological_1995a]. Thus, we expect supply
 and demand of the good and services being exchanged to determine the
 action of individuals, at least in an evolutionary time-scale. However,
 supply and demand conditions of a biological market, which typically
@@ -62,7 +110,7 @@ cleaning mutualism involving the cleaner fish *Labroides dimidiatus* and
 'client' fish. Clients offer themselves as food patches for cleaners to
 remove ectoparasites, which gives the cleaners calories and the clients
 improved health [@waldie_LongTerm_2011;
-@ros_Does_2011,@triki_Effects_2016]. As cleaners have about 2000
+@ros_Does_2011;@triki_Effects_2016]. As cleaners have about 2000
 interactions per day [@grutter_Relationship_1995], they regularly face
 the situation that two clients seek cleaning simultaneously. In such
 conditions, it is important to distinguish between 'resident' and
@@ -99,7 +147,7 @@ access in the *L. dimidiatus* cleaning mutualism, and as a consequence
 performance in the biological market task. First, details of the task
 presentation may matter; i.e. what relevant information is encoded in
 the design of the two plates (colour versus size;
-@wismer_Cuebased_2019), or whether the information is in the colour of
+[@wismer_Cuebased_2019]), or whether the information is in the colour of
 the food [@pretot_Comparative_2021; @pretot_Comparing_2016], and
 whether the food is visible or hidden/released only when the subjects
 made choices on a touch screen [@pretot_Factors_2016]. Second, it
@@ -127,7 +175,7 @@ decision-making [@shettleworth_Cognition_2009].
 One approach to identify candidate mechanisms underlying performance in
 a cognitive task is to develop proximate learning models and to evaluate
 their predictions in light of the behavioural data (e.g.
-@dubois_Model_2021). By varying the cognitive tool kit, one can assess
+[@dubois_Model_2021]). By varying the cognitive tool kit, one can assess
 which minimal kit is necessary to solve the task at hand. This approach
 has been used to analyse the market task [@prat_Role_2021;
 @quinones_Reinforcement_2019]. Learning models showed that basic
@@ -159,8 +207,8 @@ incorporate future consequences of current decisions.
 
 ### Overview
 
-We used the data from @triki_Biological_2019 to fit the parameters of
-the model analysed in @quinones_Reinforcement_2019. For the bayesian
+We used the data from [@triki_Biological_2019] to fit the parameters of
+the model analysed in [@quinones_Reinforcement_2019]. For the bayesian
 fitting procedure we used Markov Chain Monte Carlo (MCMC) with a
 Metropolis sampler to estimate the posterior distribution of the model
 parameters. The data consist a of the number of times that a set of
@@ -208,8 +256,8 @@ and using for decision making the future expected rewards in action.
 Second, $\eta$ measures how much individuals include in their reward the
 fleeing behaviour of visitor clients as a negative component. Both of
 these parameters allow individuals to use in their estimates the future
-effects of their choices. The model analysis by
-@quinones_Reinforcement_2019 shows that without either of them, learning
+effects of their choices. The model analysis by Quiñones *et al*
+[@quinones_Reinforcement_2019] shows that without either of them, learning
 individuals cannot develop a preference for the visitor client. The
 analysis contrast the effect of these two parameters against variation
 in the relative abundance of the two client types. The analysis shows
@@ -218,10 +266,10 @@ rewards ($\gamma>0$) no longer favours the preference for the ephemeral
 clients, this effect does not occur with negative reward mediated by
 client behaviour ($\eta$). Thus, the analysis suggests that future
 reward as an explanation for cleaner ability to prefer visitors is
-supported by @triki_Biological_2019 data. However, a combination of
+supported by Triki *et al* [@triki_Biological_2019] data. However, a combination of
 future and negative rewards, could still be a better explanation for the
 data. In the current analysis, we will use the data from
-@triki_Biological_2019 to fit some of the model parameters, particularly
+[@triki_Biological_2019] to fit some of the model parameters, particularly
 relevant we will fit $\gamma$ and $\eta$ to find out whether each or a
 combination of these effects is a better explanation for the pattern
 seen in the data. For other parameter values used for the model
@@ -398,8 +446,8 @@ cells than individuals whose performance mismatched locally optimal
 decision-rules [@triki_Brain_2020]. This suggests that despite the
 overall behavioural adjustment, evidenced here and elsewhere
 [@triki_Biological_2019; @triki_Decrease_2018], there are some
-cleaners better than others at adjusting their behaviour.
-@triki_Brain_2020 refer to these as socially competent cleaners. Social
+cleaners better than others at adjusting their behaviour. Triki *et al.*
+[@triki_Brain_2020] refer to these as socially competent cleaners. Social
 competence refers to the ability to optimise social behaviour depending
 on the available social information [@taborsky_Social_2012a;
 @bshary_Cooperation_2015]. However, we have shown here that cleaners
@@ -418,7 +466,7 @@ generally, an important challenge ahead is to understand which cognitive
 mechanisms evolved exclusively for social life.
 
 One potential difference between cleaners that adjusted adaptively, like
-the ones reported in @triki_Brain_2020, is configurational learning or
+the ones reported in Triki *et al.* [@triki_Brain_2020], is configurational learning or
 chunking. The original analysis of the learning model showed that agents
 needed two mechanism to solve the market task; to account for the
 future, and to assign value to the combination of clients present in the
@@ -451,31 +499,28 @@ enhancement. Such strict conditions are virtually never met. For
 example, potato washing by Japanese macaques, an iconic example of
 social learning, took several years to spread within the group
 [@kawamura_Process_1959], meaning that any learner had been repeatedly
-exposed to demonstrations before acquisition. Importantly,
-@galef_Question_1992 refuted imitation as mechanism not simply because
+exposed to demonstrations before acquisition. Importantly, Galef
+[@galef_Question_1992] refuted imitation as mechanism not simply because
 of the repeated exposure but because a (rather qualitative) analysis of
 the spread of potato washing across individuals did not follow the
 prediction based on imitation learning (see also
-@hirata_SweetPotato_2001). In our case, the number of trials it took
+[@hirata_SweetPotato_2001]). In our case, the number of trials it took
 cleaners to learn the solution to the market task would never allow to
 exclude an important role of negative reinforcement based on the data
 alone. However, fitting model predictions to our data set revealed that
 a more complex mechanism (estimation of future reward) fits the data
 better.
 
-## Cited literature
-
-::: {#refs}
-:::
 
 \newpage
 
 # Supplementary material
 
+
 ```{=tex}
 \beginsupplement
 ```
-```{r nogamma, fig.cap="Observed and predicted probability of choosing a visitor for a model without future rewards. Left-hand side panel: color contour shows the prediction of the learning model using the mode of the posterior distributions of parameters recovered by the statistical analysis. Dots show the frequency of visitor choices for the 12 locations, as well as the corresponding relative cleaner abundance (x axis) and frequency of visitors leaving the station (y axis). Right-hand side panel: scatter plot of the observed and predicted probabilities of choosing a visitor for 12 locations. Line correspond to a perfect match between observed and predicted probabilities.",out.width='90%'}
+```{r nogamma, fig.cap="Observed and predicted probability of choosing a visitor for a model without future rewards. Left-hand side panel: color contour shows the prediction of the learning model using the mode of the posterior distributions of parameters recovered by the statistical analysis. Dots show the frequency of visitor choices for the 12 locations, as well as the corresponding relative cleaner abundance (x axis) and frequency of visitors leaving the station (y axis). Right-hand side panel: scatter plot of the observed and predicted probabilities of choosing a visitor for 12 locations. Line correspond to a perfect match between observed and predicted probabilities.",out.width='90%',fig.pos = 'H', out.extra = ""}
 fileNogamma<-grep("contour_gamma_",list.files(here("Simulations","MCMCclean_nRew_sca_"),
                                               full.names = TRUE),value = TRUE)
 knitr::include_graphics(fileNogamma)
@@ -499,4 +544,3 @@ knitr::include_graphics(fileNogamma)
 ')
 
 ```
-

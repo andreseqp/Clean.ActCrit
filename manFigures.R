@@ -82,7 +82,6 @@ fieldatabyLoc.gam
 myPalette <- colorRampPalette(rev(brewer.pal(11, "Spectral")))
 sc <- scale_colour_gradientn(colours = myPalette(100), limits=c(0,0.8))
 
-typeof(sc)
 
 obs.both<-ggplot(data = fieldatabyLoc.both, 
             aes(x=re.abund.clean, y=prob.Vis.leave,color=probVisi.data))+

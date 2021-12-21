@@ -1,4 +1,4 @@
-Data for Quniones, Triki and Bshary entitled: " "
+Data for Quiñones, Triki and Bshary entitled: " "
 
 Please refer to the manuscript for context, data collection methods and statistical analyses.
 

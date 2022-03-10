@@ -4,22 +4,14 @@
 ActCrit.cpp
 ===============================================================================
 
-This is the main file of the project exploring a simple learning model in the
-context of the cleaner wrasse mutualism. 
-The model uses the actor-critic methods from reinforcement learning, 
-to teach an agent to solve the market expertiment that cleaners face in 
-experimental trials. In the market experiment individuals are offered two 
-options of clients to clean. This options can be a visitor, a resident, or 
-the absence of clients. The difference between the two types of 
-clients is that visitors leave the cleaning station when they are not served, 
-while residents wait; thus, are available in the next time step.There are two 
-types of agent. Fully Aware Agents (FAA) estimate value for 
-9 state-action pairs. In contrast, partially Aware agents 
-(PAA) estimate value for 3 potential actions. 
+ Main file of a project to use data to fit parameter values in a learning model.
+ The fit is done using a Markov Chain Monte Carlo. Address of the data file
+ and parameter values for the MCMC arer provided to the executable file through 
+ a JSON file. The output of the executable is either the MCMC data or a data file 
+ including predictions from the computational model. 
 
-
-
-
+ 
+ 
 Written by:
 
 Andr�s E. Qui�ones
@@ -41,7 +33,6 @@ Start date:
 #include <fstream>
 #include <omp.h>
 #include "../Cpp/Routines/C++/RandomNumbers/random.h"
-//H for house pc, E for laptop, M for office
 #include "../Cpp/json.hpp"       
 // Header for reading and using JSON files see https://github.com/nlohmann/json
 
@@ -1264,7 +1255,8 @@ int main(int argc, char* argv[]){
 				}
 			}
 			for (int j = 0; j < emp_data_loc.size(); ++j)
-				emp_data_loc[j].marketPred = average_prediction[j] / sim_param["nRep"];
+				emp_data_loc[j].marketPred = 
+				average_prediction[j] / double(sim_param["nRep"]);
 			printRoundFile(roundOut, emp_data_loc);
 			roundOut.close();
 		}
@@ -1282,7 +1274,8 @@ int main(int argc, char* argv[]){
 				}
 			}
 			for (int j = 0; j < emp_data_clean.size(); ++j) 
-				emp_data_clean[j].marketPred = average_prediction[j]/sim_param["nRep"];
+				emp_data_clean[j].marketPred = 
+				average_prediction[j]/double(sim_param["nRep"]);
 			printRoundFile(roundOut, emp_data_clean);
 			roundOut.close();
 		}

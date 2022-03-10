@@ -18,12 +18,12 @@ library("jsonlite")
 
 # simdir<-"D:/Neuch_simulations/ABCfit/Simulations/"
 
-scen1<-"MCMCclean_gam_nRew_sca_group_"
-scen2<-"MCMCclean_gam_sca_group_"
-scen3<-"MCMCclean_gam_sca_"
+scen1<-"MCMCclean_gam_nRew_sca_"
+scen2<-"MCMCclean_gam_sca_"
+scen3<-"MCMCclean_nRew_sca_"
 
-labels.Scen<-c("both.group","gam.group","gam")
-labelsPlot.Scen<-c("Full grouped","Future reward grouped","Future reward")
+labels.Scen<-c("both","gam","negReward")
+labelsPlot.Scen<-c("Full","Future reward ","Negative reward")
 
 ## Load files --------------------------------------------------------------
 
@@ -46,33 +46,32 @@ ABCraw<-fread(here("Simulations",scen1,"MCMCchain_CL100000_seed1.txt"))
 # All in a list
 mcmcList.1<-mcmc.list(do.call(list,lapply(unique(MCMCdata1$seed), function(repli){
   rundata<-MCMCdata1[seed==repli]
-  mcmcRun<-mcmc(rundata[,.(gamma,gamma.1,negReward,negReward.1,scaleConst)],thin = thinning)#
-  return(mcmcRun)
-})))
-
-mcmcList.2<-mcmc.list(do.call(list,lapply(unique(MCMCdata2$seed), function(repli){
-  rundata<-MCMCdata2[seed==repli]
-  mcmcRun<-mcmc(rundata[,.(gamma,gamma.1,scaleConst)],thin = thinning)#
-  return(mcmcRun)
-})))
-
-
-mcmcList.2<-mcmc.list(do.call(list,lapply(unique(MCMCdata2$seed), function(repli){
-  rundata<-MCMCdata2[seed==repli]
   mcmcRun<-mcmc(rundata[,.(gamma,negReward,scaleConst)],thin = thinning)#
+  return(mcmcRun)
+})))
+
+# mcmcList.2<-mcmc.list(do.call(list,lapply(unique(MCMCdata2$seed), function(repli){
+#   rundata<-MCMCdata2[seed==repli]
+#   mcmcRun<-mcmc(rundata[,.(gamma,gamma.1,scaleConst)],thin = thinning)#
+#   return(mcmcRun)
+# })))
+
+
+mcmcList.2<-mcmc.list(do.call(list,lapply(unique(MCMCdata2$seed), function(repli){
+  rundata<-MCMCdata2[seed==repli]
+  mcmcRun<-mcmc(rundata[,.(gamma,scaleConst)],thin = thinning)#
   return(mcmcRun)
 })))
 
 
 mcmcList.3<-mcmc.list(do.call(list,lapply(unique(MCMCdata3$seed), function(repli){
   rundata<-MCMCdata3[seed==repli]
-  mcmcRun<-mcmc(rundata[,.(gamma,negReward,scaleConst)],thin = 100)#
+  mcmcRun<-mcmc(rundata[,.(negReward,scaleConst)],thin = 100)#
   return(mcmcRun)
 })))
 
 
 ## Base R plots -----------------------------------------------------------------
-
 
 
 ## get original parameter values from the simulations
@@ -192,22 +191,22 @@ cuts.1<-lapply(MCMCdata1[,.(gamma,negReward,scaleConst)],
                  mode_hdci(x,.width = c(.66,.95))$ymax)  
 })
 
-cuts.1<-lapply(MCMCdata1[,.(gamma,gamma.1,negReward,negReward.1,scaleConst)],
+# cuts.1<-lapply(MCMCdata1[,.(gamma,gamma.1,negReward,negReward.1,scaleConst)],
+#                function(x){
+#                  c(mode_hdci(x,.width = c(0.95,.66))$ymin,
+#                    mode_hdci(x,.width = c(.66,.95))$ymax)  
+#                })
+
+cuts.2<-lapply(MCMCdata2[,.(gamma,scaleConst)],
+               function(x){
+                 c(mode_hdi(x,.width = c(0.95,.66))$ymin,
+                   mode_hdi(x,.width = c(.66,.95))$ymax)  
+               })
+
+cuts.3<-lapply(MCMCdata3[,.(negReward,scaleConst)],
                function(x){
                  c(mode_hdci(x,.width = c(0.95,.66))$ymin,
                    mode_hdci(x,.width = c(.66,.95))$ymax)  
-               })
-
-cuts.2<-lapply(MCMCdata2[,.(gamma,gamma.1,negReward,scaleConst)],
-               function(x){
-                 c(mode_hdi(x,.width = c(0.95,.66))$ymin,
-                   mode_hdi(x,.width = c(.66,.95))$ymax)  
-               })
-
-cuts.3<-lapply(MCMCdata3[,.(gamma,scaleConst)],
-               function(x){
-                 c(mode_hdi(x,.width = c(0.95,.66))$ymin,
-                   mode_hdi(x,.width = c(.66,.95))$ymax)  
                })
 
 
@@ -237,19 +236,16 @@ ggplot(data=loglikehoods.both[is.finite(lglikelihood)],
   geom_vline(xintercept = nullLikehood,color="red")
 
 
-df.Rsqrd.mode<-data.table(model=c("both","gam"),
-                          Rsqr=c(rsqr.both.McFadden,rsqr.gam.McFadden))
-
 rsqr.both<-
   ggplot(data=loglikehoods.both[is.finite(lglikelihood)],
                   aes(y=model,x=Rsqrd,fill=model))+
   stat_halfeye(alpha=0.5,point_size=3)+
-  theme_classic()+xlim(-0.5,0.3)+
+  theme_classic()+xlim(-0.5,0.25)+
   scale_fill_manual(values=c("#1b9e77","#d95f02","#7570b3"),
-  name = "Model", labels = c(labelsPlot.Scen[1],"Future reward \n grouped",
-                             labelsPlot.Scen[3]))+
+  name = "Model", labels = labelsPlot.Scen)+
   geom_vline(xintercept = 0,color="black",size=1)+
-  theme(legend.position = c(.3, .80),legend.key.size = unit(0.4,'cm'),
+  labs(subtitle = expression(pseudo-R^2),x="",y="")+
+  theme(legend.position = c(.2, .50),legend.key.size = unit(0.4,'cm'),
         axis.text.y = element_blank())
 
 rsqr.both
@@ -322,6 +318,48 @@ plot_grid(nrow=3,align = "v",byrow = TRUE,
           labels=c('a','b','c','d','e','f','g','h','i')
 )
 
+gam.both.post<-ggplot(data=MCMCdata1,aes(x=gamma)) + 
+  stat_halfeye(aes(fill=stat(cut(x,breaks = cuts.1$gamma))),
+               point_interval = mode_hdi, .width = c(.66, .95),
+               point_size=3,show.legend=FALSE) + 
+  labs(title=labelsPlot.Scen[1],
+       subtitle = expression(gamma),x="",y="")+
+  theme_classic()+
+  scale_fill_manual(values=c("gray85","skyblue","gray85"))
+nrew.both.post<-ggplot(data=MCMCdata1,aes(x=negReward)) + 
+  stat_halfeye(aes(fill=stat(cut(x,breaks = cuts.1$negReward))),
+               point_interval = mode_hdi, 
+               .width = c(.66, .95),point_size=3,
+               show.legend=FALSE)+theme_classic()+
+  scale_fill_manual(values=c("gray85","skyblue","gray85"))+
+  labs(title="",subtitle = expression(eta),x="",y="")+
+  xlim(-2,2)
+gam.gam.post<-ggplot(data=MCMCdata2,aes(x=gamma)) +
+  stat_halfeye(aes(fill=stat(cut(x,breaks = cuts.2$gamma))),
+               point_interval = mode_hdi, .width = c(.66, .95),
+               point_size=3,
+               show.legend=FALSE) +
+  scale_fill_manual(values=c("gray85","skyblue","gray85"))+
+  labs(title=labelsPlot.Scen[2],
+       subtitle = expression(gamma),x="",y="")+
+  theme_classic()
+nrew.nrew.post<-ggplot(data=MCMCdata3,aes(x=negReward)) +
+  stat_halfeye(aes(fill=stat(cut(x,breaks = cuts.3$negReward))),
+               point_interval = mode_hdi, .width = c(.66, .95),
+               point_size=3,
+               show.legend=FALSE) +
+  scale_fill_manual(values=c("gray85","skyblue","gray85"))+
+  labs(title=labelsPlot.Scen[3],
+       subtitle = expression(gamma),x="",y="")+
+  theme_classic()+xlim(-2,2)
+
+first.col<-plot_grid(nrow=3,align = "v",byrow = TRUE,
+          gam.both.post,gam.gam.post,nrew.nrew.post,           
+          labels=c('a','c','d'))
+second.col<-plot_grid(nrow = 2,align = "v",byrow = TRUE,
+          nrew.both.post,rsqr.both,rel_heights = c(1,2),
+          labels = c('b','e'))
+plot_grid(ncol = 2,first.col,second.col)
 
 
 dev.off()

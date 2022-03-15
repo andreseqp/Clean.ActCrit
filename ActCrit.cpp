@@ -123,6 +123,8 @@ public:
 protected:
 	double values[6];																							
 	// array storing the estimated values of states 
+	double alphas[6];
+	// array storing the speed of learning
 	double delta;
 	double piV;
 	double theta[2]; // policy parameters
@@ -405,17 +407,59 @@ void agent::act(client newOptions[], int &idNewOptions, double &VisProbLeav,
 	choice();
 }
 
-void agent::update(){																								
+void agent::update() {
 	// change estimated value according to TD error
 	// change policy parameter according to TD error
-	int currState = mapOptions(cleanOptionsT,choiceT);
+	int currState = mapOptions(cleanOptionsT, choiceT);
 	int nextState = mapOptions(cleanOptionsT1, choiceT);
-	delta = currentReward +
-		negReward*neta + gamma*values[nextState] - values[currState];
+	double totValcurr, totValfut;
+	// if there is a compound stimuli, calculate total value
+	bool compoundCurr = cleanOptionsT[0] == absence ||
+		cleanOptionsT[1] == absence;
+	if (compoundCurr)
+		totValcurr = values[currState];
+	else totValcurr = values[cleanOptionsT[0]] + values[cleanOptionsT[1]];
+	if (cleanOptionsT1[0] == absence || cleanOptionsT1[1] == absence)
+		totValfut = values[nextState];
+	else totValfut = values[cleanOptionsT1[0]] + values[cleanOptionsT1[1]];
+	delta = currentReward +	negReward*neta + gamma*totValfut - totValcurr;
 	// construct the TD error
-	values[currState] += alpha*delta;
-	// update value
+	if (compoundCurr) {
+		values[cleanOptionsT[0]] += alphas[0]*delta;
+		values[cleanOptionsT[1]] += alphas[1]*delta;
+	}
+	else values[currState] += alpha*delta;
 	updateThet(currState);
+	// update values and critic
+}
+
+void agent::updateAlpha(int attenMech, int currState) {
+	// implementation of mechanism of selective attention. Changes in
+	// the speed of learning (\alpha)
+	switch (attenMech)	{
+		case 0: // No mechanism for selective atention
+			break;
+		case 1:
+			if (cleanOptionsT[0] == 0 || cleanOptionsT[1] == 0) {
+
+				alphas[0] = alpha*;
+			}
+			if (cleanOptionsT[0] == 1 || cleanOptionsT[1] == 1) {
+				alphas[1] = ;
+			}
+			// attention (associability) increases for good predictors
+			// Based on @mackintosh_Theory_1975
+			break;
+		case 2:
+			alphas[currState] = ;// attention increases with prediction error
+			// Based on @pearce_Model_1980
+			break;
+		case 3
+			alphas[currState] = ; // hybrid model
+			break;
+		default:
+			break;
+	}
 }
 
 void agent::printIndData(ofstream &learnSeries, int &seed, double &outbr, 
@@ -516,16 +560,16 @@ class FAATyp1 :public agent{			// Fully Aware Agent (FAA)
 class PAATyp1 :public agent{				// Partially Aware Agent (PAA)	
 	public:
 	PAATyp1(double alphaI, double gammaI, double netaI, 
-		double alphaThI, double initVal, double alphaThNchI):agent(alphaI, gammaI,  
+		double alphaThI, double initVal):agent(alphaI, gammaI,  
 			netaI, alphaThI,initVal){
-		alphaThNch = alphaThNchI;
 		numEst = 3;
-		values[3] -= 1;
+		values[2] -= 1;
+		// Value of absence starts with reward of 0
 	}
 	
 	void rebirth(int initVal=1) {
 		rebirth();
-		values[3] -= 1;
+		values[2] -= 1;
 	}
 	int mapOptions(client options[], int &choice){
 		if (options[choice] == resident) { return (0); }
@@ -535,30 +579,16 @@ class PAATyp1 :public agent{				// Partially Aware Agent (PAA)
 	}
 	virtual void updateThet(int curStatAct) {
 		if (curStatAct < 2) {
-			//int notchoice = (choiceT == 0);
 			if (curStatAct == 1) {
-				if (cleanOptionsT[0] == cleanOptionsT[1]) {
-					theta[0] += alphaThNch*alphath*delta*(1 - piV);
-				}
-				else {
-					theta[0] += alphath*delta*(1 - piV);
-				}
-				
+					theta[0] += alphas[0]*delta*(1 - piV);
 			}
 			else {
-				if (cleanOptionsT[0] == cleanOptionsT[1]) {
-					theta[1] += alphaThNch*alphath*delta*piV;
-				}
-				else {
-					theta[1] += alphath*delta*piV;
-				}
-				
+					theta[1] += alphas[1]*delta*piV;
 			}
 			piV = logist();
 		}
 	}
-	private:
-		double alphaThNch;
+
 };
 
 // Functions external to the agent
@@ -688,7 +718,7 @@ int main(int argc, char* argv[]){
 	double propfullPrint = param["propfullPrint"];
 	int seed = param["seed"];
 	const double forRat = param["forRat"];
-	double alphaThNch = param["alphaThNch"];
+
 	
 	rnd::set_seed(seed);
 
@@ -720,7 +750,7 @@ int main(int argc, char* argv[]){
 
 							   // Initialize agents
 								learners[1] = new PAATyp1(alphaT, *itg, *itn,
-									*italTh, init, alphaThNch);
+									*italTh, init);
 								learners[0] = new FAATyp1(alphaT, *itg, *itn, 
 									*italTh, init);
 								// output of learning trials

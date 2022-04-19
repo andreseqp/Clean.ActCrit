@@ -70,7 +70,7 @@ public:
 	// constructor providing values for the learning parameters
 	~agent();																
 	// destructor not really necessary
-	void update();
+	void update(int attenMech);
 	// function that updates the value of state-action pairs according to 
 	//current reward and estimates of future values
 	void act(client newOptions[], int &idNewOptions, double &VisProbLeav, 
@@ -102,6 +102,9 @@ public:
 	void getExtenededMarket();
 	// Get new clients in the experimental setting of Noa's experiment
 	void ObtainReward(double &ResReward, double &VisReward);
+	// Calculate new \alpha (associability) for each stimuli
+	void updateAlpha(int attenMech, int currState, double totValcurr,
+		double lambda);
 	// Get reward
 	double logist();
 	int mapOptionsDP(client options[], int &choice);			
@@ -116,6 +119,7 @@ public:
 	// function that maps state action pairs to indexes in the array 'values' 
 	//where values are stored
 	virtual void updateThet(int curState) = 0;
+	virtual void rebirth_a(double init) = 0;
 	// function to update the policy parameter Theta
 	int numEst;
 	// Number of estimates characterizing bhavioural options 9 for FAA
@@ -151,7 +155,10 @@ agent::agent(double alphaI = 0.01, double gammaI = 0.5,
 	theta[0] = 0, theta[1] = 0;
 	numEst = 6;
 	delta = 0;
-	for (int i = 0; i < numEst; i++) { values[i] = 1+initVal; }
+	for (int i = 0; i < numEst; i++) { 
+		values[i] = initVal; 
+		alphas[i] = alphaI;
+	}
 	// assigned educated initial values. Reward + guess of 
 	//the expected future reward
 	values[5] -= 1;
@@ -174,8 +181,10 @@ void agent::rebirth(double initVal = 0)
 	choiceT = 0, choiceT1 = 0;
 	currentReward = 0;
 	cumulReward = 0;
-	for (int i = 0; i < numEst; i++) { values[i] = 1 + initVal; }
-	values[5] -= 1;
+	for (int i = 0; i < numEst; i++) { 
+		values[i] = initVal; 
+		alphas[i] = alpha;
+	}
 	piV = logist();
 	delta = 0;
 	theta[0] = 0, theta[1] = 0;
@@ -407,33 +416,40 @@ void agent::act(client newOptions[], int &idNewOptions, double &VisProbLeav,
 	choice();
 }
 
-void agent::update() {
+void agent::update(int attenMech) {
 	// change estimated value according to TD error
 	// change policy parameter according to TD error
 	int currState = mapOptions(cleanOptionsT, choiceT);
 	int nextState = mapOptions(cleanOptionsT1, choiceT);
-	double totValcurr, totValfut;
+	double totValcurr, totValfut, lambda;
 	// if there is a compound stimuli, calculate total value
-	bool compoundCurr = cleanOptionsT[0] == absence ||
+	bool singleStiCurr = cleanOptionsT[0] == absence ||
 		cleanOptionsT[1] == absence;
-	if (compoundCurr)
+	if (singleStiCurr)
 		totValcurr = values[currState];
 	else totValcurr = values[cleanOptionsT[0]] + values[cleanOptionsT[1]];
 	if (cleanOptionsT1[0] == absence || cleanOptionsT1[1] == absence)
 		totValfut = values[nextState];
 	else totValfut = values[cleanOptionsT1[0]] + values[cleanOptionsT1[1]];
-	delta = currentReward +	negReward*neta + gamma*totValfut - totValcurr;
+	// Lambda: observed reward, including the estimate of future reward
+	lambda = currentReward + negReward * neta + gamma * totValfut;
+	delta = lambda - totValcurr;
 	// construct the TD error
-	if (compoundCurr) {
+	if (!singleStiCurr) {
 		values[cleanOptionsT[0]] += alphas[0]*delta;
 		values[cleanOptionsT[1]] += alphas[1]*delta;
 	}
 	else values[currState] += alpha*delta;
+	if (isinf(alphas[0] + alphas[1])) {
+		wait_for_return();
+	}
+	updateAlpha(attenMech, currState, totValcurr, lambda);
 	updateThet(currState);
 	// update values and critic
 }
 
-void agent::updateAlpha(int attenMech, int currState) {
+void agent::updateAlpha(int attenMech, int currState, double totValcurr,
+			double lambda) {
 	// implementation of mechanism of selective attention. Changes in
 	// the speed of learning (\alpha)
 	switch (attenMech)	{
@@ -441,21 +457,30 @@ void agent::updateAlpha(int attenMech, int currState) {
 			break;
 		case 1:
 			if (cleanOptionsT[0] == 0 || cleanOptionsT[1] == 0) {
-
-				alphas[0] = alpha*;
+				alphas[0] = alpha*(abs(lambda - totValcurr)-
+					abs(lambda-values[0]));
+				clip_low(alphas[0], 0);
+				if (isnan(alphas[0])) {
+					wait_for_return();
+				}
 			}
 			if (cleanOptionsT[0] == 1 || cleanOptionsT[1] == 1) {
-				alphas[1] = ;
+				alphas[1] = alpha * (abs(lambda - totValcurr) -
+					abs(lambda - values[1]));
+				clip_low(alphas[1], 0);
+				if (isnan(alphas[0])) {
+					wait_for_return();
+				}
 			}
 			// attention (associability) increases for good predictors
 			// Based on @mackintosh_Theory_1975
 			break;
 		case 2:
-			alphas[currState] = ;// attention increases with prediction error
+			//alphas[currState] = ;// attention increases with prediction error
 			// Based on @pearce_Model_1980
 			break;
-		case 3
-			alphas[currState] = ; // hybrid model
+		case 3:
+			//alphas[currState] = ; // hybrid model
 			break;
 		default:
 			break;
@@ -473,16 +498,14 @@ void agent::printIndData(ofstream &learnSeries, int &seed, double &outbr,
 	learnSeries << theta[1] << '\t' << outbr << '\t';
 	learnSeries << cleanOptionsT[0] << '\t' << cleanOptionsT[1] << '\t';
 	learnSeries << cleanOptionsT[choiceT] << '\t';
-	//cout << cleanOptionsT[0] << '\t' << cleanOptionsT[1] << '\t' << choiceT << '\t';
 	learnSeries << currentReward << '\t' << cumulReward << '\t' << negReward << '\t';
-	//cout << currentReward << '\t' << cumulReward << '\t';
 	for (int j = 0; j < numEst; j++)
 	{
 		learnSeries << values[j] << '\t';
-		//cout << values[j] << '\t';
+		learnSeries << alphas[j] << '\t';
 	}
 	learnSeries << endl;
-	//cout << endl;
+
 }
 
 double agent::logist() { return (1 / (1 + exp(-(theta[0]-theta[1]))));}
@@ -555,6 +578,10 @@ class FAATyp1 :public agent{			// Fully Aware Agent (FAA)
 			piV = logist();
 		}
 	}
+	virtual void rebirth_a (double init = 0) {
+		rebirth(init);
+		values[5] -= 1;
+	}
 };
 
 class PAATyp1 :public agent{				// Partially Aware Agent (PAA)	
@@ -563,14 +590,15 @@ class PAATyp1 :public agent{				// Partially Aware Agent (PAA)
 		double alphaThI, double initVal):agent(alphaI, gammaI,  
 			netaI, alphaThI,initVal){
 		numEst = 3;
-		values[2] -= 1;
+		values[2] = 0;
 		// Value of absence starts with reward of 0
 	}
 	
-	void rebirth(int initVal=1) {
-		rebirth();
-		values[2] -= 1;
+	virtual void rebirth_a(double initVal=1) {
+		rebirth(initVal);
+		values[2] = 0;
 	}
+
 	int mapOptions(client options[], int &choice){
 		if (options[choice] == resident) { return (0); }
 		else if (options[choice] == visitor) { return(1); }
@@ -581,9 +609,11 @@ class PAATyp1 :public agent{				// Partially Aware Agent (PAA)
 		if (curStatAct < 2) {
 			if (curStatAct == 1) {
 					theta[0] += alphas[0]*delta*(1 - piV);
+					theta[1] -= alphas[0] * delta * (1 - piV);
 			}
 			else {
 					theta[1] += alphas[1]*delta*piV;
+					theta[0] -= alphas[1] * delta * piV;
 			}
 			piV = logist();
 		}
@@ -655,8 +685,9 @@ void initializeIndFile(ofstream &indOutput, agent &learner,
 		indOutput << "RR" << '\t' << "VV" << '\t' << "00_" << '\t';
 	}
 	else {
-		indOutput << "Resident" << '\t' << "Visitor" << '\t';
-		indOutput << "Absence" << '\t';
+		indOutput << "Resident" << '\t' << "alphaRes" << '\t'
+			<< "Visitor" << '\t' << "alphaVis" << '\t'
+			<< "Absence" << '\t' << "alphaAbs" << '\t';
 	}
 	indOutput << endl;
 }
@@ -672,7 +703,7 @@ int main(int argc, char* argv[]){
 	// input parameters provided by a JSON file with the following
 	// structure:
 
-	/*json param;
+	json param;
 	param["totRounds"]    = 20000;
 	param["ResReward"]    = 1;
 	param["VisReward"]    = 1;
@@ -681,25 +712,29 @@ int main(int argc, char* argv[]){
 	param["ResProbLeav"]  = 0;
 	param["VisProbLeav"]  = 1;
 	param["negativeRew"]  = -0.5;
-	param["experiment"]   = false;
+	param["scenario"]     = 0;
+	//param["experiment"]   = false;
 	param["inbr"]         = 0;
 	param["outbr"]        = 0;
 	param["trainingRep"]  = 10;
 	param["alphaT"]       = 0.01;
+	param["numlearn"]     = 1;
+	param["propfullPrint"] = 0.7;
 	param["printGen"]     = 1;
 	param["seed"]         = 1;
 	param["forRat"]       = 0.0;
 	param["alphThRange"]  = { 0 };
-	param["gammaRange"]   = {  0.8 };
+	param["gammaRange"]   = { 0, 0.5,0.8};
 	param["netaRange"]    = { 0 };
 	param["alphaThRange"] = { 0.01 };
-	param["folder"]       = "S:/quinonesa/Simulations/actCrit/test_/";
-	param["initVal"]      = 1;*/
+	param["folder"]       = "E:/Projects/Clean.ActCrit/Simulations/test_/";
+	param["initVal"]      = 1;
+	param["attenMech"] = 1;
 
 	
-	ifstream input(argv[1]);
+	/*ifstream input(argv[1]);
 	if (input.fail()) { cout << "JSON file failed" << endl; }
-	json param = nlohmann::json::parse(input);
+	json param = nlohmann::json::parse(input);*/
 	
 	// Pass on parameters from JSON to c++
 	int const totRounds = param["totRounds"];
@@ -749,9 +784,9 @@ int main(int argc, char* argv[]){
 								double init = tmpGam*(1 - pow(1 - tmpRes - tmpVis, 2)) / (1 - tmpGam);
 
 							   // Initialize agents
-								learners[1] = new PAATyp1(alphaT, *itg, *itn,
+								learners[0] = new PAATyp1(alphaT, *itg, *itn,
 									*italTh, init);
-								learners[0] = new FAATyp1(alphaT, *itg, *itn, 
+								learners[1] = new FAATyp1(alphaT, *itg, *itn, 
 									*italTh, init);
 								// output of learning trials
 								ofstream printTest;
@@ -769,7 +804,7 @@ for (int k = 0; k < numlearn; ++k) {
 				VisProbLeav, ResProbLeav, VisReward,
 				ResReward, inbr, outbr, negativeRew,
 				scenario);
-			learners[k]->update();
+			learners[k]->update(int(param["attenMech"]));
 			// print the last tenth of the interations
 			// or every printGen rounds
 			if (j > totRounds*propfullPrint) {
@@ -781,7 +816,7 @@ for (int k = 0; k < numlearn; ++k) {
 					outbr, *itVisProb, *itResProb);
 			}
 		}
-		learners[k]->rebirth(init);
+		learners[k]->rebirth_a(init);
 	}
 
 	printTest.close();

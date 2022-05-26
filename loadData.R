@@ -112,8 +112,11 @@ getParam<-function(folder,agent,listparam=NULL,values=NULL){
 # divides raw data in interval according to interV and calculates 
 # the RV preference is such interval
 
-file2timeInter<-function(filename,interV,maxAge=-2){
-  extPar<-strsplit(filename,split ="_/")[[1]][1]
+file2timeInter<-function(filename,interV,maxAge=-2,parOFint){
+  extPar<-strsplit(filename,split ="/")[[1]]
+  extPar<-grep(parOFint,x = extPar,value = TRUE)
+  extPar<-strsplit(extPar,split ="_")[[1]]
+  extPar<-grep(parOFint,x = extPar,value = TRUE)
   parVal<-as.numeric(gsub("[[:alpha:]]",extPar,replacement = ''))
   extPar<-gsub("[[:digit:]]",extPar,replacement = '')
   tmp<-fread(filename,nrows = maxAge+1)
@@ -127,6 +130,20 @@ file2timeInter<-function(filename,interV,maxAge=-2){
     tmptimeInter[,eval(extPar):=parVal]
   }
   return(tmptimeInter)
+}
+
+loadFilewithPar<-function(filename,interV,maxAge=-2,parOFint){
+  extPar<-strsplit(filename,split ="/")[[1]]
+  extPar<-grep(parOFint,x = extPar,value = TRUE)
+  extPar<-strsplit(extPar,split ="_")[[1]]
+  extPar<-grep(parOFint,x = extPar,value = TRUE)
+  parVal<-as.numeric(gsub("[[:alpha:]]",extPar,replacement = ''))
+  extPar<-gsub("[[:digit:]]",extPar,replacement = '')
+  tmp<-fread(filename,nrows = maxAge+1)
+  if(length(extPar)>0){
+    tmp[,eval(extPar):=parVal]
+  }
+  return(tmp)
 }
 
 # Computes RV preference for a certain final proportion of the learning trial --
@@ -224,6 +241,31 @@ loadMCMCrun<-function(scen,burn.in=1000,thinning=100){
   return(filtered)
 }
   
+# Function to recursively filter a list of files
+
+greploop<-function(x,mylist,and=TRUE){
+  newlist<-mylist
+  for(i in x){
+    newlist<-grep(pattern = i,x=newlist,value = TRUE)
+  }
+  return(newlist)
+}
   
+# Function to run simulations from parameter files in a folder -----------------
+
+runSims<-function(scenario){#},filter){
+  l<-grep("parameters",list.files(
+    path = here("Simulations",scenario)),value = TRUE)
+  filepath<-"./runSims2.sh"
+  # filepath<-gsub("M:/",replacement = "/m/",filepath)
+  # x<-paste("bash --login -i -c",
+  #        filepath,scenario,l,sep = " ")
+  # lapply(l, function(x){
+    com<-paste(filepath,scenario,l,sep = " ")
+    system(com)
+  # })
+  return(0)
+}
   
+
   

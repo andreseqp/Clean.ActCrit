@@ -1,0 +1,423 @@
+---
+title: "The role of attention in learning to solve the ephemeral reward task"
+author: "Andres Quiñones"
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+output:  
+  bookdown::pdf_document2:
+     number_sections : false 
+     toc: false 
+bibliography: "../manuscript_1.0/Cleanerlearning.bib"
+keep_tex: yes
+header-includes:
+  - \usepackage{amsmath}
+---
+    
+
+```{r setup,include=FALSE,}
+knitr::opts_chunk$set(echo = FALSE,message = FALSE)
+```
+
+## The model
+
+Just like like in previous versions of the model, we assume that clients that 
+reach the cleaning station of a cleaner fish can be classified into resident 
+or visitors. Up to two of these clients can demand cleaning service simultaneously.
+In such case the cleaner fish must choose which client to clean first. In order to
+make that choice, the cleaner fish estimates a value for each client combination
+that it faces. Hence, each client combination is a **state** in Reinforcement 
+Learning (RL) jargon. In order to update the estimates and use the estimations 
+based on the client types, cleaners must discriminate between 
+the two types and their combinations in the cleaning stations. We, thus, assume
+that each client type is associated with a specific stimulus. The cleaner fish
+stores an estimate of value for each of these stimuli in a look-up table 
+\ref{tab:lookup}. These estimates of individual client values are used independently
+or combined depending on the state of the cleaning station. For example, 
+when the cleaning station only has a resident the estimated value is 
+$S_r$ of the state; while when it has a resident and a visitor the 
+estimated value is $S_r+S_v$. This combination of stimuli to estimate 
+value is in line with classical accounts of associative 
+learning [@rescorla_Theory_1972]. 
+
+The estimation and decision making are structured as in the **actor-critic** 
+implementation in RL. Both the value estimation update (the critic) and the 
+decision making update (the actor), change proportionally to the 
+prediction error ($\delta$)
+
+$$
+\delta^t = R^t + \gamma \sum_{i}^{n^{t+1}} S_i^{t+1} - \sum_{i}^{n^t} S_i^t ,
+$$
+where $t$ and $t+1$ refer to the current and future cleaning 
+interactions respectively; $R$ is the primary reward obtained from the 
+choice made; $\gamma$ is measure of how much future reward 
+influences the estimation process; and the sum terms correspond 
+to the estimate of value made by summing over the client 
+fish present in the corresponding cleaning
+interaction. The total update of the value estimation is given by the product
+of $\delta$ and $\alpha_i$, which can be interpreted as how much 
+attention the cleaner fish pays to each stimuli. The fact that each stimuli 
+can have a different $\alpha_i$ implies that the model implement differential 
+attention. Furthermore, the actual value of $\alpha_i$ may be updated 
+and depend on specific rules, which will be explained later. 
+So, the update rule for the critic is given by
+
+$$ \Delta S_i^t = \alpha^t_i \delta^t.  $$
+
+The decision between resident and visitor is implemented as a probability, 
+which is given by 
+
+$$ \pi_i = \frac{1}{1+e^{-(\theta_i-\theta_j)}}$$
+where $\theta_i$ and $\theta_j$ are the preferences for each of the two 
+available options. These preferences start on zero and are updated on every 
+cleaning interaction where the cleaner fish chooses among of the two
+options according to
+
+$$ \Delta (\theta_i-\theta_j) = \beta_i^t \delta_t2(1-\pi_i)$$
+where $\beta$ is the speed of the actor update and can be also interpreted as 
+the attention that is paid to the respective stimuli in the decision-making
+process. 
+
+```{r lookup}
+lookupTab<-data.frame(client=c("Resident","Visitor","absence"),
+                      Value=c("$S_r$","$S_v$",0))
+knitr::kable(lookupTab,caption = "Look up table where a cleaner fish stores the 
+             estimated values for each client type.",escape=FALSE)
+```
+
+## Attention updates 
+
+In the following sections we explain three different possible rules for 
+the change in the selective attention variables.
+
+### Static attention
+
+As a benchmark we implement first a model where attention is not selective, 
+all stimuli get the same attention and this level of attention does not vary
+as learning proceeds. Figure \ref{fig:bench} shows the dynamics of the 
+resident *vs* visitor choices that agents make along the learning process. 
+The dynamics are discriminated according to how important future reward 
+is in the estimation ($\gamma$). The dynamics show that regardless of the value 
+of $\gamma$ used in the simulations, this set up does not allow cleaner fish 
+to develop a preference for the visitor over the resident. Interestingly, 
+under $\gamma=0$ the learning process leads to a small proference fir the 
+resident option; while with $\gamma>0$ agents stay with a neutral preference.
+
+```{r bench, fig.cap="Dynamics of the resident-visitor choices under a constant and even attention to all the stimuli"}
+library("jsonlite")
+library("here")
+library("ggplot2")
+source(here("loadData.R"))
+source(here("aesth_par.R"))
+
+scenario<-"equalAttAC1";simsDir<-"Simulations"
+listPar<-c("AttMech","alph");listVal<-c(0,0.01)
+
+# param<-list(totRounds=10000,ResReward=1,VisReward=1,
+#             ResProb=c(0.3),
+#             VisProb=c(0.3),
+#             ResProbLeav=0,VisProbLeav=1,negativeRew=-0,
+#             scenario=0,
+#             inbr=0,outbr=0,trainingRep=10,forRat=0.0,
+#             alphaT=0.05,printGen=1,seed=1, gammaRange=I(c(0,0.5,0.8)),
+#             netaRange=I(c(0)),alphaThRange=I(c(0.05)),numlearn=1,
+#             propfullPrint = 0.7,
+#             # alphaThNch=0.01,
+#             attenMech=0, equalAttAC=TRUE,
+#             folderL=paste0(here(simsDir),scenario,"_/"))
+# 
+# check_create.dir(here(simsDir),param = rep(scenario,1),
+#                  values = c(""))
+# 
+# parRange<-c(1)
+# 
+# for(parVal in parRange){
+#   param$folderL<-paste0(here("Simulations",paste0(scenario,"_")),"/")
+#   param$folder<-param$folderL #paste0(folderSims,"/",listfolders[i],"/") 
+#   # param$attenMech<-parVal
+#   outParam<-toJSON(param,auto_unbox = TRUE,pretty = TRUE)
+#   fileName<-paste("parameters_",parVal,".json",sep="") 
+#   if(file.exists(paste(param$folderL,fileName,sep = ''))){
+#     currFile<-fromJSON(paste(param$folderL,fileName,sep = ''))
+#     if(sum(unlist(currFile)!=unlist(param))>0){
+#       write(outParam,paste(param$folderL,fileName,sep = "/"))
+#     }
+#   }
+#   else{
+#     write(outParam,paste(param$folderL,fileName,sep = ""))
+#   }
+# }
+
+# runSims(paste0(scenario,"_"))
+# 
+# system("cd Simulations \n cd staticAtt_ \n ../.././CleanAC. exe parameters:1.json")
+
+
+GamVar<-do.call(rbind,lapply(
+                getFilelist(here("Simulations",paste0(scenario,"_")),
+                            listparam = listPar,
+                            values = listVal,
+                            fullNam = TRUE)$PAA,
+                file2timeInter,interV=501,parOFint="AttMech"))
+        
+ggplot(data = GamVar,aes(x=Interv,y=Prob.RV.V,group=Gamma,
+                         color=as.factor(Gamma)))+
+        stat_summary(fun.data = function(x){
+                x.r<-fivenum(x)
+                return(list(ymin=x.r[2],ymax=x.r[4],y=x.r[3]))
+        },geom ="pointrange",position = position_dodge(0.9))+
+        geom_hline(yintercept = 0.5,color="red")+
+        geom_line(aes(group=interaction(Gamma,Training),
+                  color=as.factor(Gamma)),alpha=0.2,size=0.2,
+                  position = position_dodge(0.9))+
+        scale_color_manual(values =colorValues, name = expression(gamma))+
+        xlab("Time")+ylab("Probability of V over R")+
+        theme_classic()
+```
+
+### The Mackintosh update
+
+@mackintosh_Theory_1975 proposed a model of attentional dynamics, where the 
+central idea is that stimuli which are the best predictors of reward get an
+increase in the attention they enjoy during the learning process. Formally,
+@mackintosh_Theory_1975 defined the attentional update as
+
+
+\begin{align*}
+\Delta \alpha_i &> 0 \text{ if } |\lambda - V_i | <  |\lambda - V_P| \\
+\Delta \alpha_i &< 0 \text{ if } |\lambda - V_i | < |\lambda- V_P|
+\end{align*}
+
+
+Where $\lambda$ is the "real" associative value in a given trial, which translates
+to RL jargon as the reward; $V_i$ is the associative strength of the focal stimulus;
+and $V_p$ is sum of the associative strengths of the stimuli other than the focal. 
+
+Following a notation more in line with the current model, we implemented the 
+@mackintosh_Theory_1975 idea as follows
+
+$$
+\alpha_i^{t+1} = \hat{\alpha}(|R^t + \gamma \sum_{j}^{n^{t+1}} S_j^{t+1}-\sum_{j\neq i}^{n^{t+1}}S_j^{t}|-
+|R^t + \gamma \sum_{j}^{n^{t+1}} S_j^{t+1}-S_i^t|)
+$$
+
+```{r Mackintosh,fig.cap="Dynamics of the resident-visitor choices under a update inspired by @mackintosh_Theory_1975"}
+library(cowplot)
+scenario<-"equalAttAC1"
+listPar<-c("AttMech","alph");listVal<-c(1,0.01)
+list1<-getFilelist(here("Simulations",paste0(scenario,"_")),
+            listparam = listPar,
+            values = listVal,
+            fullNam = TRUE)$PAA
+TimeInterv<-do.call(rbind,lapply(
+                list1,
+                file2timeInter,interV=501,parOFint="AttMech"))
+
+ggplot(data = TimeInterv,aes(x=Interv,y=Prob.RV.V,group=Gamma,
+                         color=as.factor(Gamma)))+
+        stat_summary(fun.data = function(x){
+                x.r<-fivenum(x)
+                return(list(ymin=x.r[2],ymax=x.r[4],y=x.r[3]))
+        },geom ="pointrange",position = position_dodge(0.9))+
+        geom_hline(yintercept = 0.5,color="red")+
+        geom_line(aes(group=interaction(Gamma,Training),
+                  color=as.factor(Gamma)),alpha=0.2,size=0.2,
+                  position = position_dodge(0.9))+
+        scale_color_manual(values =colorValues, name = expression(gamma))+
+        xlab("Time")+ylab("Probability of V over R")+
+        theme_classic()
+
+```
+
+```{r attenDynMac,fig.cap="Dynamics of attention to the different stimuli under the model inspired by  @mackintosh_Theory_1975"}
+# Load raw data
+rawdynamics<-do.call(rbind,lapply(list1,loadFilewithPar,parOFint="AttMech"))
+
+
+# Transform associability (\alpha) data to long format
+long_alpha<-melt(rawdynamics[Age%%200==0],
+                    id.vars = c("Age","Training","Gamma","AttMech"),
+                    variable.name = "Client",
+                    measure.vars = c("alphaRes","alphaVis"))
+
+long_alpha[,Client:=as.factor(Client)]
+
+ggplot(data=long_alpha,aes(x=Age,y=value,colour=Client,
+                              group=as.factor(Client)))+
+        stat_summary(fun.data = function(x){
+                x.r<-fivenum(x)
+                return(list(ymin=x.r[2],ymax=x.r[4],y=x.r[3]))
+        },geom = "pointrange")+
+        geom_line(aes(group=interaction(Client,Training)),
+                  alpha=0.2,size=0.2,)+
+                facet_grid(Gamma~Client,scales = "free_y",
+                           labeller = labeller(Client=NULL))+
+        scale_color_manual(values =colorValues,name="Client",
+                           labels=c("Resident","Visitor"))+
+  scale_y_continuous(sec.axis = sec_axis(~ . , name = expression(gamma),
+                                         breaks = NULL, labels = NULL))+
+      theme_classic()+
+        theme(legend.position = "top",strip.background = element_blank(),
+   strip.text.x = element_blank())
+  
+
+```
+
+
+
+### The Pearce and Hall
+
+@pearce_Model_1980 proposed a model of attentional dynamics, where the 
+central idea is that the level of attention is proportional to the difference
+between the real associative strength and that predicted by the stimulus. 
+Formally, @pearce_Model_1980 defined the attentional update as
+
+$$
+\alpha^t = \rho|\lambda^{t-1}-V^{t-1}_{\sum}| + (1-\rho)\alpha^{t-1},
+$$
+
+where $V_{\sum}^{t-1}$ represents the total associative strength triggered
+by the stimulus; and $\rho$ is a constant that measure how fast are the 
+jumps in attention. 
+
+Following a notation more in line with the current model, we implemented the 
+@pearce_Model_1980 idea as follows
+
+$$
+\alpha_i^{t+1} = \hat{\alpha}|R^t + \gamma \sum_{j}^{n^{t+1}}S_i^{t+1}-S_i^t|
+$$
+
+```{r PandH,fig.cap="Dynamics of the resident-visitor choices under a update inspired by @pearce_Model_1980"}
+scenario<-"equalAttAC1"
+listPar<-c("AttMech","alph");listVal<-c(2,0.01)
+list1<-getFilelist(here("Simulations",paste0(scenario,"_")),
+            listparam = listPar,
+            values = listVal,
+            fullNam = TRUE)$PAA
+GamVar<-do.call(rbind,lapply(list1,
+                file2timeInter,interV=501,parOFint="AttMech"))
+        
+ggplot(data = GamVar,aes(x=Interv,y=Prob.RV.V,group=Gamma,
+                         color=as.factor(Gamma)))+
+        stat_summary(fun.data = function(x){
+                x.r<-fivenum(x)
+                return(list(ymin=x.r[2],ymax=x.r[4],y=x.r[3]))
+        },geom ="pointrange",position = position_dodge(0.9))+
+        geom_hline(yintercept = 0.5,color="red")+
+        geom_line(aes(group=interaction(Gamma,Training),
+                  color=as.factor(Gamma)),alpha=0.2,size=0.2,
+                  position = position_dodge(0.9))+
+        scale_color_manual(values =colorValues, name = expression(gamma))+
+        xlab("Time")+ylab("Probability of V over R")+
+        theme_classic()
+
+```
+
+```{r attenDynPandH,fig.cap="Dynamics of attention to the different stimuli under the model inspired by  @pearce_Model_1980"}
+
+
+# Load raw data
+rawdynamics<-do.call(rbind,lapply(list1,loadFilewithPar,parOFint="AttMech"))
+
+
+# Transform associability (\alpha) data to long format
+long_alpha<-melt(rawdynamics[Age%%200==0],
+                    id.vars = c("Age","Training","Gamma","AttMech"),
+                    variable.name = "Client",
+                    measure.vars = c("alphaRes","alphaVis"))
+
+long_alpha[,Client:=as.factor(Client)]
+
+ggplot(data=long_alpha,aes(x=Age,y=value,colour=Client,
+                              group=as.factor(Client)))+
+        stat_summary(fun.data = function(x){
+                x.r<-fivenum(x)
+                return(list(ymin=x.r[2],ymax=x.r[4],y=x.r[3]))
+        },geom = "pointrange")+
+        geom_line(aes(group=interaction(Client,Training)),
+                  alpha=0.2,size=0.2,)+
+                facet_grid(Gamma~Client,scales = "free_y",
+                           labeller = labeller(Client=NULL))+
+        scale_color_manual(values =colorValues,name="Client",
+                           labels=c("Resident","Visitor"))+
+  scale_y_continuous(sec.axis = sec_axis(~ . , name = expression(gamma),
+                                         breaks = NULL, labels = NULL))+
+      theme_classic()+
+        theme(legend.position = "top",strip.background = element_blank(),
+   strip.text.x = element_blank())
+  
+
+```
+
+## An alternative Mackintosh implementation
+
+During the development of the model an alternative implementation to the @mackintosh_Theory_1975. This alternative implementation captures the original conceptual idea. However, it implements it in a slightly different way:
+
+$$
+\alpha_i^{t+1} = \hat{\alpha}(|R^t + \gamma \sum_{j}^{n^{t+1}} S_j^{t+1}-\sum_{j}^{n^{t+1}}S_j^{t}|-
+|R^t + \gamma \sum_{j}^{n^{t+1}} S_j^{t+1}-S_i^t|)
+$$
+
+```{r MackAltRV,fig.cap="Dynamics of the resident-visitor choices under a update inspired by a model with an alternative implementation similar to @mackintosh_Theory_1975"}
+scenario<-"equalAttAC1"
+listPar<-c("AttMech","alph");listVal<-c(3,0.01)
+list1<-getFilelist(here("Simulations",paste0(scenario,"_")),
+            listparam = listPar,
+            values = listVal,
+            fullNam = TRUE)$PAA
+GamVar<-do.call(rbind,lapply(list1,
+                file2timeInter,interV=501,parOFint="AttMech"))
+        
+ggplot(data = GamVar,aes(x=Interv,y=Prob.RV.V,group=Gamma,
+                         color=as.factor(Gamma)))+
+        stat_summary(fun.data = function(x){
+                x.r<-fivenum(x)
+                return(list(ymin=x.r[2],ymax=x.r[4],y=x.r[3]))
+        },geom ="pointrange",position = position_dodge(0.9))+
+        geom_hline(yintercept = 0.5,color="red")+
+        geom_line(aes(group=interaction(Gamma,Training),
+                  color=as.factor(Gamma)),alpha=0.2,size=0.2,
+                  position = position_dodge(0.9))+
+        scale_color_manual(values =colorValues, name = expression(gamma))+
+        xlab("Time")+ylab("Probability of V over R")+
+        theme_classic()
+
+```
+
+```{r MackAltAtt,fig.cap="Dynamics of attention to the different stimuli under a model inspired by  @mackintosh_Theory_1975"}
+
+
+# Load raw data
+rawdynamics<-do.call(rbind,lapply(list1,loadFilewithPar,parOFint="AttMech"))
+
+
+# Transform associability (\alpha) data to long format
+long_alpha<-melt(rawdynamics[Age%%200==0],
+                    id.vars = c("Age","Training","Gamma","AttMech"),
+                    variable.name = "Client",
+                    measure.vars = c("alphaRes","alphaVis"))
+
+long_alpha[,Client:=as.factor(Client)]
+
+ggplot(data=long_alpha,aes(x=Age,y=value,colour=Client,
+                              group=as.factor(Client)))+
+        stat_summary(fun.data = function(x){
+                x.r<-fivenum(x)
+                return(list(ymin=x.r[2],ymax=x.r[4],y=x.r[3]))
+        },geom = "pointrange")+
+        geom_line(aes(group=interaction(Client,Training)),
+                  alpha=0.2,size=0.2,)+
+                facet_grid(Gamma~Client,scales = "free_y",
+                           labeller = labeller(Client=NULL))+
+        scale_color_manual(values =colorValues,name="Client",
+                           labels=c("Resident","Visitor"))+
+  scale_y_continuous(sec.axis = sec_axis(~ . , name = expression(gamma),
+                                         breaks = NULL, labels = NULL))+
+      theme_classic()+
+        theme(legend.position = "top",strip.background = element_blank(),
+   strip.text.x = element_blank())
+  
+
+```
+
+# References
+
+

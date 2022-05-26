@@ -22,7 +22,7 @@ types of agent. Fully Aware Agents (FAA) estimate value for
 
 Written by:
 
-Andr?s E. Qui?ones
+Andres E. Quinones
 Posdoctoral researcher
 Behavioural Ecology Group
 Institute of Biology
@@ -66,7 +66,7 @@ class agent													// Learning agent
 {
 public:
 	agent(double alphaI, double gammaI, bool netaI, 
-		double alphathI, double initVal);
+		double alphathI, double initVal, bool equalAttI);
 	// constructor providing values for the learning parameters
 	~agent();																
 	// destructor not really necessary
@@ -144,13 +144,14 @@ protected:
 	double cumulReward;	// Cumulative reward
 	int age;
 	double negReward;
+	bool equalAttAC; // TRUE if both Actor and Critic use the same \alpha
 };
 
 // Members of agent class
 
 agent::agent(double alphaI = 0.01, double gammaI = 0.5, 
 	bool netaI = 0, double alphathI = 0.01,
-	double initVal = 0){
+	double initVal = 0, bool equalAttI = true){
 // parameterized constructor with defaults
 	theta[0] = 0, theta[1] = 0;
 	numEst = 6;
@@ -171,6 +172,7 @@ agent::agent(double alphaI = 0.01, double gammaI = 0.5,
 	currentReward = 0, cumulReward = 0;
 	age = 0;
 	countExp = 2;
+	equalAttAC = equalAttI;
 }
 
 void agent::rebirth(double initVal = 0)
@@ -457,8 +459,47 @@ void agent::updateAlpha(int attenMech, int currState, double totValcurr,
 			break;
 		case 1:
 			if (cleanOptionsT[0] == 0 || cleanOptionsT[1] == 0) {
-				alphas[0] = alpha*(abs(lambda - totValcurr)-
+				alphas[0] = alpha*(abs(lambda - totValcurr + values[0])-
+				//alphas[0] = alpha*(abs(lambda - values[1]) -
 					abs(lambda-values[0]));
+				clip_low(alphas[0], 0);
+				if (isnan(alphas[0])) {
+					wait_for_return();
+				}
+			}
+			if (cleanOptionsT[0] == 1 || cleanOptionsT[1] == 1) {
+				alphas[1] = alpha * (abs(lambda - totValcurr + values[0]) -
+					abs(lambda - values[1]));
+				clip_low(alphas[1], 0);
+				if (isnan(alphas[0])) {
+					wait_for_return();
+				}
+			}
+			// attention (associability) increases for good predictors
+			// Based on @mackintosh_Theory_1975
+			break;
+		case 2:
+			if (cleanOptionsT[0] == 0 || cleanOptionsT[1] == 0) {
+				alphas[0] = alpha*abs(lambda -  values[0]);
+				if (isnan(alphas[0])) {
+					wait_for_return();
+				}
+			}
+			if (cleanOptionsT[0] == 1 || cleanOptionsT[1] == 1) {
+				alphas[1] = alpha*abs(lambda -  values[1]);
+				clip_low(alphas[1], 0);
+				if (isnan(alphas[0])) {
+					wait_for_return();
+				}
+			}
+			//alphas[currState] = ;// attention increases with prediction error
+			// Based on @pearce_Model_1980
+			break;
+		case 3:
+			if (cleanOptionsT[0] == 0 || cleanOptionsT[1] == 0) {
+				alphas[0] = alpha*(abs(lambda - totValcurr) -
+					//alphas[0] = alpha*(abs(lambda - values[1]) -
+					abs(lambda - values[0]));
 				clip_low(alphas[0], 0);
 				if (isnan(alphas[0])) {
 					wait_for_return();
@@ -474,13 +515,6 @@ void agent::updateAlpha(int attenMech, int currState, double totValcurr,
 			}
 			// attention (associability) increases for good predictors
 			// Based on @mackintosh_Theory_1975
-			break;
-		case 2:
-			//alphas[currState] = ;// attention increases with prediction error
-			// Based on @pearce_Model_1980
-			break;
-		case 3:
-			//alphas[currState] = ; // hybrid model
 			break;
 		default:
 			break;
@@ -587,8 +621,8 @@ class FAATyp1 :public agent{			// Fully Aware Agent (FAA)
 class PAATyp1 :public agent{				// Partially Aware Agent (PAA)	
 	public:
 	PAATyp1(double alphaI, double gammaI, double netaI, 
-		double alphaThI, double initVal):agent(alphaI, gammaI,  
-			netaI, alphaThI,initVal){
+		double alphaThI, double initVal, bool equalAttI):agent(alphaI, gammaI,  
+			netaI, alphaThI,initVal,equalAttI){
 		numEst = 3;
 		values[2] = 0;
 		// Value of absence starts with reward of 0
@@ -607,14 +641,27 @@ class PAATyp1 :public agent{				// Partially Aware Agent (PAA)
 	}
 	virtual void updateThet(int curStatAct) {
 		if (curStatAct < 2) {
-			if (curStatAct == 1) {
+			if (equalAttAC) {
+				if (curStatAct == 1) {
 					theta[0] += alphas[0]*delta*(1 - piV);
-					theta[1] -= alphas[0] * delta * (1 - piV);
+					theta[1] -= alphas[1]* delta * (1 - piV);
+				}
+				else {
+					theta[1] += alphas[1]*delta*piV;
+					theta[0] -= alphas[0]* delta * piV;
+				}
 			}
 			else {
-					theta[1] += alphas[1]*delta*piV;
-					theta[0] -= alphas[1] * delta * piV;
+				if (curStatAct == 1) {
+					theta[0] += alpha*delta*(1 - piV);
+					theta[1] -= alpha* delta * (1 - piV);
+				}
+				else {
+					theta[1] += alpha*delta*piV;
+					theta[0] -= alpha* delta * piV;
+				}
 			}
+			
 			piV = logist();
 		}
 	}
@@ -648,8 +695,8 @@ string create_filename(std::string filename, agent &individual,
 	filename.append(douts(pV));
 	filename.append("_pR");
 	filename.append(douts(pR));
-	filename.append("_alphaTh");
-	filename.append(douts(individual.getLearnPar(alphathPar)));
+	filename.append("_AttMech");
+	filename.append(itos(param["attenMech"]));
 	filename.append("_seed");
 	filename.append(itos(param["seed"]));
 	filename.append(".txt");
@@ -703,38 +750,39 @@ int main(int argc, char* argv[]){
 	// input parameters provided by a JSON file with the following
 	// structure:
 
-	json param;
-	param["totRounds"]    = 20000;
-	param["ResReward"]    = 1;
-	param["VisReward"]    = 1;
-	param["ResProb"]      = 0.3;
-	param["VisProb"]      = 0.3;
-	param["ResProbLeav"]  = 0;
-	param["VisProbLeav"]  = 1;
-	param["negativeRew"]  = -0.5;
-	param["scenario"]     = 0;
-	//param["experiment"]   = false;
-	param["inbr"]         = 0;
-	param["outbr"]        = 0;
-	param["trainingRep"]  = 10;
-	param["alphaT"]       = 0.01;
-	param["numlearn"]     = 1;
-	param["propfullPrint"] = 0.7;
-	param["printGen"]     = 1;
-	param["seed"]         = 1;
-	param["forRat"]       = 0.0;
-	param["alphThRange"]  = { 0 };
-	param["gammaRange"]   = { 0, 0.5,0.8};
-	param["netaRange"]    = { 0 };
-	param["alphaThRange"] = { 0.01 };
-	param["folder"]       = "E:/Projects/Clean.ActCrit/Simulations/test_/";
-	param["initVal"]      = 1;
-	param["attenMech"] = 1;
+	//json param;
+	//param["totRounds"]    = 20000;
+	//param["ResReward"]    = 1;
+	//param["VisReward"]    = 1;
+	//param["ResProb"]      = 0.3;
+	//param["VisProb"]      = 0.3;
+	//param["ResProbLeav"]  = 0;
+	//param["VisProbLeav"]  = 1;
+	//param["negativeRew"]  = -0.5;
+	//param["scenario"]     = 0;
+	////param["experiment"]   = false;
+	//param["inbr"]         = 0;
+	//param["outbr"]        = 0;
+	//param["trainingRep"]  = 10;
+	//param["alphaT"]       = 0.01;
+	//param["numlearn"]     = 1;
+	//param["propfullPrint"] = 0.7;
+	//param["printGen"]     = 1;
+	//param["seed"]         = 1;
+	//param["forRat"]       = 0.0;
+	//param["alphThRange"]  = { 0 };
+	//param["gammaRange"]   = { 0, 0.5,0.8};
+	//param["netaRange"]    = { 0 };
+	//param["alphaThRange"] = { 0.01 };
+	//param["folder"]       = "M:/Projects/Clean.ActCrit/Simulations/test_/";
+	//param["initVal"]      = 1;
+	//param["attenMech"] = 1;
+	//param["equalAttAC"] = true;
 
 	
-	/*ifstream input(argv[1]);
+	ifstream input(argv[1]);
 	if (input.fail()) { cout << "JSON file failed" << endl; }
-	json param = nlohmann::json::parse(input);*/
+	json param = nlohmann::json::parse(input);
 	
 	// Pass on parameters from JSON to c++
 	int const totRounds = param["totRounds"];
@@ -785,7 +833,7 @@ int main(int argc, char* argv[]){
 
 							   // Initialize agents
 								learners[0] = new PAATyp1(alphaT, *itg, *itn,
-									*italTh, init);
+									*italTh, init,param["equalAttAC"]);
 								learners[1] = new FAATyp1(alphaT, *itg, *itn, 
 									*italTh, init);
 								// output of learning trials

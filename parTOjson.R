@@ -6,11 +6,11 @@ source(here("loadData.R"))
 
 simsDir<-"Simulations"
 
-exedir<-'/./ActCrit.exe'
+# exedir<-'/./ActCrit.exe'
 
 fileName<-"parameters.json"
 
-scenario<-"MCMCclean_gam_nRew_sca_group_"
+
 
 
 # MCMC fit - Generate json parameter files for -------------------------------------
@@ -265,8 +265,47 @@ for (i in 1:length(rangLeav)) {
     #   ,sep = " "))
   }
 }
-# 
-for (k in 1:90) print(y)
+#
+
+## Create Job files for individuaL runs and single parameter variation ---------
+
+scenario<-"equalAttAC1"
+
+param<-list(totRounds=10000,ResReward=1,VisReward=1,
+            ResProb=c(0.3),
+            VisProb=c(0.3),
+            ResProbLeav=0,VisProbLeav=1,negativeRew=-0,
+            scenario=0,
+            inbr=0,outbr=0,trainingRep=10,forRat=0.0,
+            alphaT=0.01,printGen=1,seed=1, gammaRange=I(c(0,0.5,0.8)),
+            netaRange=I(c(0)),alphaThRange=I(c(0.05)),numlearn=1,
+            propfullPrint = 0.7,
+            # alphaThNch=0.01,
+            attenMech=1, equalAttAC=TRUE,
+            folderL=paste0(here(simsDir),scenario,"_/"))
+
+check_create.dir(here(simsDir),param = rep(scenario,1),
+                 values = c(""))
+
+parRange<-c(0,1,2,3)
+
+for(parVal in parRange){
+  param$folderL<-paste0(here("Simulations",paste0(scenario,"_")),"/")
+  param$folder<-param$folderL #paste0(folderSims,"/",listfolders[i],"/") 
+  param$attenMech<-parVal
+  outParam<-toJSON(param,auto_unbox = TRUE,pretty = TRUE)
+  fileName<-paste("parameters_",parVal,".json",sep="") 
+  if(file.exists(paste(param$folderL,fileName,sep = ''))){
+    currFile<-fromJSON(paste(param$folderL,fileName,sep = ''))
+    if(sum(unlist(currFile)!=unlist(param))>0){
+      write(outParam,paste(param$folderL,fileName,sep = "/"))
+    }
+  }
+  else{
+    write(outParam,paste(param$folderL,fileName,sep = ""))
+  }
+}
+
 
 
 

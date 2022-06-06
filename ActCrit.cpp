@@ -175,8 +175,7 @@ agent::agent(double alphaI = 0.01, double gammaI = 0.5,
 	equalAttAC = equalAttI;
 }
 
-void agent::rebirth(double initVal = 0)
-{
+void agent::rebirth(double initVal = 0){
 	age = 0;
 	cleanOptionsT[0] = absence, cleanOptionsT[1] = absence;
 	cleanOptionsT1[0] = absence, cleanOptionsT1[1] = absence;
@@ -195,18 +194,14 @@ void agent::rebirth(double initVal = 0)
 
 agent::~agent() {}		// Destructor
 
-void agent::checkChoice()
-{
-	if (choiceT > 1 )
-	{
+void agent::checkChoice(){
+	if (choiceT > 1 )	{
 		error("agent::act", "choice is not among the options");
 	}
 }
 
-double agent::getLearnPar(learPar parameter)
-{
-	switch (parameter)
-	{
+double agent::getLearnPar(learPar parameter){
+	switch (parameter)	{
 	case alphaPar:return(alpha);
 		break;
 	case gammaPar:
@@ -223,8 +218,7 @@ double agent::getLearnPar(learPar parameter)
 	}
 }
 
-void agent::ObtainReward(double &ResReward, double &VisReward)
-{
+void agent::ObtainReward(double &ResReward, double &VisReward){
 	if (cleanOptionsT[choiceT] == resident) { 
 		currentReward = ResReward, cumulReward += ResReward; 
 	}					// Obtain reward if the choice is a resident
@@ -237,20 +231,16 @@ void agent::ObtainReward(double &ResReward, double &VisReward)
 
 void agent::getNewOptions(client newOptions[], int &idNewOptions, 
 	double &VisProbLeav, double &ResProbLeav, double &negativeRew, 
-	double &inbr, double &outbr, learnScenario &scenario)
-{
-	if (choiceT == 0)		// Define the behaviour of the unattended client
-	{
-		if (cleanOptionsT[1] == resident)
-		{
+	double &inbr, double &outbr, learnScenario &scenario) {
+	if (choiceT == 0){		// Define the behaviour of the unattended client
+		if (cleanOptionsT[1] == resident)		{
 			if (rnd::uniform() > ResProbLeav) { 
 				cleanOptionsT1[0] = cleanOptionsT[1], negReward = 0; 
 			}								
 			// if the unttended client is a resident, it leaves with probability ResPropLeave
 			else { negReward = negativeRew; }
 		}
-		else if (cleanOptionsT[1] == visitor)
-		{
+		else if (cleanOptionsT[1] == visitor)	{
 			if (rnd::uniform() > VisProbLeav) { 
 				cleanOptionsT1[0] = cleanOptionsT[1], negReward = 0; 
 			}
@@ -259,18 +249,15 @@ void agent::getNewOptions(client newOptions[], int &idNewOptions,
 		}
 		else { negReward = 0; }
 	}
-	else
-	{
-		if (cleanOptionsT[0] == resident)
-		{
+	else	{
+		if (cleanOptionsT[0] == resident)		{
 			if (rnd::uniform() > ResProbLeav) { 
 				cleanOptionsT1[0] = cleanOptionsT[0], negReward = 0; 
 			}	
 			// if the unattended client is a resident, it leaves with probability ResPropLeave
 			else { negReward = negativeRew; }
 		}
-		else if (cleanOptionsT[0] == visitor)
-		{
+		else if (cleanOptionsT[0] == visitor)		{
 			if (rnd::uniform() > VisProbLeav) { 
 				cleanOptionsT1[0] = cleanOptionsT[0], negReward = 0; }
 			// if the unattended client is a visitor, it leaves with probability VisPropLeave
@@ -295,8 +282,7 @@ void agent::getNewOptions(client newOptions[], int &idNewOptions,
 }
 
 void agent::getExternalOptions(client newOptions[], int &idNewOptions, 
-	double &inbr, double &outbr)
-{
+	double &inbr, double &outbr){
 	if (cleanOptionsT1[0] == absence){
 		// If none of the clients stayed from the previous interaction
 		cleanOptionsT1[0] = newOptions[idNewOptions], ++idNewOptions;
@@ -522,8 +508,7 @@ void agent::updateAlpha(int attenMech, int currState, double totValcurr,
 }
 
 void agent::printIndData(ofstream &learnSeries, int &seed, double &outbr, 
-	double pV, double pR)
-{
+	double pV, double pR){
 	learnSeries << seed << '\t' << age << '\t';
 	//cout << seed << '\t' << age << '\t';
 	learnSeries << alpha << '\t' << gamma << '\t';
@@ -533,8 +518,7 @@ void agent::printIndData(ofstream &learnSeries, int &seed, double &outbr,
 	learnSeries << cleanOptionsT[0] << '\t' << cleanOptionsT[1] << '\t';
 	learnSeries << cleanOptionsT[choiceT] << '\t';
 	learnSeries << currentReward << '\t' << cumulReward << '\t' << negReward << '\t';
-	for (int j = 0; j < numEst; j++)
-	{
+	for (int j = 0; j < numEst; j++) {
 		learnSeries << values[j] << '\t';
 		learnSeries << alphas[j] << '\t';
 	}
